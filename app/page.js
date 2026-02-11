@@ -71,7 +71,7 @@ const StarRating = ({ rating }) => (
 
 export default function Home() {
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-white via-sky-50 to-sky-100 text-gray-800">
+    <div className="min-h-screen w-full">
       <main className="container mx-auto px-4 py-16 md:py-24">
         <div className="text-center">
           <h1 className="text-4xl md:text-6xl font-extrabold text-sky-900 tracking-tight">
