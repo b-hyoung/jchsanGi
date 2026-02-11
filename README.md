@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+📘 정보처리산업기사 CBT 모의시험 시스템
+정보처리산업기사 필기 기출 PDF를 기반으로, 실제 시험과 유사한 CBT(Computer Based Test) 환경에서 연습할 수 있는 웹/데스크톱 애플리케이션입니다.
 
-## Getting Started
+✅ 특징
+3개 과목 구성, 실제 시험과 동일
 
-First, run the development server:
+- 정보시스템 기반 기술 (20문항)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 소프트웨어 설계·프로그래밍 언어 활용 (20문항)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- 데이터베이스 활용 (20문항)
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+총 60문항, 과목/전체 점수 자동 채점
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+과락 및 합격 여부 자동 판정
 
-## Learn More
+과목별 8문제 이하 정답 시 과락 처리 (20문항 × 40점 기준)
 
-To learn more about Next.js, take a look at the following resources:
+총 36문제 이상 정답 시 합격 (평균 60점 기준)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+PDF 기출문제를 내부 데이터베이스/JSON 형태로 변환하여 사용
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+실제 시험과 유사한 CBT UI (문항 이동, 답안 수정, 남은 문항 표시 등)
 
-## Deploy on Vercel
+상단에 / 해설보기 체크박스가 있음
+현재는 각 문제를 1-60번 문제를 풀 수 있도록해주고
+문제는 하나씩 보고 넘어간다
+답을 선택하면 확인 후 넘어가는 방식으로 만약 답이 맞다면 다음문제로 넘어가고 (간단한 O 표시) 틀리다면 X 표시 후 해설 보기 체크박스 여부에따라 하단에 해설 및 답이 나옴(핸드폰의 경우는 팝업이 뜨도록)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 이후 추가목록
+ - 틀린 문제들의 리스트를 모아 AI가 비슷한 문제 모아서 출제(개인화)
+ - 틀린 문제 같은경우는 기존에 있는 문제가 아닌 AI가 새로 만드는 방향
