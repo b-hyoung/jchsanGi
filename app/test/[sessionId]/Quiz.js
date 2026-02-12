@@ -2,13 +2,19 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 
 // Main Quiz Component
-export default function Quiz({ problems, session }) {
+export default function Quiz({ problems, session, answersMap, commentsMap }) {
   const [isStarted, setIsStarted] = useState(false);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [checkedProblems, setCheckedProblems] = useState({});
+  
+  // Settings state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
+  const [showExplanationWhenIncorrect, setShowExplanationWhenIncorrect] = useState(true);
 
   if (!problems || problems.length === 0) {
     return <div>문제를 불러오는 데 실패했습니다.</div>;
@@ -25,9 +31,27 @@ export default function Quiz({ problems, session }) {
     });
   };
 
-  const goToNextProblem = () => {
-    if (currentProblemIndex < problems.length - 1) {
-      setCurrentProblemIndex(currentProblemIndex + 1);
+  const currentProblem = problems[currentProblemIndex];
+  const isChecked = checkedProblems[currentProblem.problem_number];
+
+  const handleNextClick = () => {
+    const selectedAnswer = answers[currentProblem.problem_number];
+    
+    // If not checked yet, perform check
+    if (!isChecked) {
+      if (!selectedAnswer) {
+        alert("답을 선택해주세요.");
+        return;
+      }
+      setCheckedProblems(prev => ({
+        ...prev,
+        [currentProblem.problem_number]: true
+      }));
+    } else {
+      // If already checked, move to next problem
+      if (currentProblemIndex < problems.length - 1) {
+        setCurrentProblemIndex(currentProblemIndex + 1);
+      }
     }
   };
 
@@ -41,42 +65,131 @@ export default function Quiz({ problems, session }) {
     return <TestLobby session={session} onStart={handleStartQuiz} problemCount={problems.length} />;
   }
 
-  const currentProblem = problems[currentProblemIndex];
   const selectedAnswer = answers[currentProblem.problem_number];
+  const correctAnswer = answersMap ? answersMap[currentProblem.problem_number] : null;
+  const isCorrect = selectedAnswer === correctAnswer;
+  
+  // Find the index of the correct answer to display it (1-based)
+  const correctAnswerIndex = currentProblem.options.indexOf(correctAnswer);
+  
+  // Show results logic
+  const showResult = isChecked;
+  const shouldShowExplanation = showResult && (
+    (isCorrect && showExplanationWhenCorrect) || 
+    (!isCorrect && showExplanationWhenIncorrect)
+  );
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col">
-      <header className="bg-white shadow-md p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-indigo-900">{session.title}</h1>
+      <header className="bg-white shadow-md p-4 flex justify-between items-center relative z-10">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-indigo-900 hidden md:block">{session.title}</h1>
+          <h1 className="text-xl font-bold text-indigo-900 md:hidden">{session.title.split(' ')[0]}...</h1>
+        </div>
+
         <div className="text-lg font-semibold text-gray-900">
           문제 {currentProblemIndex + 1} / {problems.length}
         </div>
-        <button className="px-6 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700">
-          시험 종료
-        </button>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button 
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Settings"
+            >
+              <Settings className="w-6 h-6" />
+            </button>
+            
+            {isSettingsOpen && (
+              <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20">
+                <h3 className="font-bold text-gray-900 mb-3 pb-2 border-b">해설 설정</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={showExplanationWhenCorrect}
+                      onChange={(e) => setShowExplanationWhenCorrect(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">정답을 맞췄을 때 해설 보기</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={showExplanationWhenIncorrect}
+                      onChange={(e) => setShowExplanationWhenIncorrect(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">오답일 때 해설 보기</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <button className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 text-sm md:text-base">
+            종료
+          </button>
+        </div>
       </header>
 
-      <main className="flex-grow container mx-auto p-8">
-        <div className="bg-white p-8 rounded-xl shadow-lg">
+      <main className="flex-grow container mx-auto p-4 md:p-8">
+        <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg">
           <p className="text-sm font-semibold text-indigo-600 mb-2">{currentProblem.sectionTitle}</p>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6 leading-relaxed">
             {currentProblem.problem_number}. {currentProblem.question_text}
           </h2>
           <div className="space-y-4">
-            {currentProblem.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleSelectOption(currentProblem.problem_number, option)}
-                className={`w-full text-left text-gray-500 p-4 rounded-lg border-2 transition-all
-                  ${selectedAnswer === option
-                    ? 'bg-indigo-100 text-skyblue border-indigo-500 ring-2 ring-indigo-500'
-                    : 'bg-white hover:bg-indigo-50 border-indigo-200'
-                  }`}
-              >
-                {index + 1}. {option}
-              </button>
-            ))}
+            {currentProblem.options.map((option, index) => {
+              let buttonClass = "bg-white hover:bg-indigo-50 border-indigo-200 text-gray-800";
+              
+              if (selectedAnswer === option) {
+                // Base style for selected
+                buttonClass = "bg-indigo-100 text-indigo-700 border-indigo-500 ring-2 ring-indigo-500 font-bold";
+                
+                // If checked, override with result colors
+                if (showResult) {
+                  if (isCorrect) {
+                    buttonClass = "bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500";
+                  } else {
+                    buttonClass = "bg-red-100 text-red-800 border-red-500 ring-2 ring-red-500";
+                  }
+                }
+              }
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleSelectOption(currentProblem.problem_number, option)}
+                  disabled={isChecked} // Disable changing answer after checking
+                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${buttonClass} ${isChecked ? 'cursor-default' : ''}`}
+                >
+                  {index + 1}. {option}
+                </button>
+              );
+            })}
           </div>
+
+          {shouldShowExplanation && (
+            <div className={`mt-6 p-6 rounded-lg animate-in fade-in slide-in-from-top-2 border ${
+              isCorrect ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'
+            }`}>
+              <h3 className={`text-lg font-bold mb-1 ${isCorrect ? 'text-blue-800' : 'text-red-800'}`}>
+                {isCorrect ? '정답입니다!' : '오답입니다!'}
+              </h3>
+              <p className="text-lg font-semibold text-indigo-900 mb-3">
+                정답: {correctAnswerIndex + 1}번
+              </p>
+              {commentsMap && commentsMap[currentProblem.problem_number] && (
+                <p className={`text-gray-700 whitespace-pre-line border-t pt-3 ${
+                  isCorrect ? 'border-blue-100' : 'border-red-100'
+                }`}>
+                  <span className="font-semibold">해설:</span> {commentsMap[currentProblem.problem_number]}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </main>
 
@@ -90,12 +203,12 @@ export default function Quiz({ problems, session }) {
           이전
         </button>
         <button
-          onClick={goToNextProblem}
-          disabled={currentProblemIndex === problems.length - 1}
+          onClick={handleNextClick}
+          disabled={currentProblemIndex === problems.length - 1 && isChecked} 
           className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed inline-flex items-center"
         >
-          다음
-          <ChevronRight className="ml-2 w-5 h-5" />
+          {isChecked ? (currentProblemIndex === problems.length - 1 ? '완료' : '다음') : '정답 확인'}
+          {isChecked && currentProblemIndex !== problems.length - 1 && <ChevronRight className="ml-2 w-5 h-5" />}
         </button>
       </footer>
     </div>

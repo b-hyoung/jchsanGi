@@ -3,19 +3,42 @@ import path from 'path';
 import { notFound } from 'next/navigation';
 import Quiz from './Quiz';
 
-async function getProblems(sessionId) {
+async function getQuizData(sessionId) {
   if (sessionId === '1') {
-    const filePath = path.join(process.cwd(), 'problem2024', 'first', 'problem1.json');
+    const basePath = path.join(process.cwd(), 'problem2024', 'first');
     try {
-      const jsonString = await fs.readFile(filePath, 'utf8');
-      const data = JSON.parse(jsonString);
-      const allProblems = data.reduce((acc, section) => {
+      const [problemStr, answerStr, commentStr] = await Promise.all([
+        fs.readFile(path.join(basePath, 'problem1.json'), 'utf8'),
+        fs.readFile(path.join(basePath, 'answer1.json'), 'utf8'),
+        fs.readFile(path.join(basePath, 'comment1.json'), 'utf8')
+      ]);
+
+      const problemData = JSON.parse(problemStr);
+      const answerData = JSON.parse(answerStr);
+      const commentData = JSON.parse(commentStr);
+
+      const problems = problemData.reduce((acc, section) => {
         const problemsWithSection = section.problems.map(p => ({ ...p, sectionTitle: section.title }));
         return acc.concat(problemsWithSection);
       }, []);
-      return allProblems;
+
+      const answersMap = answerData.reduce((acc, section) => {
+        section.answers.forEach(a => {
+          acc[a.problem_number] = a.correct_answer_text;
+        });
+        return acc;
+      }, {});
+
+      const commentsMap = commentData.reduce((acc, section) => {
+        section.comments.forEach(c => {
+          acc[c.problem_number] = c.comment;
+        });
+        return acc;
+      }, {});
+
+      return { problems, answersMap, commentsMap };
     } catch (error) {
-      console.error("Failed to read or parse problem file:", error);
+      console.error("Failed to read or parse quiz files:", error);
       return null;
     }
   }
@@ -35,13 +58,13 @@ export default async function TestPage({ params: paramsPromise }) {
   const params = await paramsPromise;
   const { sessionId } = params;
 
-  const problems = await getProblems(sessionId);
+  const data = await getQuizData(sessionId);
   const session = sessionDetails[sessionId];
 
-  if (!problems || !session) {
+  if (!data || !session) {
     notFound();
   }
 
   // Pass the server-fetched problems directly to the client component.
-  return <Quiz problems={problems} session={session} />;
+  return <Quiz problems={data.problems} answersMap={data.answersMap} commentsMap={data.commentsMap} session={session} />;
 }

@@ -235,7 +235,7 @@
       {
         "problem_number": 45,
         "correct_answer_index": 0,
-        "correct_answer_text": "SELECT 이름 FROM 학생 WHERE 학년 = 3 AND 학과 = “컴퓨터공학";"
+        "correct_answer_text": "SELECT 이름 FROM 학생 WHERE 학년 = 3 AND 학과 = “컴퓨터공학”;"
       },
       {
         "problem_number": 46,
