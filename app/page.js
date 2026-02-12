@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { FileText, LayoutGrid, CheckCircle, BrainCircuit, ArrowRight, Star } from 'lucide-react';
 
 const features = [
@@ -71,7 +72,7 @@ const StarRating = ({ rating }) => (
 
 export default function Home() {
   return (
-    <div className="min-h-screen w-full">
+    <div className="min-h-screen w-full bg-white">
       <main className="container mx-auto px-4 py-16 md:py-24">
         <div className="text-center">
           <h1 className="text-4xl md:text-6xl font-extrabold text-sky-900 tracking-tight">
@@ -80,9 +81,9 @@ export default function Home() {
           <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-gray-600">
             실제 시험과 가장 유사한 환경에서 기출문제를 풀고 합격을 준비하세요.
           </p>
-          <button className="mt-8 px-8 py-4 bg-sky-600 text-white font-bold text-lg rounded-full hover:bg-sky-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sky-300 inline-flex items-center">
+          <Link href="/test" className="mt-8 px-8 py-4 bg-sky-600 text-white font-bold text-lg rounded-full hover:bg-sky-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sky-300 inline-flex items-center">
             모의시험 시작하기 <ArrowRight className="ml-2 w-5 h-5" />
-          </button>
+          </Link>
         </div>
 
         <div className="mt-20 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
