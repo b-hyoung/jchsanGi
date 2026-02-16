@@ -2,9 +2,8 @@ import Link from 'next/link';
 import { Book, ChevronRight } from 'lucide-react';
 
 const testSessions = [
-  { id: 1, title: '정보처리산업기사 2024년 1회', description: '가장 최신 기출문제로 실력을 점검해보세요.' },
-  { id: 2, title: '정보처리산업기사 2023년 3회', description: '지난 회차 문제를 통해 취약점을 파악하세요.' },
-  { id: 3, title: '정보처리산업기사 2023년 2회', description: '다양한 유형의 문제를 경험해보세요.' },
+  { id: 1, title: '정보처리산업기사 2024년 1회', description: '새롭게 추가된 2024년 1회 기출문제입니다.' },
+  { id: 4, title: '정보처리산업기사 2024년 2회', description: '새롭게 추가된 2024년 2회 기출문제입니다.' },
 ];
 
 export default function TestSelectionPage() {
