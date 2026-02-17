@@ -1,0 +1,257 @@
+[
+  {
+    "title": "정보시스템 기반 기술",
+    "comments": [
+      {
+        "problem_number": 1,
+        "comment": "정답: 편리한 유지보수를 위해 개발자 중심으로 설계되어야 한다."
+      },
+      {
+        "problem_number": 2,
+        "comment": "정답: 라운드 로빈"
+      },
+      {
+        "problem_number": 3,
+        "comment": "정답: SOA"
+      },
+      {
+        "problem_number": 4,
+        "comment": "정답: 8.25"
+      },
+      {
+        "problem_number": 5,
+        "comment": "정답: UTP cable"
+      },
+      {
+        "problem_number": 6,
+        "comment": "정답: 브로드캐스트, 유니캐스트, 멀티캐스트로 구성된다."
+      },
+      {
+        "problem_number": 7,
+        "comment": "정답: 105"
+      },
+      {
+        "problem_number": 8,
+        "comment": "정답: 형상 관리"
+      },
+      {
+        "problem_number": 9,
+        "comment": "정답: SMTP"
+      },
+      {
+        "problem_number": 10,
+        "comment": "정답: 연산식 반복"
+      },
+      {
+        "problem_number": 11,
+        "comment": "정답: PROCESS"
+      },
+      {
+        "problem_number": 12,
+        "comment": "정답: 단위 테스트"
+      },
+      {
+        "problem_number": 13,
+        "comment": "정답: Semaphore"
+      },
+      {
+        "problem_number": 14,
+        "comment": "정답: 14K"
+      },
+      {
+        "problem_number": 15,
+        "comment": "정답: 자기정정 부호 방식"
+      },
+      {
+        "problem_number": 16,
+        "comment": "정답: 클래스"
+      },
+      {
+        "problem_number": 17,
+        "comment": "정답: (대기 시간 + 서비스 시간) / 서비스 시간"
+      },
+      {
+        "problem_number": 18,
+        "comment": "정답: Preemption"
+      },
+      {
+        "problem_number": 19,
+        "comment": "정답: 모듈이나 컴포넌트의 기능성 테스트를 최우선으로 한다."
+      },
+      {
+        "problem_number": 20,
+        "comment": "정답: 전송 계층"
+      }
+    ]
+  },
+  {
+    "title": "프로그래밍 언어 활용",
+    "comments": [
+      {
+        "problem_number": 21,
+        "comment": "정답: %"
+      },
+      {
+        "problem_number": 22,
+        "comment": "정답: 3edc"
+      },
+      {
+        "problem_number": 23,
+        "comment": "정답: Content Coupling"
+      },
+      {
+        "problem_number": 24,
+        "comment": "정답: 모듈 간의 결합도는 강할수록 바람직하다."
+      },
+      {
+        "problem_number": 25,
+        "comment": "정답: splice( ) : 배열에서 지정한 범위의 데이터를 가져온다."
+      },
+      {
+        "problem_number": 26,
+        "comment": "정답: Vulnerability"
+      },
+      {
+        "problem_number": 27,
+        "comment": "정답: Open API"
+      },
+      {
+        "problem_number": 28,
+        "comment": "정답: 3행"
+      },
+      {
+        "problem_number": 29,
+        "comment": "정답: 1, 30 2회"
+      },
+      {
+        "problem_number": 30,
+        "comment": "정답: 기능적 → 순차적 → 통신적 → 절차적"
+      },
+      {
+        "problem_number": 31,
+        "comment": "정답: 8"
+      },
+      {
+        "problem_number": 32,
+        "comment": "정답: 구현하려는 기능들의 공통점만을 모아 놓은 것이다."
+      },
+      {
+        "problem_number": 33,
+        "comment": "정답: prompt(“title”, “default”)"
+      },
+      {
+        "problem_number": 34,
+        "comment": "정답: 2"
+      },
+      {
+        "problem_number": 35,
+        "comment": "정답: Django"
+      },
+      {
+        "problem_number": 36,
+        "comment": "정답: 문법 오류로 인해 발생한 것"
+      },
+      {
+        "problem_number": 37,
+        "comment": "정답: ∥"
+      },
+      {
+        "problem_number": 38,
+        "comment": "정답: 1"
+      },
+      {
+        "problem_number": 39,
+        "comment": "정답: i = 4"
+      },
+      {
+        "problem_number": 40,
+        "comment": "정답: 다른 모듈에서의 접근이 불가능해야 한다. 제3과목 데이터베이스의 활용"
+      }
+    ]
+  },
+  {
+    "title": "데이터베이스의 활용",
+    "comments": [
+      {
+        "problem_number": 41,
+        "comment": "정답: 하나 이상의 기본 테이블로부터 유도되어 만들어지는 물리적인 실제 테이블이다."
+      },
+      {
+        "problem_number": 42,
+        "comment": "정답: 6, 7, 3, 5, 9"
+      },
+      {
+        "problem_number": 43,
+        "comment": "정답: DEGREE, CARDINALITY"
+      },
+      {
+        "problem_number": 44,
+        "comment": "정답: Atomicity"
+      },
+      {
+        "problem_number": 45,
+        "comment": "정답: 부분 함수 종속성 제거"
+      },
+      {
+        "problem_number": 46,
+        "comment": "정답: SELECT"
+      },
+      {
+        "problem_number": 47,
+        "comment": "정답: 개체 타입"
+      },
+      {
+        "problem_number": 48,
+        "comment": "정답: 개체 무결성 제약 조건"
+      },
+      {
+        "problem_number": 49,
+        "comment": "정답: 6, 8, 3, 5"
+      },
+      {
+        "problem_number": 50,
+        "comment": "정답: 운영 기능"
+      },
+      {
+        "problem_number": 51,
+        "comment": "정답: A B D C E F"
+      },
+      {
+        "problem_number": 52,
+        "comment": "정답: SELECT 이름 FROM 학생 WHERE 학년 = 3 AND 학과 = “컴퓨터공학”;"
+      },
+      {
+        "problem_number": 53,
+        "comment": "정답: 일반 사용자는 시스템 테이블의 내용을 검색할 수 없다."
+      },
+      {
+        "problem_number": 54,
+        "comment": "정답: 데크"
+      },
+      {
+        "problem_number": 55,
+        "comment": "정답: 20"
+      },
+      {
+        "problem_number": 56,
+        "comment": "정답: 개념적 설계 단계에서 만들어진 정보 구조로부터 특정 목표 DBMS가 처리할 수 있는 스키마를 생성한다."
+      },
+      {
+        "problem_number": 57,
+        "comment": "정답: 널 값(Null Value)"
+      },
+      {
+        "problem_number": 58,
+        "comment": "정답: 15000"
+      },
+      {
+        "problem_number": 59,
+        "comment": "정답: SELECT DISTINCT DEPT FROM STUDENT;"
+      },
+      {
+        "problem_number": 60,
+        "comment": "정답: 하나의 릴레이션을 구성하는 튜플은 모두 같다."
+      }
+    ]
+  }
+]

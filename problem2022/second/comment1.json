@@ -1,0 +1,257 @@
+[
+  {
+    "title": "정보시스템 기반 기술",
+    "comments": [
+      {
+        "problem_number": 1,
+        "comment": "정답: Hamming code"
+      },
+      {
+        "problem_number": 2,
+        "comment": "정답: OSPF"
+      },
+      {
+        "problem_number": 3,
+        "comment": "정답: 네트워크 계층"
+      },
+      {
+        "problem_number": 4,
+        "comment": "정답: 물리적 뷰"
+      },
+      {
+        "problem_number": 5,
+        "comment": "정답: 2단계 디렉터리 구조"
+      },
+      {
+        "problem_number": 6,
+        "comment": "정답: 편리한 유지보수를 위해 개발자 중심으로 설계되어야 한다."
+      },
+      {
+        "problem_number": 7,
+        "comment": "정답: 하드웨어에 의해 사용되는 입출력 장치"
+      },
+      {
+        "problem_number": 8,
+        "comment": "정답: Debugging"
+      },
+      {
+        "problem_number": 9,
+        "comment": "정답: 하나의 객체를 생성하면 생성된 객체를 어디서든 참조할 수 있지만, 여러 프로세스가 동시에 참조할 수는 없는 패턴이다."
+      },
+      {
+        "problem_number": 10,
+        "comment": "정답: 15"
+      },
+      {
+        "problem_number": 11,
+        "comment": "정답: Fedora"
+      },
+      {
+        "problem_number": 12,
+        "comment": "정답: 단위 테스트"
+      },
+      {
+        "problem_number": 13,
+        "comment": "정답: Capability List"
+      },
+      {
+        "problem_number": 14,
+        "comment": "정답: 사용자의 비전문성을 인정하지 않는다."
+      },
+      {
+        "problem_number": 15,
+        "comment": "정답: 프로젝트 개발 비용"
+      },
+      {
+        "problem_number": 16,
+        "comment": "정답: 실시간 전송이나 대량의 데이터 전송에 적합하다."
+      },
+      {
+        "problem_number": 17,
+        "comment": "정답: 추상 클래스"
+      },
+      {
+        "problem_number": 18,
+        "comment": "정답: Preemption"
+      },
+      {
+        "problem_number": 19,
+        "comment": "정답: ㉮ → ㉱ → ㉰ → ㉯"
+      },
+      {
+        "problem_number": 20,
+        "comment": "정답: 전송 계층"
+      }
+    ]
+  },
+  {
+    "title": "프로그래밍 언어 활용",
+    "comments": [
+      {
+        "problem_number": 21,
+        "comment": "정답: prompt"
+      },
+      {
+        "problem_number": 22,
+        "comment": "정답: Vulnerability"
+      },
+      {
+        "problem_number": 23,
+        "comment": "정답: 응집도를 최소화 한다."
+      },
+      {
+        "problem_number": 24,
+        "comment": "정답: Open API"
+      },
+      {
+        "problem_number": 25,
+        "comment": "정답: 함수가 종료되면 값도 소멸된다."
+      },
+      {
+        "problem_number": 26,
+        "comment": "정답: C++"
+      },
+      {
+        "problem_number": 27,
+        "comment": "정답: Range"
+      },
+      {
+        "problem_number": 28,
+        "comment": "정답: 3행"
+      },
+      {
+        "problem_number": 29,
+        "comment": "정답: Inheritance"
+      },
+      {
+        "problem_number": 30,
+        "comment": "정답: alert"
+      },
+      {
+        "problem_number": 31,
+        "comment": "정답: push"
+      },
+      {
+        "problem_number": 32,
+        "comment": "정답: ㉠-method, ㉡-action"
+      },
+      {
+        "problem_number": 33,
+        "comment": "정답: 1, 30"
+      },
+      {
+        "problem_number": 34,
+        "comment": "정답: 'I don't like it'"
+      },
+      {
+        "problem_number": 35,
+        "comment": "정답: max = (a > b) ? a : b;"
+      },
+      {
+        "problem_number": 36,
+        "comment": "정답: 100 정보처리산업기사 필기 기출문제"
+      },
+      {
+        "problem_number": 37,
+        "comment": "정답: 결합도"
+      },
+      {
+        "problem_number": 38,
+        "comment": "정답: 기능적 응집성 → 순차적 응집성 → 통신적 응집성 → 절차적 응집성"
+      },
+      {
+        "problem_number": 39,
+        "comment": "정답: 더미코드 재사용"
+      },
+      {
+        "problem_number": 40,
+        "comment": "정답: Cobol"
+      }
+    ]
+  },
+  {
+    "title": "데이터베이스의 활용",
+    "comments": [
+      {
+        "problem_number": 41,
+        "comment": "정답: 6, 7, 3, 5, 9"
+      },
+      {
+        "problem_number": 42,
+        "comment": "정답: 3NF → BCNF"
+      },
+      {
+        "problem_number": 43,
+        "comment": "정답: 데이터와 데이터의 관계를 명확하게 명세할 수 있어야 하며, 원하는 데이터 연산은 무엇이든 명세할 수 있어야 한다."
+      },
+      {
+        "problem_number": 44,
+        "comment": "정답: 논리적, 물리적 데이터 구조 정의"
+      },
+      {
+        "problem_number": 45,
+        "comment": "정답: SELECT 이름 FROM 학생 WHERE 학년 = 3 AND 학과 = “컴퓨터공학”;"
+      },
+      {
+        "problem_number": 46,
+        "comment": "정답: A B D C E F"
+      },
+      {
+        "problem_number": 47,
+        "comment": "정답: SQL을 사용하면 뷰에 대한 삽입, 갱신, 삭제 연산 시 제약 사항이 없다."
+      },
+      {
+        "problem_number": 48,
+        "comment": "정답: E-R 다이어그램은 개체를 사각형, 관계를 마름모, 속성을 화 살표로 표현한다."
+      },
+      {
+        "problem_number": 49,
+        "comment": "정답: 20"
+      },
+      {
+        "problem_number": 50,
+        "comment": "정답: 보조키는 후보키 중에서 대표로 선정된 키이다."
+      },
+      {
+        "problem_number": 51,
+        "comment": "정답: SELECT 정보처리산업기사 필기 기출문제"
+      },
+      {
+        "problem_number": 52,
+        "comment": "정답: 개체 무결성 제약 조건"
+      },
+      {
+        "problem_number": 53,
+        "comment": "정답: 집합 연산자"
+      },
+      {
+        "problem_number": 54,
+        "comment": "정답: Atomicity"
+      },
+      {
+        "problem_number": 55,
+        "comment": "정답: 검색 이상"
+      },
+      {
+        "problem_number": 56,
+        "comment": "정답: 하나의 릴레이션을 구성하는 튜플은 모두 같다."
+      },
+      {
+        "problem_number": 57,
+        "comment": "정답: Stack"
+      },
+      {
+        "problem_number": 58,
+        "comment": "정답: INSERT ON~ VALUES~"
+      },
+      {
+        "problem_number": 59,
+        "comment": "정답: Detection"
+      },
+      {
+        "problem_number": 60,
+        "comment": "정답: 15000"
+      }
+    ]
+  }
+]

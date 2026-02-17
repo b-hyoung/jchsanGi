@@ -4,6 +4,13 @@ import { Book, ChevronRight } from 'lucide-react';
 const testSessions = [
   { id: 1, title: '정보처리산업기사 2024년 1회', description: '새롭게 추가된 2024년 1회 기출문제입니다.' },
   { id: 4, title: '정보처리산업기사 2024년 2회', description: '새롭게 추가된 2024년 2회 기출문제입니다.' },
+  { id: 5, title: '정보처리산업기사 2024년 3회', description: '새롭게 추가된 2024년 3회 기출문제입니다.' },
+  { id: 6, title: '정보처리산업기사 2023년 1회', description: '새롭게 추가된 2023년 1회 기출문제입니다.' },
+  { id: 7, title: '정보처리산업기사 2023년 2회', description: '새롭게 추가된 2023년 2회 기출문제입니다.' },
+  { id: 8, title: '정보처리산업기사 2023년 3회', description: '새롭게 추가된 2023년 3회 기출문제입니다.' },
+  { id: 9, title: '정보처리산업기사 2022년 1회', description: '새롭게 추가된 2022년 1회 기출문제입니다.' },
+  { id: 10, title: '정보처리산업기사 2022년 2회', description: '새롭게 추가된 2022년 2회 기출문제입니다.' },
+  { id: 11, title: '정보처리산업기사 2022년 3회', description: '새롭게 추가된 2022년 3회 기출문제입니다.' },
 ];
 
 export default function TestSelectionPage() {

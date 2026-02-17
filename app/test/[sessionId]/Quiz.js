@@ -216,7 +216,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
           </div>
 
           {shouldShowExplanation && (
-            <div className={`mt-6 p-6 rounded-lg animate-in fade-in slide-in-from-top-2 border ${
+            <div className={`mt-6 p-6 rounded-lg animate-in fade-in border ${
               isCorrect ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'
             }`}>
               <h3 className={`text-lg font-bold mb-1 ${isCorrect ? 'text-blue-800' : 'text-red-800'}`}>

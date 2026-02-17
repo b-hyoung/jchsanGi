@@ -1,0 +1,257 @@
+[
+  {
+    "title": "정보시스템 기반 기술",
+    "comments": [
+      {
+        "problem_number": 1,
+        "comment": "정답: 해밍(Hamming) 코드"
+      },
+      {
+        "problem_number": 2,
+        "comment": "정답: Synonym"
+      },
+      {
+        "problem_number": 3,
+        "comment": "정답: SMTP"
+      },
+      {
+        "problem_number": 4,
+        "comment": "정답: 물리적 뷰"
+      },
+      {
+        "problem_number": 5,
+        "comment": "정답: 서브 시스템이 입력 데이터를 받아 처리하고 결과를 다음 서브 시스템으로 넘겨주는 과정을 반복한다."
+      },
+      {
+        "problem_number": 6,
+        "comment": "정답: Observer"
+      },
+      {
+        "problem_number": 7,
+        "comment": "정답: 전송 계층"
+      },
+      {
+        "problem_number": 8,
+        "comment": "정답: 2단계 디렉터리 구조"
+      },
+      {
+        "problem_number": 9,
+        "comment": "정답: "
+      },
+      {
+        "problem_number": 10,
+        "comment": "정답: 9.25"
+      },
+      {
+        "problem_number": 11,
+        "comment": "정답: 브로드캐스트, 유니캐스트, 멀티캐스트로 구성된다."
+      },
+      {
+        "problem_number": 12,
+        "comment": "정답: UTP cable"
+      },
+      {
+        "problem_number": 13,
+        "comment": "정답: 편리한 유지보수를 위해 개발자 중심으로 설계되어야 한다."
+      },
+      {
+        "problem_number": 14,
+        "comment": "정답: 105"
+      },
+      {
+        "problem_number": 15,
+        "comment": "정답: 형상 관리"
+      },
+      {
+        "problem_number": 16,
+        "comment": "정답: 동기적 행위를 일으키는 주체"
+      },
+      {
+        "problem_number": 17,
+        "comment": "정답: 일반화 관계"
+      },
+      {
+        "problem_number": 18,
+        "comment": "정답: SOA"
+      },
+      {
+        "problem_number": 19,
+        "comment": "정답: 모듈이나 컴포넌트의 기능성 테스트를 최우선으로 한다."
+      },
+      {
+        "problem_number": 20,
+        "comment": "정답: Secure Coding"
+      }
+    ]
+  },
+  {
+    "title": "프로그래밍 언어 활용",
+    "comments": [
+      {
+        "problem_number": 21,
+        "comment": "정답: 내용 결합도"
+      },
+      {
+        "problem_number": 22,
+        "comment": "정답: prompt(“title”, “default”)"
+      },
+      {
+        "problem_number": 23,
+        "comment": "정답: iAvg"
+      },
+      {
+        "problem_number": 24,
+        "comment": "정답: #define"
+      },
+      {
+        "problem_number": 25,
+        "comment": "정답: 2"
+      },
+      {
+        "problem_number": 26,
+        "comment": "정답: %x - 정수형 8진수"
+      },
+      {
+        "problem_number": 27,
+        "comment": "정답: Slice"
+      },
+      {
+        "problem_number": 28,
+        "comment": "정답: "
+      },
+      {
+        "problem_number": 29,
+        "comment": "정답: math.h"
+      },
+      {
+        "problem_number": 30,
+        "comment": "정답: Django"
+      },
+      {
+        "problem_number": 31,
+        "comment": "정답: getchar( )"
+      },
+      {
+        "problem_number": 32,
+        "comment": "정답: 라이브러리와 같이 객체들을 사용자가 직접 관리하고 통제해 야 한다."
+      },
+      {
+        "problem_number": 33,
+        "comment": "정답: Zeplin"
+      },
+      {
+        "problem_number": 34,
+        "comment": "정답: 응집도는 강하고 결합도는 약해야 한다."
+      },
+      {
+        "problem_number": 35,
+        "comment": "정답: 8"
+      },
+      {
+        "problem_number": 36,
+        "comment": "정답: 구현하려는 기능들의 공통점만을 모아 놓은 것이다."
+      },
+      {
+        "problem_number": 37,
+        "comment": "정답: C++"
+      },
+      {
+        "problem_number": 38,
+        "comment": "정답: ＼b"
+      },
+      {
+        "problem_number": 39,
+        "comment": "정답: 논리적 응집도"
+      },
+      {
+        "problem_number": 40,
+        "comment": "정답: 휘발성"
+      }
+    ]
+  },
+  {
+    "title": "데이터베이스의 활용",
+    "comments": [
+      {
+        "problem_number": 41,
+        "comment": "정답: 운영체제의 작업 스케줄링"
+      },
+      {
+        "problem_number": 42,
+        "comment": "정답: 6, 8, 3, 5"
+      },
+      {
+        "problem_number": 43,
+        "comment": "정답: 6개"
+      },
+      {
+        "problem_number": 44,
+        "comment": "정답: 3 4 8 9 7"
+      },
+      {
+        "problem_number": 45,
+        "comment": "정답: 2NF → 3NF"
+      },
+      {
+        "problem_number": 46,
+        "comment": "정답: SNAME이 ‘홍’씨로 시작되는 튜플을 찾는다."
+      },
+      {
+        "problem_number": 47,
+        "comment": "정답: Integrity"
+      },
+      {
+        "problem_number": 48,
+        "comment": "정답: SELECT"
+      },
+      {
+        "problem_number": 49,
+        "comment": "정답: 개념적 설계 단계에서 만들어진 정보 구조로부터 특정 목표 DBMS가 처리할 수 있는 스키마를 생성한다."
+      },
+      {
+        "problem_number": 50,
+        "comment": "정답: DEGREE, CARDINALITY"
+      },
+      {
+        "problem_number": 51,
+        "comment": "정답: 개체 무결성 제약 조건"
+      },
+      {
+        "problem_number": 52,
+        "comment": "정답: UNION"
+      },
+      {
+        "problem_number": 53,
+        "comment": "정답: SQL에서 뷰를 생성할 때는 MAKE를 사용한다."
+      },
+      {
+        "problem_number": 54,
+        "comment": "정답: 3, 5, 6, 7, 9"
+      },
+      {
+        "problem_number": 55,
+        "comment": "정답: 정금강업"
+      },
+      {
+        "problem_number": 56,
+        "comment": "정답: 정식으로 허가 받은 사용자가 아닌 불법적인 사용자에 의한 갱신으로부터 데이터베이스를 보호하기 위한 규정이다."
+      },
+      {
+        "problem_number": 57,
+        "comment": "정답: 이행적 함수 종속 제거"
+      },
+      {
+        "problem_number": 58,
+        "comment": "정답: INSERT"
+      },
+      {
+        "problem_number": 59,
+        "comment": "정답: Isolation"
+      },
+      {
+        "problem_number": 60,
+        "comment": "정답: 일반 사용자는 시스템 테이블의 내용을 검색할 수 없다."
+      }
+    ]
+  }
+]
