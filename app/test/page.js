@@ -1,16 +1,31 @@
 import Link from 'next/link';
 import { Book, ChevronRight } from 'lucide-react';
 
-const testSessions = [
-  { id: 1, title: '정보처리산업기사 2024년 1회', description: '새롭게 추가된 2024년 1회 기출문제입니다.' },
-  { id: 4, title: '정보처리산업기사 2024년 2회', description: '새롭게 추가된 2024년 2회 기출문제입니다.' },
-  { id: 5, title: '정보처리산업기사 2024년 3회', description: '새롭게 추가된 2024년 3회 기출문제입니다.' },
-  { id: 6, title: '정보처리산업기사 2023년 1회', description: '새롭게 추가된 2023년 1회 기출문제입니다.' },
-  { id: 7, title: '정보처리산업기사 2023년 2회', description: '새롭게 추가된 2023년 2회 기출문제입니다.' },
-  { id: 8, title: '정보처리산업기사 2023년 3회', description: '새롭게 추가된 2023년 3회 기출문제입니다.' },
-  { id: 9, title: '정보처리산업기사 2022년 1회', description: '새롭게 추가된 2022년 1회 기출문제입니다.' },
-  { id: 10, title: '정보처리산업기사 2022년 2회', description: '새롭게 추가된 2022년 2회 기출문제입니다.' },
-  { id: 11, title: '정보처리산업기사 2022년 3회', description: '새롭게 추가된 2022년 3회 기출문제입니다.' },
+const sessionsByYear = [
+  {
+    year: 2024,
+    sessions: [
+      { id: 1, title: '1회', description: '2024년 1회 기출문제입니다.' },
+      { id: 4, title: '2회', description: '2024년 2회 기출문제입니다.' },
+      { id: 5, title: '3회', description: '2024년 3회 기출문제입니다.' },
+    ],
+  },
+  {
+    year: 2023,
+    sessions: [
+      { id: 6, title: '1회', description: '2023년 1회 기출문제입니다.' },
+      { id: 7, title: '2회', description: '2023년 2회 기출문제입니다.' },
+      { id: 8, title: '3회', description: '2023년 3회 기출문제입니다.' },
+    ],
+  },
+  {
+    year: 2022,
+    sessions: [
+      { id: 9, title: '1회', description: '2022년 1회 기출문제입니다.' },
+      { id: 10, title: '2회', description: '2022년 2회 기출문제입니다.' },
+      { id: 11, title: '3회', description: '2022년 3회 기출문제입니다.' },
+    ],
+  },
 ];
 
 export default function TestSelectionPage() {
@@ -27,26 +42,41 @@ export default function TestSelectionPage() {
             </p>
           </div>
 
-          <div className="space-y-6">
-            {testSessions.map((session) => (
-              <Link
-                key={session.id}
-                href={`/test/${session.id}`}
-                className="block p-8 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 hover:border-sky-300 hover:scale-[1.02]"
+          <div className="space-y-4">
+            {sessionsByYear.map((yearGroup) => (
+              <details
+                key={yearGroup.year}
+                className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 open:border-sky-300"
+                open={yearGroup.year === 2024}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex items-center justify-center w-12 h-12 bg-sky-100 rounded-xl mr-6">
+                <summary className="list-none cursor-pointer p-6 md:p-7 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-center w-12 h-12 bg-sky-100 rounded-xl">
                       <Book className="w-6 h-6 text-sky-600" />
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-sky-900">{session.title}</h2>
-                      <p className="text-gray-600 mt-1">{session.description}</p>
-                    </div>
+                    <h2 className="text-2xl font-bold text-sky-900">{yearGroup.year}년</h2>
                   </div>
-                  <ChevronRight className="w-8 h-8 text-gray-400" />
+                  <ChevronRight className="w-7 h-7 text-gray-400" />
+                </summary>
+
+                <div className="px-4 pb-4 md:px-6 md:pb-6 space-y-3">
+                  {yearGroup.sessions.map((session) => (
+                    <Link
+                      key={session.id}
+                      href={`/test/${session.id}`}
+                      className="block p-5 bg-white rounded-xl border border-gray-200 hover:border-sky-300 hover:bg-sky-50 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-bold text-sky-900">{session.title}</h3>
+                          <p className="text-gray-600 mt-1">{session.description}</p>
+                        </div>
+                        <ChevronRight className="w-6 h-6 text-gray-400" />
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              </Link>
+              </details>
             ))}
           </div>
         </div>
