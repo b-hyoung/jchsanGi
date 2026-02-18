@@ -4,83 +4,83 @@
     "comments": [
       {
         "problem_number": 1,
-        "comment": "정답: Hamming code"
+        "comment": "오류 검출과 정정이 모두 가능한 대표적 코드."
       },
       {
         "problem_number": 2,
-        "comment": "정답: OSPF"
+        "comment": "OSPF는 Link State 방식이다. Distance Vector가 아니다."
       },
       {
         "problem_number": 3,
-        "comment": "정답: 네트워크 계층"
+        "comment": "경로 설정, 트래픽 제어는 Network Layer 기능."
       },
       {
         "problem_number": 4,
-        "comment": "정답: 물리적 뷰"
+        "comment": "아키텍처 뷰는 논리·프로세스·개발·배포 뷰가 핵심."
       },
       {
         "problem_number": 5,
-        "comment": "정답: 2단계 디렉터리 구조"
+        "comment": "마스터 디렉터리 아래 사용자별 디렉터리 구조."
       },
       {
         "problem_number": 6,
-        "comment": "정답: 편리한 유지보수를 위해 개발자 중심으로 설계되어야 한다."
+        "comment": "UI는 사용자 중심 설계가 원칙이다. 개발자 중심은 오답."
       },
       {
         "problem_number": 7,
-        "comment": "정답: 하드웨어에 의해 사용되는 입출력 장치"
+        "comment": "프로세스는 실행 중인 프로그램이지 하드웨어 장치가 아니다."
       },
       {
         "problem_number": 8,
-        "comment": "정답: Debugging"
+        "comment": "오류 추적 및 수정 작업."
       },
       {
         "problem_number": 9,
-        "comment": "정답: 하나의 객체를 생성하면 생성된 객체를 어디서든 참조할 수 있지만, 여러 프로세스가 동시에 참조할 수는 없는 패턴이다."
+        "comment": "Singleton은 객체를 하나만 생성하여 공유하는 패턴."
       },
       {
         "problem_number": 10,
-        "comment": "정답: 15"
+        "comment": "SJF 기준 평균 대기 시간 계산 결과 15."
       },
       {
         "problem_number": 11,
-        "comment": "정답: Fedora"
+        "comment": "운영체제 배포판이며 빌드 자동화 도구가 아니다."
       },
       {
         "problem_number": 12,
-        "comment": "정답: 단위 테스트"
+        "comment": "개별 모듈의 정확한 구현 여부를 확인."
       },
       {
         "problem_number": 13,
-        "comment": "정답: Capability List"
+        "comment": "주체(사용자) 기준으로 객체 + 권한 목록을 관리."
       },
       {
         "problem_number": 14,
-        "comment": "정답: 사용자의 비전문성을 인정하지 않는다."
+        "comment": "인간공학적 UI 원리는 비전문성 인정이 포함된다. ④는 반대."
       },
       {
         "problem_number": 15,
-        "comment": "정답: 프로젝트 개발 비용"
+        "comment": "형상 관리 대상은 산출물이지 비용이 아니다."
       },
       {
         "problem_number": 16,
-        "comment": "정답: 실시간 전송이나 대량의 데이터 전송에 적합하다."
+        "comment": "패킷 교환은 실시간 전송에 부적합한 경우가 많다."
       },
       {
         "problem_number": 17,
-        "comment": "정답: 추상 클래스"
+        "comment": "공통 기능만 정의, 인스턴스 생성 불가."
       },
       {
         "problem_number": 18,
-        "comment": "정답: Preemption"
+        "comment": "교착상태의 필요 조건은 비선점이다. 선점은 해당 없음."
       },
       {
         "problem_number": 19,
-        "comment": "정답: ㉮ → ㉱ → ㉰ → ㉯"
+        "comment": "일괄 처리 → 시분할 → 다중 모드 → 분산 처리."
       },
       {
         "problem_number": 20,
-        "comment": "정답: 전송 계층"
+        "comment": "X.25는 물리·프레임·패킷 계층을 포함한다."
       }
     ]
   },
@@ -89,83 +89,83 @@
     "comments": [
       {
         "problem_number": 21,
-        "comment": "정답: prompt"
+        "comment": "사용자로부터 입력을 받는 메소드."
       },
       {
         "problem_number": 22,
-        "comment": "정답: Vulnerability"
+        "comment": "시스템 설계·구현상의 보안 취약점 의미."
       },
       {
         "problem_number": 23,
-        "comment": "정답: 응집도를 최소화 한다."
+        "comment": "모듈 설계는 응집도는 높여야 한다. 최소화는 오답."
       },
       {
         "problem_number": 24,
-        "comment": "정답: Open API"
+        "comment": "누구나 사용 가능한 공개 API."
       },
       {
         "problem_number": 25,
-        "comment": "정답: 함수가 종료되면 값도 소멸된다."
+        "comment": "외부 변수는 프로그램 종료 시까지 유지된다. 함수 종료와 무관."
       },
       {
         "problem_number": 26,
-        "comment": "정답: C++"
+        "comment": "객체지향 특징(캡슐화·상속·추상화)을 가진 언어."
       },
       {
         "problem_number": 27,
-        "comment": "정답: Range"
+        "comment": "연속된 숫자 생성 기능."
       },
       {
         "problem_number": 28,
-        "comment": "정답: 3행"
+        "comment": "nth-child(even) 기준으로 tbody 첫 번째 tr이 3번째 행."
       },
       {
         "problem_number": 29,
-        "comment": "정답: Inheritance"
+        "comment": "상위 클래스의 속성과 메소드를 물려받는 개념."
       },
       {
         "problem_number": 30,
-        "comment": "정답: alert"
+        "comment": "HTML 로딩 시 안내 메시지 출력."
       },
       {
         "problem_number": 31,
-        "comment": "정답: push"
+        "comment": "배열 끝에 데이터 삽입."
       },
       {
         "problem_number": 32,
-        "comment": "정답: ㉠-method, ㉡-action"
+        "comment": "form 속성: method=\"post\", action=\"log01.jsp\"."
       },
       {
         "problem_number": 33,
-        "comment": "정답: 1, 30"
+        "comment": "전위 감소 + 후위 증가 연산 결과."
       },
       {
         "problem_number": 34,
-        "comment": "정답: 'I don't like it'"
+        "comment": "작은따옴표 안에 작은따옴표 사용 불가(이스케이프 필요)."
       },
       {
         "problem_number": 35,
-        "comment": "정답: max = (a > b) ? a : b;"
+        "comment": "삼항 연산자 올바른 형태."
       },
       {
         "problem_number": 36,
-        "comment": "정답: 100 정보처리산업기사 필기 기출문제"
+        "comment": "p = arg + 1, p[2] → arg[3]."
       },
       {
         "problem_number": 37,
-        "comment": "정답: 결합도"
+        "comment": "모듈 간 상호 의존도."
       },
       {
         "problem_number": 38,
-        "comment": "정답: 기능적 응집성 → 순차적 응집성 → 통신적 응집성 → 절차적 응집성"
+        "comment": "응집도 높은 순: 기능적 → 순차적 → 통신적 → 절차적"
       },
       {
         "problem_number": 39,
-        "comment": "정답: 더미코드 재사용"
+        "comment": "공통 모듈 재사용 분류에 해당하지 않는다."
       },
       {
         "problem_number": 40,
-        "comment": "정답: Cobol"
+        "comment": "스크립트 언어가 아님."
       }
     ]
   },
@@ -174,83 +174,83 @@
     "comments": [
       {
         "problem_number": 41,
-        "comment": "정답: 6, 7, 3, 5, 9"
+        "comment": "버블 정렬 1회전 결과."
       },
       {
         "problem_number": 42,
-        "comment": "정답: 3NF → BCNF"
+        "comment": "모든 결정자가 후보키가 되도록 분해."
       },
       {
         "problem_number": 43,
-        "comment": "정답: 데이터와 데이터의 관계를 명확하게 명세할 수 있어야 하며, 원하는 데이터 연산은 무엇이든 명세할 수 있어야 한다."
+        "comment": "데이터 정의 기능은 DDL 영역이다."
       },
       {
         "problem_number": 44,
-        "comment": "정답: 논리적, 물리적 데이터 구조 정의"
+        "comment": "논리·물리적 데이터 구조 정의는 DDL, DCL 아님."
       },
       {
         "problem_number": 45,
-        "comment": "정답: SELECT 이름 FROM 학생 WHERE 학년 = 3 AND 학과 = “컴퓨터공학”;"
+        "comment": "AND 조건을 사용한 올바른 SQL."
       },
       {
         "problem_number": 46,
-        "comment": "정답: A B D C E F"
+        "comment": "Preorder: Root → Left → Right."
       },
       {
         "problem_number": 47,
-        "comment": "정답: SQL을 사용하면 뷰에 대한 삽입, 갱신, 삭제 연산 시 제약 사항이 없다."
+        "comment": "뷰에는 삽입·갱신·삭제 제약이 존재한다."
       },
       {
         "problem_number": 48,
-        "comment": "정답: E-R 다이어그램은 개체를 사각형, 관계를 마름모, 속성을 화 살표로 표현한다."
+        "comment": "속성은 타원, 화살표가 아니다."
       },
       {
         "problem_number": 49,
-        "comment": "정답: 20"
+        "comment": "카디널리티 = 4 × 5."
       },
       {
         "problem_number": 50,
-        "comment": "정답: 보조키는 후보키 중에서 대표로 선정된 키이다."
+        "comment": "보조키는 후보키 중 대표 키가 아니다."
       },
       {
         "problem_number": 51,
-        "comment": "정답: SELECT 정보처리산업기사 필기 기출문제"
+        "comment": "SELECT는 DML, DCL 아님."
       },
       {
         "problem_number": 52,
-        "comment": "정답: 개체 무결성 제약 조건"
+        "comment": "기본키는 NULL·중복 불가."
       },
       {
         "problem_number": 53,
-        "comment": "정답: 집합 연산자"
+        "comment": "릴레이션 합병에 사용."
       },
       {
         "problem_number": 54,
-        "comment": "정답: Atomicity"
+        "comment": "전부 수행되거나 전혀 수행되지 않음."
       },
       {
         "problem_number": 55,
-        "comment": "정답: 검색 이상"
+        "comment": "이상 현상은 삽입·삭제·갱신 이상."
       },
       {
         "problem_number": 56,
-        "comment": "정답: 하나의 릴레이션을 구성하는 튜플은 모두 같다."
+        "comment": "릴레이션의 튜플 값이 모두 같을 수는 없다."
       },
       {
         "problem_number": 57,
-        "comment": "정답: Stack"
+        "comment": "LIFO 구조."
       },
       {
         "problem_number": 58,
-        "comment": "정답: INSERT ON~ VALUES~"
+        "comment": "올바른 문법은 INSERT INTO."
       },
       {
         "problem_number": 59,
-        "comment": "정답: Detection"
+        "comment": "ACID 요소가 아니다."
       },
       {
         "problem_number": 60,
-        "comment": "정답: 15000"
+        "comment": "‘운영체제’ 책번호 = 1111 → 가격 15000."
       }
     ]
   }
