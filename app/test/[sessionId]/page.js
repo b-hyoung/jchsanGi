@@ -14,7 +14,7 @@ async function fetchQuizDataFromPath(basePath) {
 
     const [answerStr, commentStr] = await Promise.all([
       fs.readFile(path.join(basePath, 'answer1.json'), 'utf8'),
-      fs.readFile(path.join(basePath, 'comment1.json'), 'utf8')
+      fs.readFile(path.join(basePath, 'comment1.json'), 'utf8'),
     ]);
 
     const problemData = JSON.parse(problemStr);
@@ -22,27 +22,27 @@ async function fetchQuizDataFromPath(basePath) {
     const commentData = JSON.parse(commentStr);
 
     const problems = problemData.reduce((acc, section) => {
-      const problemsWithSection = section.problems.map(p => ({ ...p, sectionTitle: section.title }));
+      const problemsWithSection = section.problems.map((p) => ({ ...p, sectionTitle: section.title }));
       return acc.concat(problemsWithSection);
     }, []);
 
     const answersMap = answerData.reduce((acc, section) => {
-      section.answers.forEach(a => {
+      section.answers.forEach((a) => {
         acc[a.problem_number] = a.correct_answer_text;
       });
       return acc;
     }, {});
 
     const commentsMap = commentData.reduce((acc, section) => {
-      section.comments.forEach(c => {
-        acc[c.problem_number] = c.comment ?? c.comment_text ?? "";
+      section.comments.forEach((c) => {
+        acc[c.problem_number] = c.comment ?? c.comment_text ?? '';
       });
       return acc;
     }, {});
 
     return { problems, answersMap, commentsMap };
   } catch (error) {
-    console.error("Failed to read or parse quiz files:", error);
+    console.error('Failed to read or parse quiz files:', error);
     return null;
   }
 }
@@ -94,10 +94,7 @@ const sessionDetails = {
   11: { title: '정보처리산업기사 2022년 3회' },
 };
 
-// Reverting to an async component, but using `await` on params, which seems to be
-// the required pattern for this experimental version of Next.js.
 export default async function TestPage({ params: paramsPromise }) {
-  // Await the promise to get the actual params object
   const params = await paramsPromise;
   const { sessionId } = params;
 
@@ -108,6 +105,5 @@ export default async function TestPage({ params: paramsPromise }) {
     notFound();
   }
 
-  // Pass the server-fetched problems directly to the client component.
   return <Quiz problems={data.problems} answersMap={data.answersMap} commentsMap={data.commentsMap} session={session} />;
 }

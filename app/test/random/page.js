@@ -1,0 +1,143 @@
+import fs from 'fs/promises';
+import path from 'path';
+import { notFound } from 'next/navigation';
+import Quiz from '../[sessionId]/Quiz';
+
+export const dynamic = 'force-dynamic';
+
+const SOURCES = [
+  { key: '2024-1', basePath: ['problem2024', 'first'] },
+  { key: '2024-2', basePath: ['problem2024', 'second'] },
+  { key: '2024-3', basePath: ['problem2024', 'third'] },
+  { key: '2023-1', basePath: ['problem2023', 'first'] },
+  { key: '2023-2', basePath: ['problem2023', 'second'] },
+  { key: '2023-3', basePath: ['problem2023', 'third'] },
+  { key: '2022-1', basePath: ['problem2022', 'first'] },
+  { key: '2022-2', basePath: ['problem2022', 'second'] },
+  { key: '2022-3', basePath: ['problem2022', 'third'] },
+];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function subjectOf(problemNumber) {
+  if (problemNumber >= 1 && problemNumber <= 20) return 1;
+  if (problemNumber >= 21 && problemNumber <= 40) return 2;
+  return 3;
+}
+
+function sectionTitleOf(subject) {
+  if (subject === 1) return '정보시스템 기반 기술';
+  if (subject === 2) return '프로그래밍 언어 활용';
+  return '데이터베이스의 활용';
+}
+
+async function readSessionData(source) {
+  const basePath = path.join(process.cwd(), ...source.basePath);
+  const problemStr = await fs
+    .readFile(path.join(basePath, 'problem1.json'), 'utf8')
+    .catch(async (error) => {
+      if (error?.code === 'ENOENT') {
+        return fs.readFile(path.join(basePath, 'problem1.temp3.json'), 'utf8');
+      }
+      throw error;
+    });
+  const [answerStr, commentStr] = await Promise.all([
+    fs.readFile(path.join(basePath, 'answer1.json'), 'utf8'),
+    fs.readFile(path.join(basePath, 'comment1.json'), 'utf8'),
+  ]);
+
+  const problemData = JSON.parse(problemStr);
+  const answerData = JSON.parse(answerStr);
+  const commentData = JSON.parse(commentStr);
+
+  const answersMap = answerData.reduce((acc, section) => {
+    section.answers.forEach((a) => {
+      acc[a.problem_number] = a.correct_answer_text;
+    });
+    return acc;
+  }, {});
+
+  const commentsMap = commentData.reduce((acc, section) => {
+    section.comments.forEach((c) => {
+      acc[c.problem_number] = c.comment ?? c.comment_text ?? '';
+    });
+    return acc;
+  }, {});
+
+  const flatProblems = problemData.flatMap((section) => section.problems);
+
+  return flatProblems.map((p) => ({
+    sourceKey: source.key,
+    sourcePath: source.basePath.join('/'),
+    problem_number: p.problem_number,
+    question_text: p.question_text,
+    options: p.options,
+    answer_text: answersMap[p.problem_number],
+    comment_text: commentsMap[p.problem_number] ?? '',
+  }));
+}
+
+async function buildRandomQuizData() {
+  const allBySession = await Promise.all(SOURCES.map(readSessionData));
+  const bySessionMap = {};
+  SOURCES.forEach((s, idx) => {
+    bySessionMap[s.key] = allBySession[idx];
+  });
+
+  const selectedBySubject = { 1: [], 2: [], 3: [] };
+
+  for (const subject of [1, 2, 3]) {
+    const pickedSessions = shuffle(SOURCES).slice(0, 4);
+    for (const src of pickedSessions) {
+      const pool = bySessionMap[src.key].filter((p) => subjectOf(p.problem_number) === subject);
+      if (pool.length < 5) {
+        throw new Error(`Not enough questions in ${src.key} subject ${subject}`);
+      }
+      selectedBySubject[subject].push(...shuffle(pool).slice(0, 5));
+    }
+  }
+
+  const ordered = [
+    ...shuffle(selectedBySubject[1]),
+    ...shuffle(selectedBySubject[2]),
+    ...shuffle(selectedBySubject[3]),
+  ];
+
+  const problems = [];
+  const answersMap = {};
+  const commentsMap = {};
+
+  ordered.forEach((item, idx) => {
+    const newNo = idx + 1;
+    const subject = idx < 20 ? 1 : idx < 40 ? 2 : 3;
+    problems.push({
+      problem_number: newNo,
+      question_text: `[${item.sourceKey}] ${item.question_text}`,
+      options: item.options,
+      sectionTitle: sectionTitleOf(subject),
+    });
+    answersMap[newNo] = item.answer_text;
+    commentsMap[newNo] = item.comment_text;
+  });
+
+  return { problems, answersMap, commentsMap };
+}
+
+export default async function RandomTestPage() {
+  let data;
+  try {
+    data = await buildRandomQuizData();
+  } catch (error) {
+    console.error('Failed to build random quiz:', error);
+    notFound();
+  }
+  const session = { title: '랜덤 풀기 (회차별 5문항 x 4회차)' };
+  return <Quiz problems={data.problems} answersMap={data.answersMap} commentsMap={data.commentsMap} session={session} />;
+}

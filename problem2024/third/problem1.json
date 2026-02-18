@@ -104,9 +104,9 @@
       },
       {
         "problem_number": 11,
-        "question_text": "SJF(Shortest Job First) CPU 사용 시간은 다음 표와 같다 모든 작업들의 평균 대기 시간은 . 얼마인가?",
+        "question_text": "SJF(Shortest Job First) CPU 사용 시간은 다음 표와 같다. 모든 작업들의 평균 대기 시간은 얼마인가? 작업 도착 시간 사용시간CPU 1 0 23 2 3 35 3 8 10 15",
         "options": [
-          "작업 도착 시간 사용시간CPU 1 0 23 2 3 35 3 8 10 15",
+          "15",
           "17",
           "24",
           "25"

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Book, ChevronRight } from 'lucide-react';
+import { Book, ChevronRight, Shuffle } from 'lucide-react';
 
 const sessionsByYear = [
   {
@@ -34,13 +34,22 @@ export default function TestSelectionPage() {
       <main className="container mx-auto px-4 py-16 md:py-24">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-sky-900 tracking-tight">
-              모의시험 회차 선택
-            </h1>
-            <p className="mt-4 text-lg text-gray-600">
-              원하는 회차를 선택하여 실전처럼 연습을 시작하세요.
-            </p>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-sky-900 tracking-tight">모의시험 회차 선택</h1>
+            <p className="mt-4 text-lg text-gray-600">원하는 회차를 선택하여 실전처럼 연습을 시작하세요.</p>
           </div>
+
+          <Link
+            href="/test/random"
+            className="mb-4 block p-5 bg-gradient-to-r from-indigo-500 to-sky-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shuffle className="w-6 h-6" />
+                <h2 className="text-lg font-bold">랜덤풀기</h2>
+              </div>
+              <ChevronRight className="w-6 h-6" />
+            </div>
+          </Link>
 
           <div className="space-y-4">
             {sessionsByYear.map((yearGroup) => (
