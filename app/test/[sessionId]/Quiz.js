@@ -39,6 +39,8 @@ const T = {
   chooseOther: '다른 회차 선택',
 };
 
+const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
+
 export default function Quiz({ problems, session, answersMap, commentsMap }) {
   const router = useRouter();
   const [quizProblems, setQuizProblems] = useState(problems);
@@ -52,6 +54,16 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
   const [showExplanationWhenIncorrect, setShowExplanationWhenIncorrect] = useState(true);
+  const [showUpdateNotice, setShowUpdateNotice] = useState(false);
+
+  useEffect(() => {
+    try {
+      const seen = window.localStorage.getItem(UPDATE_NOTICE_KEY);
+      if (!seen) setShowUpdateNotice(true);
+    } catch {
+      setShowUpdateNotice(true);
+    }
+  }, []);
 
   if (!quizProblems || quizProblems.length === 0) {
     return <div>{T.loadFail}</div>;
@@ -220,7 +232,20 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   };
 
   if (!isStarted) {
-    return <TestLobby session={session} onStart={handleStartQuiz} problemCount={quizProblems.length} />;
+    return (
+      <>
+        <TestLobby session={session} onStart={handleStartQuiz} problemCount={quizProblems.length} />
+        <UpdateNoticeModal
+          isOpen={showUpdateNotice}
+          onClose={() => {
+            setShowUpdateNotice(false);
+            try {
+              window.localStorage.setItem(UPDATE_NOTICE_KEY, 'seen');
+            } catch {}
+          }}
+        />
+      </>
+    );
   }
 
   if (quizCompleted) {
@@ -379,6 +404,33 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
         </button>
         <div />
       </footer>
+    </div>
+  );
+}
+
+function UpdateNoticeModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 md:p-7">
+        <h2 className="text-xl md:text-2xl font-extrabold text-sky-900 mb-4">업데이트 안내</h2>
+        <div className="space-y-2 text-sm md:text-base text-gray-700">
+          <p>사용자 편의성 개선 사항이 적용되었습니다.</p>
+          <p>• 문제 네비게이션(1~60)에서 O / X / ? 상태를 바로 확인할 수 있습니다.</p>
+          <p>• 키보드만으로 풀이할 수 있습니다: 1~4 선택, Enter/Space 진행.</p>
+          <p>• 정답 확인/다음 버튼이 문제-해설 영역 우하단으로 이동했습니다.</p>
+          <p>• 종료 시 현재 점수와 풀이 현황을 확인하고 회차 선택으로 이동합니다.</p>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-700"
+          >
+            확인
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
