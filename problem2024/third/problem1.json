@@ -134,7 +134,7 @@
       },
       {
         "problem_number": 14,
-        "question_text": "(Routing) ?",
+        "question_text": "라우팅(Routing) 프로토콜이 아닌 것은?",
         "options": [
           "BGP",
           "OSPF",

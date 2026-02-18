@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 
 const T = {
@@ -39,6 +40,8 @@ const T = {
 };
 
 export default function Quiz({ problems, session, answersMap, commentsMap }) {
+  const router = useRouter();
+  const [quizProblems, setQuizProblems] = useState(problems);
   const [isStarted, setIsStarted] = useState(false);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -50,7 +53,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
   const [showExplanationWhenIncorrect, setShowExplanationWhenIncorrect] = useState(true);
 
-  if (!problems || problems.length === 0) {
+  if (!quizProblems || quizProblems.length === 0) {
     return <div>{T.loadFail}</div>;
   }
 
@@ -65,7 +68,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
     let totalCorrect = 0;
     const subjectCorrectCounts = { 1: 0, 2: 0, 3: 0 };
 
-    problems.forEach((problem) => {
+    quizProblems.forEach((problem) => {
       const problemNum = parseInt(problem.problem_number, 10);
       const userAnswer = answers[problem.problem_number];
       const correctAnswer = answersMap[problem.problem_number];
@@ -85,11 +88,17 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
     };
     const isOverallPass = totalCorrect >= 36 && subjectPassFail[1] && subjectPassFail[2] && subjectPassFail[3];
 
-    setQuizResults({ totalCorrect, subjectCorrectCounts, subjectPassFail, isOverallPass });
+    setQuizResults({
+      totalCorrect,
+      wrongCount: quizProblems.length - totalCorrect,
+      subjectCorrectCounts,
+      subjectPassFail,
+      isOverallPass,
+    });
     setQuizCompleted(true);
   };
 
-  const currentProblem = problems[currentProblemIndex];
+  const currentProblem = quizProblems[currentProblemIndex];
   const isChecked = checkedProblems[currentProblem.problem_number];
   const selectedAnswer = answers[currentProblem.problem_number];
   const correctAnswer = answersMap ? answersMap[currentProblem.problem_number] : null;
@@ -97,6 +106,52 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   const correctAnswerIndex = currentProblem.options.indexOf(correctAnswer);
   const showResult = isChecked;
   const shouldShowExplanation = showResult && ((isCorrect && showExplanationWhenCorrect) || (!isCorrect && showExplanationWhenIncorrect));
+
+  useEffect(() => {
+    if (!isStarted || quizCompleted) return;
+
+    const onKeyDown = (e) => {
+      const target = e.target;
+      const tag = target && target.tagName ? target.tagName.toLowerCase() : '';
+      const isEditable = tag === 'input' || tag === 'textarea' || (target && target.isContentEditable);
+      if (isEditable) return;
+
+      if (['1', '2', '3', '4'].includes(e.key)) {
+        if (isChecked) return;
+        const idx = Number(e.key) - 1;
+        const option = currentProblem.options[idx];
+        if (!option) return;
+        e.preventDefault();
+        handleSelectOption(currentProblem.problem_number, option);
+        return;
+      }
+
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (!isChecked) {
+          if (selectedAnswer) handleNextClick();
+          return;
+        }
+
+        if (currentProblemIndex === quizProblems.length - 1) {
+          handleSubmitQuiz();
+        } else {
+          handleNextClick();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    isStarted,
+    quizCompleted,
+    isChecked,
+    selectedAnswer,
+    currentProblem,
+    currentProblemIndex,
+    quizProblems.length,
+  ]);
 
   const handleNextClick = () => {
     if (!isChecked) {
@@ -107,7 +162,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
       setCheckedProblems((prev) => ({ ...prev, [currentProblem.problem_number]: true }));
       return;
     }
-    if (currentProblemIndex < problems.length - 1) {
+    if (currentProblemIndex < quizProblems.length - 1) {
       setCurrentProblemIndex(currentProblemIndex + 1);
     }
   };
@@ -117,7 +172,39 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   };
 
   const goToProblem = (index) => {
-    if (index >= 0 && index < problems.length) setCurrentProblemIndex(index);
+    if (index >= 0 && index < quizProblems.length) setCurrentProblemIndex(index);
+  };
+
+  const handleRetryWrongProblems = () => {
+    const wrongProblems = quizProblems.filter((p) => answers[p.problem_number] !== answersMap[p.problem_number]);
+    if (wrongProblems.length === 0) return;
+
+    setQuizProblems(wrongProblems);
+    setAnswers({});
+    setCheckedProblems({});
+    setCurrentProblemIndex(0);
+    setQuizCompleted(false);
+    setQuizResults(null);
+  };
+
+  const handleEndQuiz = () => {
+    const shouldEnd = window.confirm('\uC885\uB8CC\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?');
+    if (!shouldEnd) return;
+
+    let totalCorrect = 0;
+    quizProblems.forEach((problem) => {
+      const userAnswer = answers[problem.problem_number];
+      const correctAnswer = answersMap[problem.problem_number];
+      if (userAnswer === correctAnswer) totalCorrect++;
+    });
+
+    const solvedCount = Object.keys(checkedProblems).length;
+    const totalCount = quizProblems.length;
+    alert(
+      `\uD604\uC7AC \uC810\uC218: ${totalCorrect} / ${totalCount}\n` +
+      `\uD480\uC774 \uC644\uB8CC: ${solvedCount} / ${totalCount}`
+    );
+    router.push('/test');
   };
 
   const getProblemStatus = (problem) => {
@@ -133,11 +220,11 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   };
 
   if (!isStarted) {
-    return <TestLobby session={session} onStart={handleStartQuiz} problemCount={problems.length} />;
+    return <TestLobby session={session} onStart={handleStartQuiz} problemCount={quizProblems.length} />;
   }
 
   if (quizCompleted) {
-    return <QuizResults session={session} results={quizResults} />;
+    return <QuizResults session={session} results={quizResults} onRetryWrong={handleRetryWrongProblems} />;
   }
 
   return (
@@ -148,7 +235,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
           <h1 className="text-xl font-bold text-indigo-900 md:hidden">{session.title.split(' ')[0]}...</h1>
         </div>
         <div className="text-lg font-semibold text-gray-900">
-          {T.problem} {currentProblemIndex + 1} / {problems.length}
+          {T.problem} {currentProblemIndex + 1} / {quizProblems.length}
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -185,7 +272,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
               </div>
             )}
           </div>
-          <button className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 text-sm md:text-base">
+          <button
+            onClick={handleEndQuiz}
+            className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 text-sm md:text-base"
+          >
             {T.end}
           </button>
         </div>
@@ -196,7 +286,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
           <aside className="bg-white rounded-xl shadow-lg p-4 h-fit lg:sticky lg:top-24">
             <h3 className="text-sm font-bold text-gray-700 mb-3">{T.navTitle}</h3>
             <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-4 gap-2">
-              {problems.map((problem, index) => {
+              {quizProblems.map((problem, index) => {
                 const status = getProblemStatus(problem);
                 const isCurrent = index === currentProblemIndex;
                 return (
@@ -263,6 +353,17 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
                 )}
               </div>
             )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={isChecked ? (currentProblemIndex === quizProblems.length - 1 ? handleSubmitQuiz : handleNextClick) : handleNextClick}
+                disabled={!isChecked && !selectedAnswer}
+                className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed inline-flex items-center"
+              >
+                {isChecked ? (currentProblemIndex === quizProblems.length - 1 ? T.resultView : T.next) : T.check}
+                {isChecked && currentProblemIndex !== quizProblems.length - 1 && <ChevronRight className="ml-2 w-5 h-5" />}
+              </button>
+            </div>
           </div>
         </div>
       </main>
@@ -276,14 +377,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
           <ChevronLeft className="mr-2 w-5 h-5" />
           {T.prev}
         </button>
-        <button
-          onClick={currentProblemIndex === problems.length - 1 && isChecked ? handleSubmitQuiz : handleNextClick}
-          disabled={!isChecked && currentProblemIndex === problems.length - 1 && !answers[currentProblem.problem_number]}
-          className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed inline-flex items-center"
-        >
-          {isChecked ? (currentProblemIndex === problems.length - 1 ? T.resultView : T.next) : T.check}
-          {isChecked && currentProblemIndex !== problems.length - 1 && <ChevronRight className="ml-2 w-5 h-5" />}
-        </button>
+        <div />
       </footer>
     </div>
   );
@@ -314,8 +408,8 @@ function TestLobby({ session, onStart, problemCount }) {
   );
 }
 
-function QuizResults({ session, results }) {
-  const { totalCorrect, subjectCorrectCounts, subjectPassFail, isOverallPass } = results;
+function QuizResults({ session, results, onRetryWrong }) {
+  const { totalCorrect, wrongCount, subjectCorrectCounts, subjectPassFail, isOverallPass } = results;
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl text-center">
@@ -345,6 +439,14 @@ function QuizResults({ session, results }) {
               </div>
             ))}
           </div>
+          {wrongCount > 0 && (
+            <button
+              onClick={onRetryWrong}
+              className="w-full max-w-xs mx-auto mb-4 px-8 py-3 bg-amber-500 text-white font-bold rounded-full hover:bg-amber-600 transition inline-flex items-center justify-center"
+            >
+              틀린 문제만 다시 풀기 ({wrongCount})
+            </button>
+          )}
           <Link
             href="/test"
             className="w-full max-w-xs mx-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
