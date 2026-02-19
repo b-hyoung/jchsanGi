@@ -230,7 +230,7 @@
                          },
                          {
                              "problem_number":  55,
-                             "comment":  "릴레이션에서 속성의 수와 튜플의 수를 의미하는 것으로 순서대로 옳게 짝지어진 것은? ①CARDINALITY, DEGREE, ② DOMAIN, DEGREE ③ DEGREE, CARDINALITY ④ DEGREE, DOMAIN"
+                             "comment":  "DEGREE는 릴레이션의 속성(열) 개수이고, CARDINALITY는 튜플(행) 개수이다. 따라서 \"속성의 수, 튜플의 수\" 순서는 DEGREE, CARDINALITY가 맞다."
                          },
                          {
                              "problem_number":  56,
@@ -246,7 +246,7 @@
                          },
                          {
                              "problem_number":  59,
-                             "comment":  "SELECT DISTINCT S-AGE FROM STUDENT; : STUDENT 테이블에서 \u0027S-AGE\u0027를 검색하는데 DISTINCT 옵션이 있으므로 중복된 결과는 처음의 한 개만 검색에 포함 시킵니다. \u0027S-AGE\u0027의 값 중 10인 튜플이 10개이지만 1개, 19인 튜플이 35개이지만 1개, 20인 튜플이 5개이지만 1개 를 검색에 포함시킵니다. 결과는 3개의 튜플이 검색됩니다. • SELECT DISTINCT S-AGE FROM STUDENT WHERE S-AGE \u003e 19;: STUDENT 테이블에서 \u0027S-AGE\u0027 속성의 값이 19 이상인 튜플을 검색하되 중복을 제거하므로 1개의 튜플만 검색됩니다."
+                             "comment":  "첫 SQL인 SELECT DISTINCT S-AGE FROM STUDENT; 는 중복을 제거한 나이 값 {10, 19, 20}을 반환하므로 결과 개수는 3이다. 둘째 SQL은 조건을 만족하는 나이만 DISTINCT로 반환하며(정답 기준), 결과 개수는 1이다. 따라서 최종 결과는 3, 1이다."
                          },
                          {
                              "problem_number":  60,
