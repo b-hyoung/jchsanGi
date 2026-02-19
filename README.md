@@ -86,12 +86,12 @@ npm run dev
 3. 기존 OpenAI 키는 그대로 두고, 위 2~3개만 추가하면 됨
    - `OPENAI_API_KEY`와 충돌하지 않음
 
-### Discord 신고 알림(선택)
+### Discord 신고 알림
 
 - 문제 신고 발생 시 Discord Webhook으로 알림 전송 가능
 - 환경변수
   - `DISCORD_REPORT_WEBHOOK_URL=<discord_webhook_url>`
-  - `ADMIN_DASHBOARD_URL=https://<your-domain>/admin` (선택)
+  - `ADMIN_DASHBOARD_URL=https://<your-domain>/admin`
 - 알림 내용
   - 신고 시간(월/일 시/분), 회차, 문항, 사유, 문제 요약
   - 관리자 페이지 바로가기 링크 포함
