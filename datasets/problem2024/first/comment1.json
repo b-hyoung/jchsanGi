@@ -117,7 +117,7 @@
       },
       {
         "problem_number": 28,
-        "comment": "코드를 실행하면 노란색 배경을 갖는 셀은 3행이고, 사용된 코드의 의미는 다음과 같습니다. 1<html> ② <style> 3 tr:nth-child(even) { background-color: yellow; } 4 </style> 6 <body> 7 <table> <thead> <tr> <th></th> </tr> </thead> <tfoot> 13 <tr> <td></td> 15 </tr> 16 </tfoot> <tbody> 18 <tr> 19 <td></td> 20 </tr> 21 <tr> 22 <td></td> 23 </tr> 24 </tbody> 25 </table> </body> </html> HTML 문서는 태그(Tag)를 사용하여 브라우저에 나타날 웹 페이지를 구성합니다. 태그는 특정한 기능이나 모양 등을 정의하기 위한 '꼬리표'를 의미합니다. 예를 들어 제목(title)으로 '시나공'을 정의하고 싶다면, <title>시나공</title>으로 쓸 수 있습니다. '<title>'은 시작 태그, '/'가 들어간 '</title>'은 종료 태그에 해당합니다. 1, HTML 문서임을 알리는 시작점과 종료점이다. 1번부터 번까지의 문장이 HTML의 문법으로 작성되었음을 알 수 있다. <HTML>- ⑦~1에서 정의된 표 머리글의 첫 행 18~20에서 정의된 표 본문의 첫 행 2~16에서 정의된 표 바닥글의 첫 행 ②, ④ 스타일을 정의하는 태그의 시작점과 종료점이다. ②번부터 4번 사이에는 화면에 표시될 요소들의 모양, 색상 등 스타일에 대한 것이 정의된다. ③ 'tr'이라고 지정된 곳의 짝수 행에 노란색 배경을 지정한다. ·nth-child(): 특정 순번이나 홀수, 짝수 요소에만 스타일을 부여할 때 사용하는 속성, 여기서는 even이라고 하였으므로 짝수 요소에 대해서만 지정한 스타일이 적용된다. • background-color: yellow: backgrond-color는 배경 색을 의미하는 속성이고, yellow는 노란색을 의미한다. 6. 웹 페이지에 표시될 본문의 시작점과 종료점이다. 6번부터 번 사이에는 웹 페이지에 표시될 다양한 요소들이 정의된다."
+        "comment": "tr:nth-child(even)은 전체 테이블 기준이 아니라, 각 부모(thead, tbody, tfoot) 내부에서 짝수 tr을 고릅니다.\nthead는 tr 1개뿐 → 선택 없음\ntfoot도 tr 1개뿐 → 선택 없음\ntbody는 tr 2개 → 2번째 tr만 선택됨\n화면에서 그 tbody의 2번째 행이 보통 3행으로 보이므로 정답이 3번입니다."
       },
       {
         "problem_number": 29,

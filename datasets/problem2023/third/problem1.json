@@ -165,13 +165,14 @@
       },
       {
         "problem_number": 17,
-        "question_text": "OSI 7 계층 중에서 다음 설명에 해당하는 계층은? ㆍ경로 설정, 트래픽 제어 기능 ㆍ네트워크 연결을 설정, 유지, 해제하는 기능",
+        "question_text": "OSI 7 계층 중에서 다음 설명에 해당하는 계층은?",
         "options": [
           "세션 계층",
           "응용 계층",
           "네트워크 계층",
           "표현 계층"
-        ]
+        ],
+        "examples": "ㆍ경로 설정, 트래픽 제어 기능\nㆍ네트워크 연결을 설정, 유지, 해제하는 기능"
       },
       {
         "problem_number": 18,
@@ -535,7 +536,8 @@
       },
       {
         "problem_number": 53,
-        "question_text": "학생(STUDENT) 테이블에 컴퓨터정보과 학생 120명, 인터넷정보과 학생 160명, 사무자동화과 학생 80명에 관한 데이터가 있다고 했을 때, 다음에 주어지는 SQL문 ㉠, ㉡, ㉢을 각각 실행 시키면, 결과 튜플 수는 각각 몇 개인가? (단, DEPT는 학과 컬럼명임) ㉠ SELECT DISTINCT DEPT FROM STUDENT; ㉡ SELECT DEPT FROM STUDENT; ㉢ SELECT COUNT(DISTINCT DEPT) FROM STUDENT WHERE DEPT = ‘컴퓨터정보과’;",
+        "question_text": "학생(STUDENT) 테이블에 컴퓨터정보과 학생 120명, 인터넷정보과 학생 160명, 사무자동화과 학생 80명에 관한 데이터가 있다고 했을 때, 다음에 주어지는 SQL문 ㉠, ㉡, ㉢을 각각 실행시키면 결과 튜플 수는 각각 몇 개인가? (단, DEPT는 학과 컬럼명임)",
+        "examples": "㉠ SELECT DISTINCT DEPT FROM STUDENT;\n㉡ SELECT DEPT FROM STUDENT;\n㉢ SELECT COUNT(DISTINCT DEPT) FROM STUDENT WHERE DEPT = '컴퓨터정보과';",
         "options": [
           "㉠ 3, ㉡ 360, ㉢ 1",
           "㉠ 360, ㉡ 3, ㉢ 120",

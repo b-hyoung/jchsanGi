@@ -230,7 +230,7 @@
       },
       {
         "problem_number": 23,
-        "question_text": "다음 C언어 코드에서 괄호에 들어갈 알맞은 예약어는? #include <stdio.h> int func(int i, int j) { int sum = i + j; ( ) sum; } main( ) { int r = func(3, 5); }",
+        "question_text": "다음 C언어 코드에서 괄호(㉠)에 들어갈 알맞은 예약어는?\n#include <stdio.h>\nint func(int i, int j) {\n  int sum = i + j;\n  ( ㉠ ) sum;\n}\nmain() {\n  int r = func(3, 5);\n}",
         "options": [
           "print",
           "input",
@@ -240,7 +240,7 @@
       },
       {
         "problem_number": 24,
-        "question_text": "다음 C언어 코드에서 괄호에 들어갈 알맞은 코드는? #include <stdio.h> struct st { int x; int y; }; int calc(int i, int j) { return i - j; } main( ) { struct st r; r.x = 20000; r.y = 7000; printf(\"%d\", ( )); }",
+        "question_text": "다음 C언어 코드에서 괄호(㉠)에 들어갈 알맞은 코드는?\n#include <stdio.h>\nstruct st {\n  int x;\n  int y;\n};\n\nint calc(int i, int j) {\n  return i - j;\n}\n\nmain() {\n  struct st r;\n  r.x = 20000;\n  r.y = 7000;\n  printf(\"%d\", ( ㉠ ));\n}",
         "options": [
           "st(x, y)",
           "calc(x, y)",

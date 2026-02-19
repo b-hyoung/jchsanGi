@@ -420,6 +420,565 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
     return 'bg-gray-100 text-gray-700 border-gray-300';
   };
 
+  const parseBookPriceVisual = (text) => {
+    const raw = String(text || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\u00A0/g, ' ')
+      .trim();
+
+    if (!/SELECT\s+가격\s+FROM\s+도서가격/i.test(raw)) return null;
+    if (!/운영체제/.test(raw)) return null;
+
+    const qIdx = raw.indexOf('?');
+    const stem = qIdx >= 0 ? raw.slice(0, qIdx + 1).trim() : '다음 질의문 실행의 결과는?';
+
+    const sqlMatch = raw.match(/SELECT\s+가격\s+FROM\s+도서가격[\s\S]*?\);/i);
+    const sql = (sqlMatch?.[0] || "SELECT 가격 FROM 도서가격 WHERE 책번호 = (SELECT 책번호 FROM 도서 WHERE 책명 = '운영체제');")
+      .replace(/\s+/g, ' ')
+      .replace(/\bFROM\b/ig, '\nFROM')
+      .replace(/\bWHERE\b/ig, '\nWHERE')
+      .trim();
+
+    return {
+      stem,
+      sql,
+      left: {
+        title: '도서',
+        headers: ['책번호', '책명'],
+        rows: [
+          ['1111', '운영체제'],
+          ['2222', '세계지도'],
+          ['3333', '생활영어'],
+        ],
+      },
+      right: {
+        title: '도서가격',
+        headers: ['책번호', '가격'],
+        rows: [
+          ['1111', '15000'],
+          ['2222', '23000'],
+          ['3333', '7000'],
+          ['4444', '5000'],
+        ],
+      },
+    };
+  };
+
+  const parseRelationDegreeVisual = (text) => {
+    const raw = String(text || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const hasHeader =
+      /학번\(SNO\)/.test(raw) &&
+      /이름\(SNAME\)/.test(raw) &&
+      /학년\(YEAR\)/.test(raw) &&
+      /학과\(DEPT\)/.test(raw);
+    const hasStem = /릴레이션의 차수는\?/.test(raw);
+    if (!hasHeader || !hasStem) return null;
+
+    const qIdx = raw.indexOf('?');
+    const stem = qIdx >= 0 ? raw.slice(0, qIdx + 1).trim() : raw;
+
+    // 자주 출제되는 원본 표(학번/이름/학년/학과)
+    return {
+      stem,
+      headers: ['학번(SNO)', '이름(SNAME)', '학년(YEAR)', '학과(DEPT)'],
+      rows: [
+        ['100', '홍길동', '4', '전기'],
+        ['200', '임꺽정', '1', '컴퓨터'],
+        ['300', '이몽룡', '2', '전자'],
+        ['400', '강감찬', '4', '제어계측'],
+        ['500', '김유신', '3', '컴퓨터'],
+      ],
+    };
+  };
+
+  const parseTradeMaxVisual = (text) => {
+    const raw = String(text || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!/<거래내역>/i.test(raw)) return null;
+    if (!/SELECT\s+상호\s+FROM\s+거래내역\s+WHERE\s+금액\s+IN/i.test(raw)) return null;
+
+    const qIdx = raw.indexOf('?');
+    const stem = qIdx >= 0 ? raw.slice(0, qIdx + 1).trim() : '다음 SQL의 실행 결과로 옳은 것은?';
+
+    const sqlMatch = raw.match(/SELECT\s+상호\s+FROM\s+거래내역[\s\S]*?;/i);
+    const sql = (sqlMatch?.[0] || 'SELECT 상호 FROM 거래내역 WHERE 금액 IN (SELECT MAX(금액) FROM 거래내역);')
+      .replace(/\s+/g, ' ')
+      .replace(/\bFROM\b/ig, '\nFROM')
+      .replace(/\bWHERE\b/ig, '\nWHERE')
+      .trim();
+
+    return {
+      stem,
+      sql,
+      headers: ['상호', '금액'],
+      rows: [
+        ['대명금속', '255,000'],
+        ['정금강업', '900,000'],
+        ['효신산업', '600,000'],
+        ['율촌화학', '220,000'],
+        ['한국제지', '200,000'],
+        ['한국화이바', '795,000'],
+      ],
+    };
+  };
+
+  const bookPriceVisual = parseBookPriceVisual(currentProblem?.question_text);
+  const relationDegreeVisual = parseRelationDegreeVisual(currentProblem?.question_text);
+  const tradeMaxVisual = parseTradeMaxVisual(currentProblem?.question_text);
+  const showTree44 =
+    currentProblem?.problem_number === 44 &&
+    /이진 트리|binary tree|트리/i.test(String(currentProblem?.question_text || ''));
+  const showTree51 =
+    currentProblem?.problem_number === 51 &&
+    /다음 트리|트리를 전위 순서|전위 순회|트리/i.test(String(currentProblem?.question_text || ''));
+  const showTree56 =
+    currentProblem?.problem_number === 56 &&
+    /다음 그림에서 트리|터미널 노드|Degree|트리/i.test(String(currentProblem?.question_text || ''));
+  const showTree46 =
+    currentProblem?.problem_number === 46 &&
+    /이진 트리|전위|preorder/i.test(String(currentProblem?.question_text || ''));
+  const showFan36 =
+    currentProblem?.problem_number === 36 &&
+    /fan-in|fan-out/i.test(String(currentProblem?.question_text || ''));
+  const showGraph43 =
+    currentProblem?.problem_number === 43 &&
+    /그래프|간선/.test(String(currentProblem?.question_text || ''));
+  const showMemory14 =
+    currentProblem?.problem_number === 14 &&
+    /(5K|10K|15K|20K|3K|11K|7K|메모리|버디)/i.test(String(currentProblem?.question_text || ''));
+  const showPromptFigure = (() => {
+    const qText = String(currentProblem?.question_text || '');
+    const opts = Array.isArray(currentProblem?.options) ? currentProblem.options : [];
+    const hasPromptOption = opts.some((opt) => /prompt\s*\(|alert\s*\(|title|default/i.test(String(opt || '')));
+    if (!hasPromptOption) return false;
+    // 본문/보기에 키워드가 있거나, JavaScript 창(대화상자) 문제면 도식 표시
+    return /이 페이지 내용|prompt|title|default|JavaScript|창을 띄우기|대화상자/i.test(qText) || currentProblem?.problem_number === 22;
+  })();
+
+  const parseQuestionCodeBlock = (text) => {
+    const raw = String(text || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/\\n/g, '\n')
+      .trim();
+
+    // 코드형 문항(HTML/C/JS/Java/SQL)을 본문과 코드 블록으로 분리한다.
+    const markerRegex =
+      /(<html>|#include\b|public\s+class\b|SELECT\b|<script\b|\bif\s*\(|\bfor\s*\(|\bwhile\s*\(|\bdo\s*\{)/i;
+    const marker = markerRegex.exec(raw);
+    if (!marker) return { stem: raw, code: null };
+
+    const idx = marker.index;
+    const stem = raw.slice(0, idx).trim();
+    const code = raw.slice(idx).trim();
+    return { stem: stem || raw, code: code || null };
+  };
+
+  const normalizeKnownCorruptedQuestion = (text, problemNumber, sessionId) => {
+    const raw = String(text || '');
+    const sid = String(sessionId || '').toLowerCase();
+
+    // 2024년 1회 26번: 데이터가 깨져 '?'로 치환된 경우 화면에서 안전 보정
+    if (
+      problemNumber === 26 &&
+      (sid.includes('2024') || sid.includes('first')) &&
+      /javascript/i.test(raw) &&
+      /\?{3,}/.test(raw)
+    ) {
+      return '다음은 1000까지의 7의 배수를 모두 합하는 JavaScript 코드이다. 괄호(㉠, ㉡)에 들어갈 알맞은 예약어는? ……생략… <script> var r = 0, i = 0; ( ㉠ ) { i = i + 1; if (i%7 == 0) { r = r + i; } } ( ㉡ ) (i < 1000); console.log(r); </script> ……생략…';
+    }
+
+    return raw;
+  };
+
+  const formatCodeForDisplay = (code) => {
+    const raw = String(code || '').replace(/\r\n?/g, '\n').trim();
+    if (!raw) return raw;
+
+    // HTML 계열 문항은 한 줄로 들어오는 경우가 많아 가독성용 개행/들여쓰기를 적용한다.
+    if (/^<html>|<body>|<form|<table|<script/i.test(raw)) {
+      let s = raw.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+      s = s.replace(/>\s*</g, '>\n<');
+      s = s
+        .replace(/<(p|tr|td|th|li|option)\b/gi, '\n<$1')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
+
+      const lines = s.split('\n').map((line) => line.trim()).filter(Boolean);
+      let depth = 0;
+      const out = [];
+      for (const line of lines) {
+        const isClosing = /^<\//.test(line);
+        if (isClosing) depth = Math.max(0, depth - 1);
+        out.push(`${'  '.repeat(depth)}${line}`);
+        const isOpening =
+          /^<[^!/][^>]*>$/.test(line) &&
+          !/\/>$/.test(line) &&
+          !/^<(input|br|hr|img|meta|link)\b/i.test(line) &&
+          !/^<.*<\/.*>$/.test(line);
+        if (isOpening) depth += 1;
+      }
+      return out.join('\n');
+    }
+
+    return raw;
+  };
+
+  const isCodeLikeText = (text) => {
+    const raw = String(text || '').trim();
+    if (!raw) return false;
+    return /(<html>|#include\b|public\s+class\b|SELECT\b|<script\b|\bif\s*\(|\bfor\s*\(|\bwhile\s*\(|\bdo\s*\{|=>|;\s*$)/i.test(raw);
+  };
+
+  const isFramesetChoiceQuestion = (() => {
+    const q = String(currentProblem?.question_text || '');
+    const ex = String(currentProblem?.examples || '');
+    return (
+      currentProblem?.problem_number === 28 &&
+      /frameset/i.test(q) &&
+      /<FRAMESET/i.test(ex) &&
+      /cols=/i.test(ex) &&
+      /rows=/i.test(ex)
+    );
+  })();
+
+  const FramesetOptionFigure = ({ idx }) => {
+    const w = 74;
+    const h = 74;
+    const stroke = '#4b5563';
+    const halfW = w / 2;
+    const halfH = h / 2;
+
+    return (
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`frameset option ${idx + 1}`}>
+        <rect x="1" y="1" width={w - 2} height={h - 2} fill="#fff" stroke={stroke} strokeWidth="2" />
+        {idx === 0 && (
+          <>
+            <line x1={halfW} y1="1" x2={halfW} y2={h - 1} stroke={stroke} strokeWidth="2" />
+            <line x1={halfW} y1={halfH} x2={w - 1} y2={halfH} stroke={stroke} strokeWidth="2" />
+          </>
+        )}
+        {idx === 1 && (
+          <>
+            <line x1={halfW} y1="1" x2={halfW} y2={h - 1} stroke={stroke} strokeWidth="2" />
+            <line x1="1" y1={halfH} x2={halfW} y2={halfH} stroke={stroke} strokeWidth="2" />
+          </>
+        )}
+        {idx === 2 && (
+          <>
+            <line x1="1" y1={halfH} x2={w - 1} y2={halfH} stroke={stroke} strokeWidth="2" />
+            <line x1={halfW} y1="1" x2={halfW} y2={halfH} stroke={stroke} strokeWidth="2" />
+          </>
+        )}
+        {idx === 3 && (
+          <>
+            <line x1="1" y1={halfH} x2={w - 1} y2={halfH} stroke={stroke} strokeWidth="2" />
+            <line x1={halfW} y1={halfH} x2={halfW} y2={h - 1} stroke={stroke} strokeWidth="2" />
+          </>
+        )}
+      </svg>
+    );
+  };
+
+  const safeQuestionText = normalizeKnownCorruptedQuestion(
+    currentProblem?.question_text,
+    currentProblem?.problem_number,
+    session?.id
+  );
+  const rawQuestionText = bookPriceVisual
+    ? bookPriceVisual.stem
+    : relationDegreeVisual
+      ? relationDegreeVisual.stem
+      : tradeMaxVisual
+        ? tradeMaxVisual.stem
+      : safeQuestionText;
+  const { stem: questionTitle, code: questionCodeBlock } = parseQuestionCodeBlock(rawQuestionText);
+
+  const formatQuestionTitle = (text) => {
+    const raw = String(text || '').replace(/\r\n?/g, '\n').trim();
+    if (!raw) return raw;
+    if (raw.includes('\n')) return raw;
+
+    const qIdx = raw.indexOf('?');
+    if (qIdx < 0 || qIdx === raw.length - 1) return raw;
+
+    const head = raw.slice(0, qIdx + 1).trim();
+    const tail = raw.slice(qIdx + 1).trim();
+    return tail ? `${head}\n${tail}` : head;
+  };
+
+  const TreeFigure46 = () => (
+    <div className="mb-6 inline-block rounded-md border border-gray-300 bg-white p-3">
+      <svg width="300" height="140" viewBox="0 0 300 140" role="img" aria-label="이진 트리 다이어그램">
+        <g stroke="#444" strokeWidth="2" fill="none">
+          <line x1="150" y1="20" x2="95" y2="55" />
+          <line x1="150" y1="20" x2="205" y2="55" />
+          <line x1="95" y1="55" x2="60" y2="92" />
+          <line x1="205" y1="55" x2="170" y2="92" />
+          <line x1="205" y1="55" x2="240" y2="92" />
+        </g>
+        {[
+          ['A', 150, 20],
+          ['B', 95, 55],
+          ['C', 205, 55],
+          ['D', 60, 92],
+          ['E', 170, 92],
+          ['F', 240, 92],
+        ].map(([label, x, y]) => (
+          <g key={label} transform={`translate(${x},${y})`}>
+            <circle r="14" fill="#fff" stroke="#444" strokeWidth="2" />
+            <text
+              x="0"
+              y="1"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="13"
+              fontWeight="700"
+              fill="#111"
+            >
+              {label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+
+  const TreeFigure44 = () => (
+    <div className="mb-6 inline-block rounded-md border border-gray-300 bg-white p-3">
+      <svg width="320" height="180" viewBox="0 0 320 180" role="img" aria-label="트리 다이어그램">
+        <g stroke="#444" strokeWidth="2" fill="none">
+          <line x1="160" y1="20" x2="105" y2="55" />
+          <line x1="160" y1="20" x2="215" y2="55" />
+          <line x1="105" y1="55" x2="70" y2="92" />
+          <line x1="215" y1="55" x2="175" y2="92" />
+          <line x1="215" y1="55" x2="250" y2="92" />
+          <line x1="175" y1="92" x2="140" y2="130" />
+          <line x1="175" y1="92" x2="210" y2="130" />
+        </g>
+        {[
+          ['A', 160, 20],
+          ['B', 105, 55],
+          ['C', 215, 55],
+          ['D', 70, 92],
+          ['E', 175, 92],
+          ['F', 250, 92],
+          ['G', 140, 130],
+          ['H', 210, 130],
+        ].map(([label, x, y]) => (
+          <g key={label} transform={`translate(${x},${y})`}>
+            <circle r="14" fill="#fff" stroke="#444" strokeWidth="2" />
+            <text
+              x="0"
+              y="1"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="13"
+              fontWeight="700"
+              fill="#111"
+            >
+              {label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+
+  const TreeFigure51 = () => (
+    <div className="mb-6 inline-block rounded-md border border-gray-300 bg-white p-3">
+      <svg width="300" height="150" viewBox="0 0 300 150" role="img" aria-label="트리 다이어그램">
+        <g stroke="#444" strokeWidth="2" fill="none">
+          <line x1="150" y1="24" x2="95" y2="62" />
+          <line x1="150" y1="24" x2="205" y2="62" />
+          <line x1="95" y1="62" x2="60" y2="100" />
+          <line x1="205" y1="62" x2="150" y2="100" />
+          <line x1="205" y1="62" x2="240" y2="100" />
+        </g>
+        {[
+          ['A', 150, 24],
+          ['B', 95, 62],
+          ['C', 205, 62],
+          ['D', 60, 100],
+          ['E', 150, 100],
+          ['F', 240, 100],
+        ].map(([label, x, y]) => (
+          <g key={label} transform={`translate(${x},${y})`}>
+            <circle r="14" fill="#fff" stroke="#444" strokeWidth="2" />
+            <text x="0" y="1" textAnchor="middle" dominantBaseline="middle" fontSize="13" fontWeight="700" fill="#111">
+              {label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+
+  const TreeFigure56 = () => (
+    <div className="mb-6 inline-block rounded-md border border-gray-300 bg-white p-3">
+      <svg width="300" height="180" viewBox="0 0 300 180" role="img" aria-label="트리 다이어그램">
+        <g stroke="#444" strokeWidth="2" fill="none">
+          <line x1="150" y1="24" x2="95" y2="62" />
+          <line x1="150" y1="24" x2="205" y2="62" />
+          <line x1="95" y1="62" x2="60" y2="100" />
+          <line x1="205" y1="62" x2="150" y2="100" />
+          <line x1="205" y1="62" x2="240" y2="100" />
+          <line x1="150" y1="100" x2="120" y2="138" />
+          <line x1="150" y1="100" x2="180" y2="138" />
+        </g>
+        {[
+          ['A', 150, 24],
+          ['B', 95, 62],
+          ['C', 205, 62],
+          ['D', 60, 100],
+          ['E', 150, 100],
+          ['F', 240, 100],
+          ['G', 120, 138],
+          ['H', 180, 138],
+        ].map(([label, x, y]) => (
+          <g key={label} transform={`translate(${x},${y})`}>
+            <circle r="14" fill="#fff" stroke="#444" strokeWidth="2" />
+            <text x="0" y="1" textAnchor="middle" dominantBaseline="middle" fontSize="13" fontWeight="700" fill="#111">
+              {label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+
+  const FanDiagram36 = () => (
+    <div className="mb-6 inline-block rounded-md border border-gray-300 bg-white p-3">
+      <svg width="320" height="190" viewBox="0 0 320 190" role="img" aria-label="모듈 구조도">
+        <g stroke="#444" strokeWidth="2" fill="none">
+          <line x1="160" y1="24" x2="80" y2="62" />
+          <line x1="160" y1="24" x2="160" y2="62" />
+          <line x1="160" y1="24" x2="240" y2="62" />
+          <line x1="80" y1="62" x2="60" y2="100" />
+          <line x1="80" y1="62" x2="160" y2="100" />
+          <line x1="160" y1="62" x2="160" y2="100" />
+          <line x1="240" y1="62" x2="160" y2="100" />
+          <line x1="160" y1="100" x2="120" y2="138" />
+          <line x1="160" y1="100" x2="200" y2="138" />
+        </g>
+        {[
+          ['A', 160, 24],
+          ['B', 80, 62],
+          ['C', 160, 62],
+          ['D', 240, 62],
+          ['E', 60, 100],
+          ['F', 160, 100],
+          ['G', 120, 138],
+          ['H', 200, 138],
+        ].map(([label, x, y]) => (
+          <g key={label} transform={`translate(${x},${y})`}>
+            <rect x="-20" y="-10" width="40" height="20" fill="#fff" stroke="#444" strokeWidth="2" />
+            <text x="0" y="1" textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill="#111">
+              {label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+
+  const GraphFigure43 = () => (
+    <div className="mb-6 inline-block rounded-md border border-gray-300 bg-white p-3">
+      <svg width="220" height="160" viewBox="0 0 220 160" role="img" aria-label="그래프 도식">
+        <g stroke="#444" strokeWidth="2" fill="none">
+          <line x1="110" y1="24" x2="60" y2="70" />
+          <line x1="110" y1="24" x2="160" y2="70" />
+          <line x1="60" y1="70" x2="110" y2="116" />
+          <line x1="160" y1="70" x2="110" y2="116" />
+          <line x1="110" y1="24" x2="110" y2="116" />
+          <line x1="60" y1="70" x2="160" y2="70" />
+        </g>
+        {[
+          ['1', 110, 24],
+          ['2', 60, 70],
+          ['3', 160, 70],
+          ['4', 110, 116],
+        ].map(([label, x, y]) => (
+          <g key={label} transform={`translate(${x},${y})`}>
+            <circle r="12" fill="#fff" stroke="#444" strokeWidth="2" />
+            <text x="0" y="1" textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill="#111">
+              {label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+
+  const PromptFigure = () => (
+    <div className="mb-6 inline-block rounded-md border border-gray-300 bg-white p-0 shadow-sm">
+      <div className="w-[320px] bg-[#f5f5f5] p-3">
+        <p className="text-xs text-gray-700 mb-2">이 페이지 내용:</p>
+        <p className="text-[11px] text-gray-500 mb-2">title</p>
+        <div className="mb-3 rounded border border-blue-400 bg-white px-2 py-1 text-xs text-gray-700">
+          default
+        </div>
+        <div className="flex justify-end gap-2">
+          <button type="button" className="rounded bg-blue-600 px-3 py-1 text-[11px] font-semibold text-white">
+            확인
+          </button>
+          <button type="button" className="rounded px-3 py-1 text-[11px] text-slate-400">
+            취소
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const MemoryFigure14 = () => (
+    <div className="mb-6 inline-block rounded-md border border-gray-300 bg-white p-3">
+      <svg width="360" height="130" viewBox="0 0 360 130" role="img" aria-label="메모리 블록 도식">
+        <g fill="#fff" stroke="#444" strokeWidth="1.5">
+          {/* left blocks */}
+          <rect x="8" y="72" width="45" height="28" />
+          <rect x="53" y="72" width="45" height="28" />
+          <rect x="98" y="72" width="55" height="28" />
+          <rect x="153" y="72" width="45" height="28" />
+
+          {/* right stack */}
+          <rect x="250" y="10" width="60" height="28" />
+          <rect x="250" y="38" width="60" height="28" />
+          <rect x="250" y="66" width="60" height="28" />
+          <rect x="250" y="94" width="60" height="28" />
+        </g>
+
+        {/* arrow */}
+        <g stroke="#444" strokeWidth="1.8" fill="none">
+          <line x1="205" y1="86" x2="238" y2="86" />
+          <polyline points="232,80 240,86 232,92" />
+        </g>
+
+        <g fontSize="14" fontWeight="700" fill="#111" textAnchor="middle" dominantBaseline="middle">
+          <text x="30" y="86">15K</text>
+          <text x="75" y="86">3K</text>
+          <text x="125" y="86">11K</text>
+          <text x="175" y="86">7K</text>
+
+          <text x="280" y="24">5K</text>
+          <text x="280" y="52">10K</text>
+          <text x="280" y="80">15K</text>
+          <text x="280" y="108">20K</text>
+        </g>
+      </svg>
+    </div>
+  );
+
   if (!isStarted) {
     return (
       <>
@@ -524,9 +1083,123 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
 
           <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg">
             <p className="text-sm font-semibold text-indigo-600 mb-2">{currentProblem.sectionTitle}</p>
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6 leading-relaxed">
-              {currentProblem.problem_number}. {currentProblem.question_text}
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6 leading-relaxed whitespace-pre-wrap">
+              {currentProblem.problem_number}. {formatQuestionTitle(questionTitle)}
             </h2>
+
+            {questionCodeBlock && (
+              <div className="mb-6 overflow-x-auto rounded-md border border-gray-300 bg-white">
+                <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                  {formatCodeForDisplay(questionCodeBlock)}
+                </pre>
+              </div>
+            )}
+
+            {showTree44 && <TreeFigure44 />}
+            {!showTree44 && showTree46 && <TreeFigure46 />}
+            {!showTree44 && !showTree46 && showTree51 && <TreeFigure51 />}
+            {!showTree44 && !showTree46 && !showTree51 && showTree56 && <TreeFigure56 />}
+            {!showTree44 && !showTree46 && !showTree51 && !showTree56 && showFan36 && <FanDiagram36 />}
+            {!showTree44 && !showTree46 && !showTree51 && !showTree56 && !showFan36 && showGraph43 && <GraphFigure43 />}
+            {!showTree44 && !showTree46 && !showTree51 && !showTree56 && !showFan36 && !showGraph43 && showMemory14 && <MemoryFigure14 />}
+            {!showTree44 && !showTree46 && !showTree51 && !showTree56 && !showFan36 && !showGraph43 && !showMemory14 && showPromptFigure && <PromptFigure />}
+
+            {bookPriceVisual && (
+              <div className="mb-6">
+                <div className="mb-3 overflow-x-auto rounded-md border border-gray-300 bg-gray-50">
+                  <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                    {bookPriceVisual.sql}
+                  </pre>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {[bookPriceVisual.left, bookPriceVisual.right].map((tbl) => (
+                    <div key={tbl.title} className="overflow-x-auto rounded-md border border-gray-300 bg-white">
+                      <div className="px-3 py-2 text-sm font-bold text-gray-800 border-b border-gray-200">{`<${tbl.title}>`}</div>
+                      <table className="min-w-full text-sm text-gray-900">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            {tbl.headers.map((h) => (
+                              <th key={h} className="border border-gray-300 px-3 py-2 text-center font-semibold">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tbl.rows.map((r, idx) => (
+                            <tr key={`${tbl.title}-${idx}`} className="odd:bg-white even:bg-gray-50">
+                              {r.map((c, cidx) => (
+                                <td key={`${idx}-${cidx}`} className="border border-gray-300 px-3 py-2 text-center">{c}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {relationDegreeVisual && (
+              <div className="mb-6 overflow-x-auto rounded-md border border-gray-300 bg-white">
+                <table className="min-w-full text-sm text-gray-900">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      {relationDegreeVisual.headers.map((h) => (
+                        <th key={h} className="border border-gray-300 px-3 py-2 text-center font-semibold">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {relationDegreeVisual.rows.map((row, ridx) => (
+                      <tr key={`rel-${ridx}`} className="odd:bg-white even:bg-gray-50">
+                        {row.map((cell, cidx) => (
+                          <td key={`rel-${ridx}-${cidx}`} className="border border-gray-300 px-3 py-2 text-center">
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {tradeMaxVisual && (
+              <div className="mb-6">
+                <div className="mb-3 overflow-x-auto rounded-md border border-gray-300 bg-gray-50">
+                  <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                    {tradeMaxVisual.sql}
+                  </pre>
+                </div>
+                <div className="overflow-x-auto rounded-md border border-gray-300 bg-white">
+                  <div className="px-3 py-2 text-sm font-bold text-gray-800 border-b border-gray-200">{'<거래내역>'}</div>
+                  <table className="min-w-full text-sm text-gray-900">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        {tradeMaxVisual.headers.map((h) => (
+                          <th key={h} className="border border-gray-300 px-3 py-2 text-center font-semibold">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tradeMaxVisual.rows.map((row, ridx) => (
+                        <tr key={`tm-${ridx}`} className="odd:bg-white even:bg-gray-50">
+                          {row.map((cell, cidx) => (
+                            <td key={`tm-${ridx}-${cidx}`} className="border border-gray-300 px-3 py-2 text-center">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {currentProblem.examples && (
               <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 overflow-hidden">
@@ -538,7 +1211,17 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
                     const lines = currentProblem.examples.split('\n');
                     const nonEmpty = lines.filter((l) => l.trim());
                     const isTable = nonEmpty.length > 1 && nonEmpty.every((l) => l.includes('|'));
+                    const isCodeLike = !isTable && isCodeLikeText(currentProblem.examples);
                     if (!isTable) {
+                      if (isCodeLike) {
+                        return (
+                          <div className="overflow-x-auto rounded-md border border-sky-200 bg-white">
+                            <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                              {formatCodeForDisplay(currentProblem.examples)}
+                            </pre>
+                          </div>
+                        );
+                      }
                       return <p className="text-gray-800 whitespace-pre-wrap leading-relaxed font-mono text-sm">{currentProblem.examples}</p>;
                     }
                     const tables = currentProblem.examples.split('\n\n').filter(Boolean);
@@ -573,6 +1256,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
             <div className="space-y-4">
               {currentProblem.options.map((option, index) => {
                 let buttonClass = 'bg-white hover:bg-indigo-50 border-indigo-200 text-gray-800';
+                const optionIsCode = isCodeLikeText(option);
                 if (selectedAnswer === option) {
                   buttonClass = 'bg-indigo-100 text-indigo-700 border-indigo-500 ring-2 ring-indigo-500 font-bold';
                   if (showResult) {
@@ -588,7 +1272,23 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
                     disabled={isChecked}
                     className={`w-full text-left p-4 rounded-lg border-2 transition-all ${buttonClass} ${isChecked ? 'cursor-not-allowed opacity-90' : ''}`}
                   >
-                    {index + 1}. {option}
+                    {isFramesetChoiceQuestion ? (
+                      <div className="flex items-center gap-3">
+                        <div className="font-semibold">{index + 1}.</div>
+                        <FramesetOptionFigure idx={index} />
+                      </div>
+                    ) : optionIsCode ? (
+                      <div className="space-y-2">
+                        <div className="font-semibold">{index + 1}.</div>
+                        <div className="overflow-x-auto rounded-md border border-indigo-200 bg-white/80">
+                          <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                            {formatCodeForDisplay(option)}
+                          </pre>
+                        </div>
+                      </div>
+                    ) : (
+                      `${index + 1}. ${option}`
+                    )}
                   </button>
                 );
               })}
@@ -647,7 +1347,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
                       value={reportEtcText}
                       onChange={(e) => setReportEtcText(e.target.value)}
                       placeholder="신고 사유를 입력해주세요"
-                      className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   )}
                   <button

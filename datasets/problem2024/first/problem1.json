@@ -260,7 +260,7 @@
       },
       {
         "problem_number": 26,
-        "question_text": "다음은 1000까지의 7의 배수를 모두 합하는 JavaScript 코드이다. 괄호(㉠, ㉡)에 들어갈 알맞은 예약어는? ……생략… <script> var r = 0, i = 0; () { i = i + 1; if (i%7 == 0) { r = r + i; } }() (i < 1000); console.log(r); </script> ……생략…",
+        "question_text": "다음은 1000까지의 7의 배수를 모두 합하는 JavaScript 코드이다. 괄호(㉠, ㉡)에 들어갈 알맞은 예약어는? ……생략… <script> var r = 0, i = 0; ( ㉠ ) { i = i + 1; if (i%7 == 0) { r = r + i; } } ( ㉡ ) (i < 1000); console.log(r); </script> ……생략…",
         "options": [
           "-do,-while",
           "-while,-do",
