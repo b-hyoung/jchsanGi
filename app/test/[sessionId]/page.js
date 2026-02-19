@@ -63,10 +63,13 @@ const sessionConfig = {
   '12': { title: '개발자가 방금만든 따끈 문제 60', basePath: ['datasets', 'problemNow_60', 'first'] },
 };
 
-export default async function TestPage({ params: paramsPromise }) {
+export default async function TestPage({ params: paramsPromise, searchParams: searchParamsPromise }) {
   const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   const { sessionId } = params;
   const cfg = sessionConfig[sessionId];
+  const initialProblemNumber = Number(searchParams?.p);
+  const validInitialProblemNumber = Number.isNaN(initialProblemNumber) ? null : initialProblemNumber;
 
   if (!cfg) notFound();
 
@@ -80,6 +83,7 @@ export default async function TestPage({ params: paramsPromise }) {
       commentsMap={data.commentsMap}
       session={{ title: cfg.title }}
       sessionId={sessionId}
+      initialProblemNumber={validInitialProblemNumber}
     />
   );
 }

@@ -44,7 +44,7 @@ const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
 const REPORT_TIP_NOTICE_KEY = 'report_tip_notice_2026_02_once';
 const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
 
-export default function Quiz({ problems, session, answersMap, commentsMap, sessionId }) {
+export default function Quiz({ problems, session, answersMap, commentsMap, sessionId, initialProblemNumber = null }) {
   const router = useRouter();
   const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
@@ -65,6 +65,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const [reportReason, setReportReason] = useState('');
   const [reportEtcText, setReportEtcText] = useState('');
   const [reportedProblems, setReportedProblems] = useState({});
+  const [initialJumpApplied, setInitialJumpApplied] = useState(false);
 
   useEffect(() => {
     try {
@@ -74,6 +75,27 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       setShowUpdateNotice(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (initialJumpApplied) return;
+    if (!initialProblemNumber) return;
+    if (!Array.isArray(quizProblems) || quizProblems.length === 0) return;
+
+    const targetIndex = quizProblems.findIndex(
+      (p) => Number(p.problem_number) === Number(initialProblemNumber)
+    );
+    if (targetIndex < 0) {
+      setInitialJumpApplied(true);
+      return;
+    }
+
+    setCurrentProblemIndex(targetIndex);
+    if (!isStarted) {
+      setIsStarted(true);
+      trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
+    }
+    setInitialJumpApplied(true);
+  }, [initialJumpApplied, initialProblemNumber, isStarted, quizProblems, sessionId]);
 
   useEffect(() => {
     if (!isStarted) return;
