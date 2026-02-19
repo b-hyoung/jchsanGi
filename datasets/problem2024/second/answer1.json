@@ -219,8 +219,8 @@
                         },
                         {
                             "problem_number":  42,
-                            "correct_answer_index":  3,
-                            "correct_answer_text":  "D, A, C, B"
+                            "correct_answer_index":  1,
+                            "correct_answer_text":  "C, B, D, A"
                         },
                         {
                             "problem_number":  43,
