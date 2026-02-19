@@ -446,10 +446,10 @@
         "problem_number": 44,
         "question_text": "E-R 모델에서 다중값 속성의 표기법은?",
         "options": [
-          "",
-          "",
-          "",
-          ""
+          "◇ 마름모",
+          "□ 사각형",
+          "◎ 이중 타원",
+          "─ 연결선"
         ]
       },
       {
@@ -526,11 +526,12 @@
         "problem_number": 52,
         "question_text": "다음 R과 S 두 릴레이션에 대한 Division 연산의 수행 결과는?",
         "options": [
-          "",
-          "",
-          "",
-          ""
-        ]
+          "D1: a",
+          "D2 D3: 1 A",
+          "D1 D2: a 1, b 1",
+          "D1: a, b"
+        ],
+        "examples": "R||\nD1|D2|D3\na|1|A\nb|1|A\n\nS||\nD2|D3\n1|A"
       },
       {
         "problem_number": 53,

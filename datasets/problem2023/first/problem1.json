@@ -144,13 +144,14 @@
       },
       {
         "problem_number": 15,
-        "question_text": "SJF(Shortest Job First) 스케줄링에서 작업 도착 시간과 CPU 사용 시간은 다음 표와 같다. 모든 작업들의 평균 대기 시간은 얼마인가? 작업 도착 시간 CPU 사용시간 1 0 23 2 3 35 3 8 10",
+        "question_text": "SJF(Shortest Job First) 스케줄링에서 작업 도착 시간과 CPU 사용 시간은 다음 표와 같다. 모든 작업들의 평균 대기 시간은 얼마인가?",
         "options": [
           "15",
           "17",
           "24",
           "25"
-        ]
+        ],
+        "examples": "작업|도착 시간|CPU 사용시간\n1|0|23\n2|3|35\n3|8|10"
       },
       {
         "problem_number": 16,
@@ -199,7 +200,7 @@
           "Data Coupling",
           "Stamp Coupling",
           "Content Coupling",
-          "Control Coupling 제2과목 프로그래밍 언어 활용"
+          "Control Coupling"
         ]
       }
     ]
@@ -404,7 +405,7 @@
           "외부 변수는 함수 밖에서 선언한다.",
           "초기화하지 않으면 자동으로 0으로 초기화 된다.",
           "함수가 종료되면 값도 소멸된다.",
-          "다른 파일에서 선언된 변수를 참조할 경우 초기화"
+          "다른 파일에서 선언된 변수를 참조할 경우 초기화 할 수 없다."
         ]
       }
     ]
