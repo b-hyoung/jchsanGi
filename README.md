@@ -59,7 +59,19 @@ npm run dev
   - `start_exam`: 시험 시작
   - `finish_exam`: 시험 종료(총점/과목별 점수/합격 여부 포함)
   - `report_problem`: 문제 신고(문항번호/신고사유/문제 요약 포함)
-- 저장 위치: `data/analytics-events.json` (로컬 파일 기반)
+- 저장소
+  - Supabase 환경변수가 설정되면 Supabase 테이블에 저장
+  - 미설정 시 `data/analytics-events.json`(로컬 파일)로 자동 폴백
+
+### Netlify + Supabase 설정
+
+1. Supabase SQL Editor에서 `scripts/supabase-analytics.sql` 실행
+2. Netlify 환경변수 추가
+   - `SUPABASE_URL=https://<project-id>.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY=<service_role_key>`
+   - `SUPABASE_EVENTS_TABLE=analytics_events` (선택, 기본값 동일)
+3. 기존 OpenAI 키는 그대로 두고, 위 2~3개만 추가하면 됨
+   - `OPENAI_API_KEY`와 충돌하지 않음
 
 ## 향후 개선 아이디어
 

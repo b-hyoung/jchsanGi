@@ -531,20 +531,20 @@ function UpdateNoticeModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
       <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 md:p-7">
-        <h2 className="text-xl md:text-2xl font-extrabold text-sky-900 mb-4">?낅뜲?댄듃 ?덈궡</h2>
+        <h2 className="text-xl md:text-2xl font-extrabold text-sky-900 mb-4">업데이트 안내</h2>
         <div className="space-y-2 text-sm md:text-base text-gray-700">
-          <p>?ъ슜???몄쓽??媛쒖꽑 ?ы빆???곸슜?섏뿀?듬땲??</p>
-          <p>??臾몄젣 ?ㅻ퉬寃뚯씠??1~60)?먯꽌 O / X / ? ?곹깭瑜?諛붾줈 ?뺤씤?????덉뒿?덈떎.</p>
-          <p>???ㅻ낫?쒕쭔?쇰줈 ??댄븷 ???덉뒿?덈떎: 1~4 ?좏깮, Enter/Space 吏꾪뻾.</p>
-          <p>???뺣떟 ?뺤씤/?ㅼ쓬 踰꾪듉??臾몄젣-?댁꽕 ?곸뿭 ?고븯?⑥쑝濡??대룞?덉뒿?덈떎.</p>
-          <p>??醫낅즺 ???꾩옱 ?먯닔? ????꾪솴???뺤씤?섍퀬 ?뚯감 ?좏깮?쇰줈 ?대룞?⑸땲??</p>
+          <p>사용자 편의성 개선 사항이 적용되었습니다.</p>
+          <p>문제 네비게이션(1~60)에서 O / X / ? 상태를 바로 확인할 수 있습니다.</p>
+          <p>키보드만으로 진행할 수 있습니다: 1~4 선택, Enter/Space 정답확인/다음.</p>
+          <p>정답확인/다음 버튼은 문제 컨테이너 오른쪽 아래로 이동했습니다.</p>
+          <p>종료 시 확인 후 현재 점수를 보여주고 회차 선택으로 이동합니다.</p>
         </div>
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
             className="px-5 py-2.5 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-700"
           >
-            ?뺤씤
+            확인
           </button>
         </div>
       </div>
@@ -647,6 +647,4 @@ function QuizResults({ session, results, onRetryWrong }) {
     </div>
   );
 }
-
-
 
