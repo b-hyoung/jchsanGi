@@ -63,7 +63,15 @@ function sessionLabel(sessionId) {
 }
 
 function fmtTime(ts) {
-  return String(ts || '').replace('T', ' ').slice(0, 19);
+  const raw = String(ts || '').trim();
+  if (!raw) return '-';
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw.replace('T', ' ').slice(5, 16);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${mm}월 ${dd}일 ${hh}시 ${mi}분`;
 }
 
 export default function AdminPage() {
@@ -81,6 +89,67 @@ export default function AdminPage() {
   const [detailError, setDetailError] = useState('');
   const [problemDetail, setProblemDetail] = useState(null);
   const [expandedReportGroups, setExpandedReportGroups] = useState({});
+  const [selectedReportGroups, setSelectedReportGroups] = useState({});
+  const [selectedReportItems, setSelectedReportItems] = useState({});
+  const [reportSortBy, setReportSortBy] = useState('count');
+  const [reportSortDir, setReportSortDir] = useState('desc');
+  const [detailSortState, setDetailSortState] = useState({});
+
+  const toggleReportSort = (column) => {
+    if (reportSortBy === column) {
+      setReportSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setReportSortBy(column);
+    setReportSortDir(column === 'session' ? 'asc' : 'desc');
+  };
+
+  const sortMark = (column) => {
+    if (reportSortBy !== column) return '↕';
+    return reportSortDir === 'asc' ? '▲' : '▼';
+  };
+
+  const toggleDetailSort = (groupKey, column) => {
+    setDetailSortState((prev) => {
+      const current = prev[groupKey] || { by: 'time', dir: 'desc' };
+      if (current.by === column) {
+        return {
+          ...prev,
+          [groupKey]: { ...current, dir: current.dir === 'asc' ? 'desc' : 'asc' },
+        };
+      }
+      return {
+        ...prev,
+        [groupKey]: { by: column, dir: column === 'problem' ? 'asc' : 'desc' },
+      };
+    });
+  };
+
+  const detailSortMark = (groupKey, column) => {
+    const current = detailSortState[groupKey] || { by: 'time', dir: 'desc' };
+    if (current.by !== column) return '↕';
+    return current.dir === 'asc' ? '▲' : '▼';
+  };
+
+  const getSortedDetailReports = (group) => {
+    const current = detailSortState[group.key] || { by: 'time', dir: 'desc' };
+    const dir = current.dir === 'asc' ? 1 : -1;
+    const arr = [...(group?.reports || [])];
+    arr.sort((a, b) => {
+      if (current.by === 'problem') {
+        const ap = Number(a?.problemNumber);
+        const bp = Number(b?.problemNumber);
+        const da = Number.isNaN(ap) ? 0 : ap;
+        const db = Number.isNaN(bp) ? 0 : bp;
+        const d = (da - db) * dir;
+        if (d !== 0) return d;
+      }
+      const t = String(a?.timestamp || '').localeCompare(String(b?.timestamp || '')) * dir;
+      if (t !== 0) return t;
+      return String(a?.reason || '').localeCompare(String(b?.reason || ''), 'ko');
+    });
+    return arr;
+  };
 
   const load = async () => {
     setLoading(true);
@@ -137,16 +206,50 @@ export default function AdminPage() {
       g.reports.push({ ...r, _idx: idx });
     });
 
-    return Array.from(map.values())
-      .map((g) => ({
-        ...g,
-        reports: g.reports.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || ''))),
-      }))
-      .sort((a, b) => {
-        if (b.count !== a.count) return b.count - a.count;
-        return String(b.latestTimestamp || '').localeCompare(String(a.latestTimestamp || ''));
-      });
+    return Array.from(map.values()).map((g) => ({
+      ...g,
+      reports: g.reports.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || ''))),
+    }));
   }, [metrics.recentReports]);
+
+  const sortedGroupedReports = useMemo(() => {
+    const dir = reportSortDir === 'asc' ? 1 : -1;
+    const arr = [...groupedReports];
+    arr.sort((a, b) => {
+      if (reportSortBy === 'count') {
+        const d = (a.count - b.count) * dir;
+        if (d !== 0) return d;
+      }
+      if (reportSortBy === 'latest') {
+        const d = String(a.latestTimestamp || '').localeCompare(String(b.latestTimestamp || '')) * dir;
+        if (d !== 0) return d;
+      }
+      if (reportSortBy === 'session') {
+        const d = String(sessionLabel(a.sourceSessionId)).localeCompare(String(sessionLabel(b.sourceSessionId)), 'ko') * dir;
+        if (d !== 0) return d;
+      }
+      if (b.count !== a.count) return (b.count - a.count);
+      return String(b.latestTimestamp || '').localeCompare(String(a.latestTimestamp || ''));
+    });
+    return arr;
+  }, [groupedReports, reportSortBy, reportSortDir]);
+
+  const allGroupKeys = useMemo(() => sortedGroupedReports.map((g) => g.key), [sortedGroupedReports]);
+  const selectedGroupKeys = useMemo(
+    () => allGroupKeys.filter((k) => selectedReportGroups[k]),
+    [allGroupKeys, selectedReportGroups]
+  );
+  const selectedReportIds = useMemo(() => {
+    const ids = [];
+    sortedGroupedReports.forEach((g) => {
+      if (!selectedReportGroups[g.key]) return;
+      g.reports.forEach((r) => {
+        if (r?.id) ids.push(String(r.id));
+      });
+    });
+    return [...new Set(ids)];
+  }, [sortedGroupedReports, selectedReportGroups]);
+  const isAllSelected = allGroupKeys.length > 0 && selectedGroupKeys.length === allGroupKeys.length;
 
   const handleUnlock = (e) => {
     e.preventDefault();
@@ -167,7 +270,32 @@ export default function AdminPage() {
   };
 
   const toggleReportGroup = (key) => {
-    setExpandedReportGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+    setExpandedReportGroups((prev) => {
+      const isOpen = Boolean(prev[key]);
+      if (isOpen) return {};
+      return { [key]: true };
+    });
+  };
+
+  const toggleSelectReportGroup = (key) => {
+    setSelectedReportGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleSelectAllReportGroups = () => {
+    if (isAllSelected) {
+      setSelectedReportGroups({});
+      return;
+    }
+    const next = {};
+    allGroupKeys.forEach((k) => {
+      next[k] = true;
+    });
+    setSelectedReportGroups(next);
+  };
+
+  const handleDeleteSelectedReports = async () => {
+    if (selectedReportIds.length === 0) return;
+    await handleDeleteByIds(selectedReportIds, `선택한 신고 ${selectedReportIds.length}건을 삭제할까요?`);
   };
 
   const openDetail = async (report) => {
@@ -198,6 +326,62 @@ export default function AdminPage() {
       setDetailError(`상세 조회 실패: ${String(e?.message || 'unknown error')}`);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const toggleSelectReportItem = (id) => {
+    const key = String(id || '').trim();
+    if (!key) return;
+    setSelectedReportItems((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const isAllItemsSelectedByGroup = (group) => {
+    const reports = group?.reports || [];
+    const validIds = reports
+      .map((r) => String(r?.id || '').trim())
+      .filter(Boolean);
+    if (validIds.length === 0) return false;
+    return validIds.every((id) => Boolean(selectedReportItems[id]));
+  };
+
+  const toggleSelectAllItemsByGroup = (group) => {
+    const reports = group?.reports || [];
+    const validIds = reports
+      .map((r) => String(r?.id || '').trim())
+      .filter(Boolean);
+    if (validIds.length === 0) return;
+
+    const shouldSelectAll = !isAllItemsSelectedByGroup(group);
+    setSelectedReportItems((prev) => {
+      const next = { ...prev };
+      validIds.forEach((id) => {
+        next[id] = shouldSelectAll;
+      });
+      return next;
+    });
+  };
+
+  const handleDeleteByIds = async (ids, confirmMessage = '선택한 신고를 삭제할까요?') => {
+    const uniqueIds = [...new Set((ids || []).map((x) => String(x).trim()).filter(Boolean))];
+    if (uniqueIds.length === 0) return;
+    const ok = window.confirm(confirmMessage);
+    if (!ok) return;
+
+    try {
+      const res = await fetch('/api/admin/reports', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: uniqueIds }),
+      });
+      if (!res.ok) throw new Error('failed');
+      await load();
+      setSelectedReportGroups({});
+      setSelectedReportItems({});
+      setExpandedReportGroups({});
+      closeDetail();
+      alert('선택한 신고가 삭제되었습니다.');
+    } catch {
+      alert('신고 삭제에 실패했습니다.');
     }
   };
 
@@ -323,79 +507,196 @@ export default function AdminPage() {
 
         {tab === 'reports' && (
           <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
-            <h2 className="font-bold text-slate-900 mb-3">신고 리스트 (클릭하면 상세 확인)</h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-bold text-slate-900">신고 리스트 (클릭하면 상세 확인)</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDeleteSelectedReports}
+                  disabled={selectedReportIds.length === 0}
+                  className="px-3 py-1.5 rounded-md border border-red-300 text-red-700 hover:bg-red-50 font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  선택 삭제
+                </button>
+              </div>
+            </div>
             {loading ? (
               <div className="text-slate-500">로딩 중...</div>
-            ) : groupedReports.length === 0 ? (
+            ) : sortedGroupedReports.length === 0 ? (
               <div className="text-slate-500">신고 내역이 없습니다.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200 text-left text-slate-600">
-                      <th className="py-2 pr-3">원본 회차</th>
+                    <tr className="border-b border-slate-300 text-left text-slate-700 bg-slate-50">
+                      <th className="py-2 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={toggleSelectAllReportGroups}
+                          aria-label="전체 선택"
+                        />
+                      </th>
+                      <th className="py-2 pr-3">
+                        <button
+                          onClick={() => toggleReportSort('session')}
+                          className="flex w-full items-center justify-between font-semibold hover:text-slate-900"
+                        >
+                          <span>원본 회차</span>
+                          <span>{sortMark('session')}</span>
+                        </button>
+                      </th>
                       <th className="py-2 pr-3">원본 문항</th>
-                      <th className="py-2 pr-3">신고 수</th>
-                      <th className="py-2 pr-3">최근 신고</th>
+                      <th className="py-2 pr-3">
+                        <button
+                          onClick={() => toggleReportSort('count')}
+                          className="flex w-full items-center justify-between font-semibold hover:text-slate-900"
+                        >
+                          <span>신고 수</span>
+                          <span>{sortMark('count')}</span>
+                        </button>
+                      </th>
+                      <th className="py-2 pr-3">
+                        <button
+                          onClick={() => toggleReportSort('latest')}
+                          className="flex w-full items-center justify-between font-semibold hover:text-slate-900"
+                        >
+                          <span>최근 신고</span>
+                          <span>{sortMark('latest')}</span>
+                        </button>
+                      </th>
                       <th className="py-2 pr-3">회차</th>
                       <th className="py-2">문제 요약</th>
-                      <th className="py-2 pr-3">상세보기</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {groupedReports.map((g) => {
+                    {sortedGroupedReports.map((g, gi) => {
                       const isOpen = Boolean(expandedReportGroups[g.key]);
                       const firstReport = g.reports[0];
                       return (
                         <Fragment key={g.key}>
-                          <tr
-                            key={g.key}
-                            className="border-b border-slate-100 align-top hover:bg-slate-50 cursor-pointer"
-                            onClick={() => openDetail(firstReport)}
-                          >
-                            <td className="py-2 pr-3 whitespace-nowrap">{sessionLabel(g.sourceSessionId)}</td>
-                            <td className="py-2 pr-3 whitespace-nowrap">{g.sourceProblemNumber}</td>
-                            <td className="py-2 pr-3 whitespace-nowrap font-semibold text-slate-900">{g.count}</td>
-                            <td className="py-2 pr-3 whitespace-nowrap">{fmtTime(g.latestTimestamp)}</td>
-                            <td className="py-2 pr-3 whitespace-nowrap">{sessionLabel(firstReport?.sessionId || '-')}</td>
-                            <td className="py-2">{g.questionText || '-'}</td>
-                            <td className="py-2 pr-3 whitespace-nowrap">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleReportGroup(g.key);
-                                }}
-                                className="h-8 w-8 rounded-md border border-slate-300 hover:bg-slate-50 font-semibold inline-flex items-center justify-center"
-                                aria-label={isOpen ? '접기' : '펼치기'}
-                                title={isOpen ? '접기' : '펼치기'}
-                              >
-                                {'▾'}
-                              </button>
+                          <tr key={g.key} className="align-top cursor-pointer" onClick={() => toggleReportGroup(g.key)}>
+                            <td
+                              className={`py-2 pr-2 whitespace-nowrap border-l border-slate-200 ${
+                                isOpen
+                                  ? 'bg-sky-50 border-t rounded-tl-lg'
+                                  : 'bg-white border-y rounded-l-lg'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={Boolean(selectedReportGroups[g.key])}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={() => toggleSelectReportGroup(g.key)}
+                                aria-label={`선택 ${g.sourceSessionId}-${g.sourceProblemNumber}`}
+                              />
                             </td>
+                            <td
+                              className={`py-2 pr-3 whitespace-nowrap border-slate-200 ${
+                                isOpen ? 'bg-sky-50 border-t' : 'bg-white border-y'
+                              }`}
+                            >
+                              {sessionLabel(g.sourceSessionId)}
+                            </td>
+                            <td
+                              className={`py-2 pr-3 whitespace-nowrap border-slate-200 ${
+                                isOpen ? 'bg-sky-50 border-t' : 'bg-white border-y'
+                              }`}
+                            >
+                              {g.sourceProblemNumber}
+                            </td>
+                            <td
+                              className={`py-2 pr-3 whitespace-nowrap font-semibold text-slate-900 border-slate-200 ${
+                                isOpen ? 'bg-sky-50 border-t' : 'bg-white border-y'
+                              }`}
+                            >
+                              {g.count}
+                            </td>
+                            <td
+                              className={`py-2 pr-3 whitespace-nowrap border-slate-200 ${
+                                isOpen ? 'bg-sky-50 border-t' : 'bg-white border-y'
+                              }`}
+                            >
+                              {fmtTime(g.latestTimestamp)}
+                            </td>
+                            <td
+                              className={`py-2 pr-3 whitespace-nowrap border-slate-200 ${
+                                isOpen ? 'bg-sky-50 border-t' : 'bg-white border-y'
+                              }`}
+                            >
+                              {sessionLabel(firstReport?.sessionId || '-')}
+                            </td>
+                            <td
+                              className={`py-2 pr-3 border-r border-slate-200 ${
+                                isOpen
+                                  ? 'bg-sky-50 border-t rounded-tr-lg'
+                                  : 'bg-white border-y rounded-r-lg'
+                              }`}
+                            >
+                              {g.questionText || '-'}
+                            </td>
+                            
                           </tr>
                           {isOpen && (
-                            <tr className="border-b border-slate-100 bg-slate-50/50">
-                              <td colSpan={7} className="py-3 pl-6 pr-3">
-                                <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                  <p className="text-xs font-semibold text-slate-500 mb-2">개별 신고 이력</p>
-                                  <div className="overflow-x-auto">
+                            <tr className="bg-sky-50/40">
+                              <td colSpan={7} className="pb-3 pl-6 pr-3 border-x border-b border-slate-200 rounded-b-lg">
+                                <div className="rounded-lg bg-white p-3">
+                                  <div className="mb-2 flex items-center justify-between gap-2">
+                                    <p className="text-xs font-semibold text-slate-600">개별 신고 이력</p>
+                                    <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 border border-sky-200">
+                                      {g.reports.length}건
+                                    </span>
+                                  </div>
+                                  <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-md">
                                     <table className="min-w-full text-xs">
                                       <thead>
-                                        <tr className="border-b border-slate-200 text-left text-slate-500">
-                                          <th className="py-1 pr-2">시간</th>
+                                        <tr className="border-b border-slate-200 text-left text-slate-600 bg-white">
+                                          <th className="py-1 pr-2">
+                                            <label className="inline-flex items-center gap-1">
+                                              <input
+                                                type="checkbox"
+                                                checked={isAllItemsSelectedByGroup(g)}
+                                                onChange={() => toggleSelectAllItemsByGroup(g)}
+                                                aria-label="상세 전체 선택"
+                                              />
+                                              <span>전체</span>
+                                            </label>
+                                          </th>
+                                          <th className="py-1 pr-2">
+                                            <button
+                                              onClick={() => toggleDetailSort(g.key, 'time')}
+                                              className="flex w-full items-center justify-between font-semibold hover:text-slate-900"
+                                            >
+                                              <span>시간</span>
+                                              <span>{detailSortMark(g.key, 'time')}</span>
+                                            </button>
+                                          </th>
                                           <th className="py-1 pr-2">회차</th>
-                                          <th className="py-1 pr-2">문항</th>
+                                          <th className="py-1 pr-2">
+                                            <button
+                                              onClick={() => toggleDetailSort(g.key, 'problem')}
+                                              className="flex w-full items-center justify-between font-semibold hover:text-slate-900"
+                                            >
+                                              <span>문항</span>
+                                              <span>{detailSortMark(g.key, 'problem')}</span>
+                                            </button>
+                                          </th>
                                           <th className="py-1 pr-2">사유</th>
                                           <th className="py-1">상세</th>
                                         </tr>
                                       </thead>
                                       <tbody>
-                                        {g.reports.map((r, i) => (
-                                          <tr
-                                            key={`${g.key}:${r.timestamp}:${i}`}
-                                            className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => openDetail(r)}
-                                          >
+                                        {getSortedDetailReports(g).map((r, i) => (
+                                          <tr key={`${g.key}:${r.timestamp}:${i}`} className="cursor-pointer bg-white hover:bg-slate-50" onClick={() => openDetail(r)}>
+                                            <td className="py-1 pr-2 whitespace-nowrap">
+                                              <input
+                                                type="checkbox"
+                                                checked={Boolean(r?.id && selectedReportItems[String(r.id)])}
+                                                disabled={!r?.id}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onChange={() => toggleSelectReportItem(r?.id)}
+                                                aria-label={`선택 ${r?.id || i}`}
+                                              />
+                                            </td>
                                             <td className="py-1 pr-2 whitespace-nowrap">{fmtTime(r.timestamp)}</td>
                                             <td className="py-1 pr-2 whitespace-nowrap">{sessionLabel(r.sessionId)}</td>
                                             <td className="py-1 pr-2 whitespace-nowrap">{r.problemNumber}</td>
@@ -420,6 +721,9 @@ export default function AdminPage() {
                               </td>
                             </tr>
                           )}
+                          <tr aria-hidden className="h-3 bg-white">
+                            <td colSpan={7} />
+                          </tr>
                         </Fragment>
                       );
                     })}
