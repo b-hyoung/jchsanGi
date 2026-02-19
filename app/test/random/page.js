@@ -81,6 +81,7 @@ async function readSessionData(source) {
     problem_number: p.problem_number,
     question_text: p.question_text,
     options: p.options,
+    examples: p.examples || null,
     answer_text: answersMap[p.problem_number],
     comment_text: commentsMap[p.problem_number] ?? '',
   }));

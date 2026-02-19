@@ -74,13 +74,14 @@
       },
       {
         "problem_number": 8,
-        "question_text": "FIFO 스케줄링에서 작업 도착 시간과 CPU 사용 시간은 다음 표와 같다. 모든 작업들의 평균 대기 시간은 얼마인가? 작업 도착 시간 CPU 사용시간 1 0 4 2 1 10 3 4 1 4 8 7",
+        "question_text": "FIFO 스케줄링에서 작업 도착 시간과 CPU 사용 시간은 다음 표와 같다. 모든 작업들의 평균 대기 시간은 얼마인가?",
         "options": [
           "5",
           "5.5",
           "13.75",
           "3.25"
-        ]
+        ],
+        "examples": "작업|도착 시간|CPU 사용시간\n1|0|4\n2|1|10\n3|4|1\n4|8|7"
       },
       {
         "problem_number": 9,
@@ -264,7 +265,7 @@
           "-do,-while",
           "-while,-do",
           "-do, -loop",
-          "④-loop,-do"
+          "-loop,-do"
         ]
       },
       {
@@ -331,7 +332,7 @@
         "problem_number": 33,
         "question_text": "JavaScript에서 다음 그림과 같은 창을 띄우기 위해 사용한 명령어로 옳은 것은? 이 페이지 내용: title default 확인 취소",
         "options": [
-          "①alert(\"title\", \"default\")",
+          "alert(\"title\", \"default\")",
           "prompt(\"title\", \"default\")",
           "alert(\"default\", \"title\")",
           "prompt(\"default\", \"title\")"
@@ -426,10 +427,10 @@
         "problem_number": 42,
         "question_text": "다음 중 교차곱을 의미하는 기호는?",
         "options": [
-          "U",
+          "∪",
           "∩",
-          " ",
-          "X"
+          "-",
+          "×"
         ]
       },
       {

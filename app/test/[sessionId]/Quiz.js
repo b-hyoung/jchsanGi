@@ -528,6 +528,48 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
               {currentProblem.problem_number}. {currentProblem.question_text}
             </h2>
 
+            {currentProblem.examples && (
+              <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 overflow-hidden">
+                <div className="px-4 py-2 bg-sky-100 border-b border-sky-200">
+                  <span className="text-sm font-bold text-sky-800">보기</span>
+                </div>
+                <div className="p-4">
+                  {(() => {
+                    const lines = currentProblem.examples.split('\n');
+                    const nonEmpty = lines.filter((l) => l.trim());
+                    const isTable = nonEmpty.length > 1 && nonEmpty.every((l) => l.includes('|'));
+                    if (!isTable) {
+                      return <p className="text-gray-800 whitespace-pre-wrap leading-relaxed font-mono text-sm">{currentProblem.examples}</p>;
+                    }
+                    const tables = currentProblem.examples.split('\n\n').filter(Boolean);
+                    return (
+                      <div className="space-y-3">
+                        {tables.map((tbl, ti) => (
+                          <table key={ti} className="w-full text-sm border-collapse">
+                            <tbody>
+                              {tbl.split('\n').filter(Boolean).map((row, ri) => {
+                                const cells = row.split('|').map((c) => c.trim());
+                                const Tag = ri === 0 ? 'th' : 'td';
+                                return (
+                                  <tr key={ri} className={ri === 0 ? 'bg-sky-100' : ri % 2 === 0 ? 'bg-sky-50' : 'bg-white'}>
+                                    {cells.map((cell, ci) => (
+                                      <Tag key={ci} className="border border-sky-200 px-3 py-2 text-center text-gray-800 font-medium">
+                                        {cell}
+                                      </Tag>
+                                    ))}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               {currentProblem.options.map((option, index) => {
                 let buttonClass = 'bg-white hover:bg-indigo-50 border-indigo-200 text-gray-800';
