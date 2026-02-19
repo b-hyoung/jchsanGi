@@ -43,6 +43,7 @@ const T = {
 const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
 const REPORT_TIP_NOTICE_KEY = 'report_tip_notice_2026_02_once';
 const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
+const GPT_MAX_TURNS = 2;
 
 export default function Quiz({ problems, session, answersMap, commentsMap, sessionId, initialProblemNumber = null }) {
   const router = useRouter();
@@ -65,7 +66,44 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const [reportReason, setReportReason] = useState('');
   const [reportEtcText, setReportEtcText] = useState('');
   const [reportedProblems, setReportedProblems] = useState({});
+  const [showGptHelp, setShowGptHelp] = useState(false);
+  const [gptQuestion, setGptQuestion] = useState('');
+  const [gptMessages, setGptMessages] = useState([]);
+  const [gptChatOpen, setGptChatOpen] = useState(false);
+  const [gptLoading, setGptLoading] = useState(false);
+  const [gptError, setGptError] = useState('');
+  const [gptUsedProblems, setGptUsedProblems] = useState({});
+  const [gptConversationsByProblem, setGptConversationsByProblem] = useState({});
   const [initialJumpApplied, setInitialJumpApplied] = useState(false);
+  const gptStateStorageKey = `gpt_objection_state_${sessionId}`;
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(gptStateStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.usedProblems && typeof parsed.usedProblems === 'object') {
+          setGptUsedProblems(parsed.usedProblems);
+        }
+        if (parsed.conversations && typeof parsed.conversations === 'object') {
+          setGptConversationsByProblem(parsed.conversations);
+        }
+      }
+    } catch {}
+  }, [gptStateStorageKey]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        gptStateStorageKey,
+        JSON.stringify({
+          usedProblems: gptUsedProblems,
+          conversations: gptConversationsByProblem,
+        })
+      );
+    } catch {}
+  }, [gptConversationsByProblem, gptStateStorageKey, gptUsedProblems]);
 
   useEffect(() => {
     try {
@@ -212,6 +250,13 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
 
   const currentProblem = quizProblems[currentProblemIndex] ?? null;
   const currentProblemNumber = currentProblem?.problem_number;
+  const getGptProblemKey = (problem) => {
+    if (!problem) return '';
+    const srcSession = String(problem.originSessionId || sessionId || 'unknown');
+    const srcNumber = String(problem.originProblemNumber || problem.problem_number || '0');
+    return `${srcSession}:${srcNumber}`;
+  };
+  const currentGptProblemKey = getGptProblemKey(currentProblem);
   const isChecked = currentProblemNumber ? checkedProblems[currentProblemNumber] : false;
   const selectedAnswer = currentProblemNumber ? answers[currentProblemNumber] : null;
   const correctAnswer = currentProblemNumber && answersMap ? answersMap[currentProblemNumber] : null;
@@ -358,10 +403,89 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
     setReportEtcText('');
   };
 
+  const handleAskGptObjection = async () => {
+    if (!currentProblem) return;
+    const problemKey = getGptProblemKey(currentProblem);
+    const userTurns = gptMessages.filter((m) => m.role === 'user').length;
+    if (userTurns >= GPT_MAX_TURNS) {
+      setGptError(`대화는 최대 ${GPT_MAX_TURNS}번까지 가능합니다.`);
+      return;
+    }
+    if (userTurns === 0) {
+      setGptUsedProblems((prev) => ({ ...prev, [problemKey]: true }));
+    }
+
+    const userText = (gptQuestion || '이게 왜 답인지 모르겠음 난 해설보고도 이해안감').trim();
+    if (!userText) return;
+
+    const nextMessages = [...gptMessages, { role: 'user', content: userText }];
+    setGptMessages(nextMessages);
+    setGptConversationsByProblem((prev) => ({
+      ...prev,
+      [problemKey]: nextMessages,
+    }));
+    setGptQuestion('');
+
+    try {
+      setGptLoading(true);
+      setGptError('');
+
+      const res = await fetch('/api/gpt/objection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceSessionId: currentProblem.originSessionId || sessionId,
+          sourceProblemNumber: currentProblem.originProblemNumber || currentProblem.problem_number,
+          questionText: currentProblem.question_text || '',
+          options: Array.isArray(currentProblem.options) ? currentProblem.options : [],
+          selectedAnswer: selectedAnswer || '',
+          correctAnswer: correctAnswer || '',
+          explanationText: explanationText || '',
+          history: nextMessages,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.message || 'GPT 요청 실패');
+      }
+
+      const assistantText = String(data.answer || '답변이 비어 있습니다.');
+      const finalMessages = [
+        ...nextMessages,
+        {
+          role: 'assistant',
+          content: assistantText,
+          cached: !!data.cached,
+        },
+      ];
+      setGptMessages(finalMessages);
+      setGptConversationsByProblem((prev) => ({
+        ...prev,
+        [problemKey]: finalMessages,
+      }));
+      setGptChatOpen(true);
+    } catch (e) {
+      setGptError(String(e?.message || e));
+    } finally {
+      setGptLoading(false);
+    }
+  };
+
   useEffect(() => {
     setReportReason('');
     setReportEtcText('');
-  }, [currentProblemNumber]);
+    setShowGptHelp(false);
+    setGptQuestion('');
+    const savedMessages =
+      currentGptProblemKey && Array.isArray(gptConversationsByProblem[currentGptProblemKey])
+        ? gptConversationsByProblem[currentGptProblemKey]
+        : [];
+    setGptMessages(savedMessages);
+    setGptChatOpen(false);
+    setGptError('');
+    setGptLoading(false);
+  }, [currentGptProblemKey]);
 
   const goToPreviousProblem = () => {
     if (currentProblemIndex > 0) setCurrentProblemIndex(currentProblemIndex - 1);
@@ -415,6 +539,24 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   if (!currentProblem) {
     return <div>{T.loadFail}</div>;
   }
+  const isGptUsedForCurrent = !!gptUsedProblems[currentGptProblemKey];
+  const savedGptMessagesForCurrent = Array.isArray(gptConversationsByProblem[currentGptProblemKey])
+    ? gptConversationsByProblem[currentGptProblemKey]
+    : [];
+  const hasSavedGptForCurrent = savedGptMessagesForCurrent.length > 0;
+  const hasAssistantReplyForCurrent = savedGptMessagesForCurrent.some((m) => m?.role === 'assistant');
+
+  const handleOpenGptView = () => {
+    if (hasAssistantReplyForCurrent) {
+      if (gptMessages.length === 0) {
+        setGptMessages(savedGptMessagesForCurrent);
+      }
+      setShowGptHelp(false);
+      setGptChatOpen(true);
+      return;
+    }
+    setShowGptHelp(true);
+  };
 
   const getStatusClass = (status) => {
     if (status === 'O') return 'bg-green-100 text-green-700 border-green-300';
@@ -1312,6 +1454,66 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
                     {formatExplanation(explanationText)}
                   </p>
                 )}
+
+                <div className="mt-4 border-t pt-4">
+                  <button
+                    type="button"
+                    onClick={handleOpenGptView}
+                    className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700 disabled:bg-sky-300 disabled:cursor-not-allowed"
+                  >
+                    GPT 해설보기
+                  </button>
+                  {isGptUsedForCurrent && !hasAssistantReplyForCurrent && (
+                    <p className="mt-2 text-xs font-semibold text-gray-600">
+                      이 문제의 GPT 이의신청은 1회만 가능합니다.
+                    </p>
+                  )}
+
+                  {showGptHelp && (
+                    <div className="mt-3 space-y-3 rounded-lg border border-sky-200 bg-white p-3">
+                      <textarea
+                        value={gptQuestion}
+                        onChange={(e) => setGptQuestion(e.target.value)}
+                        placeholder="추가로 궁금한 점을 적어주세요. (선택)"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-sky-500"
+                        rows={3}
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleAskGptObjection}
+                          disabled={gptLoading || gptMessages.filter((m) => m.role === 'user').length >= GPT_MAX_TURNS}
+                          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed"
+                        >
+                          {gptLoading ? 'GPT 답변 생성 중...' : 'GPT에게 물어보기'}
+                        </button>
+                      </div>
+
+                      {gptError && (
+                        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                          {gptError}
+                        </p>
+                      )}
+
+                      {(gptMessages.length > 0 || hasSavedGptForCurrent) && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (gptMessages.length === 0 && hasSavedGptForCurrent) {
+                                setGptMessages(savedGptMessagesForCurrent);
+                              }
+                              setGptChatOpen(true);
+                            }}
+                            className="rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-800 hover:bg-sky-100"
+                          >
+                            GPT 설명 보기
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1393,6 +1595,88 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
                 ? `${reportTipCountdown}초 후 닫힙니다.`
                 : '잠시 후 자동으로 닫힙니다.'}
             </p>
+          </div>
+        </div>
+      )}
+
+      {gptChatOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+          onClick={() => setGptChatOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-4 md:p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between border-b border-gray-200 pb-2">
+              <h3 className="text-base md:text-lg font-extrabold text-sky-900">GPT 이의신청 대화</h3>
+              <button
+                type="button"
+                onClick={() => setGptChatOpen(false)}
+                className="rounded-md px-3 py-1 text-sm font-bold text-gray-600 hover:bg-gray-100"
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="max-h-[48vh] overflow-y-auto space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              {gptMessages.length === 0 ? (
+                <p className="text-sm text-gray-500">아직 대화가 없습니다.</p>
+              ) : (
+                gptMessages.map((m, idx) => (
+                  <div
+                    key={`${m.role}-${idx}`}
+                    className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap leading-relaxed ${
+                      m.role === 'user'
+                        ? 'ml-8 bg-indigo-100 text-indigo-900'
+                        : 'mr-8 bg-white border border-gray-200 text-gray-800'
+                    }`}
+                  >
+                    <p className="mb-1 text-xs font-bold opacity-70">{m.role === 'user' ? '나' : 'GPT'}</p>
+                    <p>{m.content}</p>
+                    {m.role === 'assistant' && m.cached && (
+                      <p className="mt-1 text-[11px] font-semibold text-emerald-700">
+                        이전에 나눈 대화를 통한 해석(캐시)
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-3">
+              <p className="mb-2 text-xs font-semibold text-gray-600">
+                대화 {gptMessages.filter((m) => m.role === 'user').length} / {GPT_MAX_TURNS}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={gptQuestion}
+                  onChange={(e) => setGptQuestion(e.target.value)}
+                  placeholder="추가 질문 입력"
+                  className="flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAskGptObjection}
+                  disabled={gptLoading || gptMessages.filter((m) => m.role === 'user').length >= GPT_MAX_TURNS}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed"
+                >
+                  {gptLoading ? '생성 중...' : '전송'}
+                </button>
+              </div>
+              {gptError && <p className="mt-2 text-xs font-semibold text-red-600">{gptError}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gptLoading && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-indigo-200 bg-white/95 p-5 text-center shadow-2xl backdrop-blur-sm">
+            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+            <p className="text-base font-bold text-indigo-900">GPT 해설 생성 중...</p>
+            <p className="mt-1 text-sm text-gray-600">잠시만 기다려주세요.</p>
           </div>
         </div>
       )}
