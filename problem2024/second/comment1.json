@@ -12,7 +12,7 @@
       },
       {
         "problem_number": 3,
-        "comment": "객체 다이어그램(Object Diagram)은 클래스에 속한 사물 (객체)들, 즉 인스턴스(Instance)를 특정 시점의 객체와 객 체 사이의 관계로 표현합니다. •③번은 클래스 다이어그램(Class Diagram)에 대한 설명입 니다."
+        "comment": "객체 다이어그램(Object Diagram)은 클래스에 속한 사물 (객체)들, 즉 인스턴스(Instance)를 특정 시점의 객체와 객 체 사이의 관계로 표현합니다. •4번은 클래스 다이어그램(Class Diagram)에 대한 설명입 니다."
       },
       {
         "problem_number": 4,
@@ -182,7 +182,7 @@
       },
       {
         "problem_number": 43,
-        "comment": "②,③, ④번은 물리적 설계 단계에서 수행하는 작업입니다."
+        "comment": "②,③,④번은 물리적 설계 단계에서 수행하는 작업입니다."
       },
       {
         "problem_number": 44,

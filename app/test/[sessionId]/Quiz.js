@@ -35,7 +35,7 @@ const T = {
   fail: '불합격입니다!',
   subject: '과목',
   qCount: '문제',
-  avoidFail: '과락 면함',
+  avoidFail: '통과',
   failSubject: '과락',
   chooseOther: '다른 회차 선택',
 };
@@ -116,9 +116,20 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   };
 
   const handleSubmitQuiz = () => {
+    const isRetryMode = quizProblems.length !== allProblems.length;
     const mergedAnswers = { ...accumulatedAnswers, ...answers };
     let totalCorrect = 0;
+    let currentSetCorrect = 0;
+    const currentSetTotal = quizProblems.length;
     const subjectCorrectCounts = { 1: 0, 2: 0, 3: 0 };
+    const subjectTotalCounts = { 1: 0, 2: 0, 3: 0 };
+
+    quizProblems.forEach((problem) => {
+      const problemNum = parseInt(problem.problem_number, 10);
+      if (problemNum >= 1 && problemNum <= 20) subjectTotalCounts[1]++;
+      else if (problemNum >= 21 && problemNum <= 40) subjectTotalCounts[2]++;
+      else if (problemNum >= 41 && problemNum <= 60) subjectTotalCounts[3]++;
+    });
 
     allProblems.forEach((problem) => {
       const problemNum = parseInt(problem.problem_number, 10);
@@ -133,10 +144,16 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       }
     });
 
+    quizProblems.forEach((problem) => {
+      const userAnswer = mergedAnswers[problem.problem_number];
+      const correctAnswer = answersMap[problem.problem_number];
+      if (userAnswer === correctAnswer) currentSetCorrect++;
+    });
+
     const subjectPassFail = {
-      1: subjectCorrectCounts[1] >= 13,
-      2: subjectCorrectCounts[2] >= 13,
-      3: subjectCorrectCounts[3] >= 13,
+      1: subjectCorrectCounts[1] >= 8,
+      2: subjectCorrectCounts[2] >= 8,
+      3: subjectCorrectCounts[3] >= 8,
     };
     const isOverallPass = totalCorrect >= 36 && subjectPassFail[1] && subjectPassFail[2] && subjectPassFail[3];
 
@@ -149,6 +166,9 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
         wrongCount: allProblems.length - totalCorrect,
         subjectCorrectCounts,
         isOverallPass,
+        isRetryMode,
+        currentSetCorrect,
+        currentSetTotal,
         completionScope: quizProblems.length,
         completionTotal: allProblems.length,
       },
@@ -157,8 +177,12 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       totalCorrect,
       wrongCount: allProblems.length - totalCorrect,
       subjectCorrectCounts,
+      subjectTotalCounts,
       subjectPassFail,
       isOverallPass,
+      isRetryMode,
+      currentSetCorrect,
+      currentSetTotal,
     });
     setQuizCompleted(true);
   };
@@ -629,12 +653,18 @@ function TestLobby({ session, onStart, problemCount }) {
 }
 
 function QuizResults({ session, results, onRetryWrong }) {
-  const { totalCorrect, wrongCount, subjectCorrectCounts, subjectPassFail, isOverallPass } = results;
-  const [showFailModal, setShowFailModal] = useState(!isOverallPass);
-
-  useEffect(() => {
-    setShowFailModal(!isOverallPass);
-  }, [isOverallPass]);
+  const {
+    totalCorrect,
+    wrongCount,
+    subjectCorrectCounts,
+    subjectTotalCounts,
+    subjectPassFail,
+    isOverallPass,
+    isRetryMode,
+    currentSetCorrect,
+    currentSetTotal,
+  } = results;
+  const [showFailModal, setShowFailModal] = useState(!isRetryMode && !isOverallPass);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
@@ -644,9 +674,14 @@ function QuizResults({ session, results, onRetryWrong }) {
           {T.backToSession}
         </Link>
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200/50">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title} 결과</h1>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-2">{session.title}</h1>
+          {isRetryMode && (
+            <p className="text-base md:text-lg font-semibold text-indigo-700 mb-2">오답 재풀이 결과</p>
+          )}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">{T.score}: {totalCorrect} / 60</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              {T.score}: {totalCorrect} / 60
+            </h2>
             <p className={`text-3xl font-extrabold ${isOverallPass ? 'text-green-600' : 'text-red-600'}`}>
               {isOverallPass ? T.pass : T.fail}
             </p>
@@ -658,7 +693,9 @@ function QuizResults({ session, results, onRetryWrong }) {
                 className={`p-4 rounded-lg border-2 ${subjectPassFail[subjectNum] ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'}`}
               >
                 <p className="font-semibold text-gray-700">{T.subject} {subjectNum}</p>
-                <p className="text-xl font-bold text-gray-900">{subjectCorrectCounts[subjectNum]} / 20 {T.qCount}</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {subjectCorrectCounts[subjectNum]} / {subjectTotalCounts?.[subjectNum] ?? 20} {T.qCount}
+                </p>
                 <p className={`font-semibold ${subjectPassFail[subjectNum] ? 'text-green-600' : 'text-red-600'}`}>
                   {subjectPassFail[subjectNum] ? T.avoidFail : T.failSubject}
                 </p>
@@ -682,7 +719,7 @@ function QuizResults({ session, results, onRetryWrong }) {
           </Link>
         </div>
       </div>
-      {!isOverallPass && showFailModal && (
+      {!isRetryMode && !isOverallPass && showFailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 text-center">
             <p className="text-lg font-bold text-gray-800 mb-5">이터널 리턴.. 조금만 할까?</p>
