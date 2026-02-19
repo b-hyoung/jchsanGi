@@ -1,16 +1,17 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { trackEvent } from '@/lib/analyticsClient';
 
 const T = {
   loadFail: '문제를 불러오는 데 실패했습니다.',
   needSelect: '답을 선택해주세요.',
   problem: '문제',
   settings: '해설 설정',
-  showCorrect: '정답을 맞췄을 때 해설 보기',
+  showCorrect: '정답일 때 해설 보기',
   showWrong: '오답일 때 해설 보기',
   end: '종료',
   navTitle: '문제 네비게이션',
@@ -40,8 +41,9 @@ const T = {
 };
 
 const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
+const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
 
-export default function Quiz({ problems, session, answersMap, commentsMap }) {
+export default function Quiz({ problems, session, answersMap, commentsMap, sessionId }) {
   const router = useRouter();
   const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
@@ -57,6 +59,8 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
   const [showExplanationWhenIncorrect, setShowExplanationWhenIncorrect] = useState(true);
   const [showUpdateNotice, setShowUpdateNotice] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportEtcText, setReportEtcText] = useState('');
 
   useEffect(() => {
     try {
@@ -67,11 +71,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
     }
   }, []);
 
-  if (!quizProblems || quizProblems.length === 0) {
-    return <div>{T.loadFail}</div>;
-  }
-
-  const handleStartQuiz = () => setIsStarted(true);
+  const handleStartQuiz = () => {
+    setIsStarted(true);
+    trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
+  };
 
   const handleSelectOption = (problemNumber, option) => {
     if (checkedProblems[problemNumber]) return;
@@ -104,6 +107,18 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
     const isOverallPass = totalCorrect >= 36 && subjectPassFail[1] && subjectPassFail[2] && subjectPassFail[3];
 
     setAccumulatedAnswers(mergedAnswers);
+    trackEvent('finish_exam', {
+      sessionId,
+      path: `/test/${sessionId}`,
+      payload: {
+        totalCorrect,
+        wrongCount: allProblems.length - totalCorrect,
+        subjectCorrectCounts,
+        isOverallPass,
+        completionScope: quizProblems.length,
+        completionTotal: allProblems.length,
+      },
+    });
     setQuizResults({
       totalCorrect,
       wrongCount: allProblems.length - totalCorrect,
@@ -114,14 +129,40 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
     setQuizCompleted(true);
   };
 
-  const currentProblem = quizProblems[currentProblemIndex];
-  const isChecked = checkedProblems[currentProblem.problem_number];
-  const selectedAnswer = answers[currentProblem.problem_number];
-  const correctAnswer = answersMap ? answersMap[currentProblem.problem_number] : null;
+  const currentProblem = quizProblems[currentProblemIndex] ?? null;
+  const currentProblemNumber = currentProblem?.problem_number;
+  const isChecked = currentProblemNumber ? checkedProblems[currentProblemNumber] : false;
+  const selectedAnswer = currentProblemNumber ? answers[currentProblemNumber] : null;
+  const correctAnswer = currentProblemNumber && answersMap ? answersMap[currentProblemNumber] : null;
   const isCorrect = selectedAnswer === correctAnswer;
-  const correctAnswerIndex = currentProblem.options.indexOf(correctAnswer);
+  const correctAnswerIndex = currentProblem ? currentProblem.options.indexOf(correctAnswer) : -1;
   const showResult = isChecked;
   const shouldShowExplanation = showResult && ((isCorrect && showExplanationWhenCorrect) || (!isCorrect && showExplanationWhenIncorrect));
+  const explanationText =
+    currentProblemNumber && commentsMap ? commentsMap[currentProblemNumber] : '';
+
+  const formatExplanation = (text) => {
+    if (!text) return '';
+
+    return text
+      .replace(/\r\n?/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\u00A0/g, ' ')
+      // 헤더/구분선 앞뒤 정리
+      .replace(/\s*(={3,})\s*/g, '\n\n')
+      // 숫자 목록(1) / 1. / 1) 형태 줄바꿈
+      .replace(/\s+(\d+[\)\.]\s)/g, '\n')
+      // 불릿(-, *, •) 줄바꿈
+      .replace(/\s+([\-\*•]\s+)/g, '\n')
+      // 문장 단위 줄바꿈(. ! ? 뒤 공백 기준)
+      .replace(/([.!?])\s+(?=[^\d])/g, '$1\n')
+      // 콜론 라벨은 줄 유지
+      .replace(/\s*:\s*/g, ': ')
+      // 과도한 공백/빈줄 정리
+      .replace(/[\t ]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
 
   useEffect(() => {
     if (!isStarted || quizCompleted) return;
@@ -133,7 +174,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
       if (isEditable) return;
 
       if (['1', '2', '3', '4'].includes(e.key)) {
-        if (isChecked) return;
+        if (!currentProblem || isChecked) return;
         const idx = Number(e.key) - 1;
         const option = currentProblem.options[idx];
         if (!option) return;
@@ -170,18 +211,45 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   ]);
 
   const handleNextClick = () => {
+    if (!currentProblem) return;
     if (!isChecked) {
       if (!selectedAnswer) {
         alert(T.needSelect);
         return;
       }
-      setCheckedProblems((prev) => ({ ...prev, [currentProblem.problem_number]: true }));
+      setCheckedProblems((prev) => ({ ...prev, [currentProblemNumber]: true }));
       return;
     }
     if (currentProblemIndex < quizProblems.length - 1) {
       setCurrentProblemIndex(currentProblemIndex + 1);
     }
   };
+
+  const handleReportProblem = async () => {
+    if (!currentProblem || !reportReason) return;
+    if (reportReason === '기타' && !reportEtcText.trim()) {
+      alert('기타 사유를 입력해주세요.');
+      return;
+    }
+    const finalReason = reportReason === '기타' ? `기타: ${reportEtcText.trim()}` : reportReason;
+    await trackEvent('report_problem', {
+      sessionId,
+      path: `/test/${sessionId}`,
+      payload: {
+        problemNumber: currentProblem.problem_number,
+        reason: finalReason,
+        questionText: String(currentProblem.question_text || '').slice(0, 150),
+      },
+    });
+    alert('신고가 접수되었습니다.');
+    setReportReason('');
+    setReportEtcText('');
+  };
+
+  useEffect(() => {
+    setReportReason('');
+    setReportEtcText('');
+  }, [currentProblemNumber]);
 
   const goToPreviousProblem = () => {
     if (currentProblemIndex > 0) setCurrentProblemIndex(currentProblemIndex - 1);
@@ -231,6 +299,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
     if (!checkedProblems[num]) return '?';
     return answers[num] === answersMap[num] ? 'O' : 'X';
   };
+
+  if (!currentProblem) {
+    return <div>{T.loadFail}</div>;
+  }
 
   const getStatusClass = (status) => {
     if (status === 'O') return 'bg-green-100 text-green-700 border-green-300';
@@ -378,9 +450,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
                 <p className="text-lg font-semibold text-indigo-900 mb-3">
                   {T.answer}: {correctAnswerIndex + 1}{T.numberSuffix}
                 </p>
-                {commentsMap && commentsMap[currentProblem.problem_number] && (
-                  <p className={`text-gray-700 whitespace-pre-line border-t pt-3 ${isCorrect ? 'border-blue-100' : 'border-red-100'}`}>
-                    <span className="font-semibold">{T.explanation}:</span> {commentsMap[currentProblem.problem_number]}
+                {explanationText && (
+                  <p className={`text-gray-700 whitespace-pre-wrap border-t pt-3 leading-relaxed ${isCorrect ? 'border-blue-100' : 'border-red-100'}`}>
+                    <span className="font-semibold">{T.explanation}:</span>{'\n'}
+                    {formatExplanation(explanationText)}
                   </p>
                 )}
               </div>
@@ -395,6 +468,43 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
                 {isChecked ? (currentProblemIndex === quizProblems.length - 1 ? T.resultView : T.next) : T.check}
                 {isChecked && currentProblemIndex !== quizProblems.length - 1 && <ChevronRight className="ml-2 w-5 h-5" />}
               </button>
+            </div>
+
+            <div className="mt-4 border-t pt-4">
+              <p className="text-sm font-semibold text-gray-700 mb-2">문제 신고하기</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                >
+                  <option value="" style={{ color: '#6b7280', backgroundColor: '#ffffff' }}>
+                    선택해주세요
+                  </option>
+                  {REPORT_REASONS.map((reason) => (
+                    <option key={reason} value={reason} style={{ color: '#111827', backgroundColor: '#ffffff' }}>
+                      {reason}
+                    </option>
+                  ))}
+                </select>
+                {reportReason === '기타' && (
+                  <input
+                    type="text"
+                    value={reportEtcText}
+                    onChange={(e) => setReportEtcText(e.target.value)}
+                    placeholder="신고 사유를 입력해주세요"
+                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                )}
+                <button
+                  onClick={handleReportProblem}
+                  disabled={!reportReason || (reportReason === '기타' && !reportEtcText.trim())}
+                  className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:bg-rose-300 disabled:cursor-not-allowed"
+                >
+                  신고하기
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -421,20 +531,20 @@ function UpdateNoticeModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
       <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 md:p-7">
-        <h2 className="text-xl md:text-2xl font-extrabold text-sky-900 mb-4">업데이트 안내</h2>
+        <h2 className="text-xl md:text-2xl font-extrabold text-sky-900 mb-4">?낅뜲?댄듃 ?덈궡</h2>
         <div className="space-y-2 text-sm md:text-base text-gray-700">
-          <p>사용자 편의성 개선 사항이 적용되었습니다.</p>
-          <p>• 문제 네비게이션(1~60)에서 O / X / ? 상태를 바로 확인할 수 있습니다.</p>
-          <p>• 키보드만으로 풀이할 수 있습니다: 1~4 선택, Enter/Space 진행.</p>
-          <p>• 정답 확인/다음 버튼이 문제-해설 영역 우하단으로 이동했습니다.</p>
-          <p>• 종료 시 현재 점수와 풀이 현황을 확인하고 회차 선택으로 이동합니다.</p>
+          <p>?ъ슜???몄쓽??媛쒖꽑 ?ы빆???곸슜?섏뿀?듬땲??</p>
+          <p>??臾몄젣 ?ㅻ퉬寃뚯씠??1~60)?먯꽌 O / X / ? ?곹깭瑜?諛붾줈 ?뺤씤?????덉뒿?덈떎.</p>
+          <p>???ㅻ낫?쒕쭔?쇰줈 ??댄븷 ???덉뒿?덈떎: 1~4 ?좏깮, Enter/Space 吏꾪뻾.</p>
+          <p>???뺣떟 ?뺤씤/?ㅼ쓬 踰꾪듉??臾몄젣-?댁꽕 ?곸뿭 ?고븯?⑥쑝濡??대룞?덉뒿?덈떎.</p>
+          <p>??醫낅즺 ???꾩옱 ?먯닔? ????꾪솴???뺤씤?섍퀬 ?뚯감 ?좏깮?쇰줈 ?대룞?⑸땲??</p>
         </div>
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
             className="px-5 py-2.5 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-700"
           >
-            확인
+            ?뺤씤
           </button>
         </div>
       </div>
@@ -453,7 +563,7 @@ function TestLobby({ session, onStart, problemCount }) {
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200/50">
           <p className="text-indigo-600 font-semibold">{T.lobbyTitle}</p>
           <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title}</h1>
-          <p className="text-gray-700 mb-8">총 {problemCount}문항 / 90분 (3과목)</p>
+          <p className="text-gray-700 mb-8">총 {problemCount}문항 / 90분(3과목)</p>
           <button
             onClick={onStart}
             className="w-full max-w-xs mx-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
@@ -477,14 +587,14 @@ function QuizResults({ session, results, onRetryWrong }) {
           {T.backToSession}
         </Link>
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200/50">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title} 결과</h1>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title} 寃곌낵</h1>
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">{T.score}: {totalCorrect} / 60</h2>
             <p className={`text-3xl font-extrabold ${isOverallPass ? 'text-green-600' : 'text-red-600'}`}>
               {isOverallPass ? T.pass : T.fail}
             </p>
             {!isOverallPass && (
-              <p className="mt-2 text-sm font-semibold text-gray-600">이리 조금만 할까...?</p>
+              <p className="mt-2 text-sm font-semibold text-gray-600">?대━ 議곌툑留??좉퉴...?</p>
             )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-lg">
@@ -506,7 +616,7 @@ function QuizResults({ session, results, onRetryWrong }) {
               onClick={onRetryWrong}
               className="w-full max-w-xs mx-auto mb-4 px-8 py-3 bg-amber-500 text-white font-bold rounded-full hover:bg-amber-600 transition inline-flex items-center justify-center"
             >
-              틀린 문제만 다시 풀기 ({wrongCount})
+              ?由?臾몄젣留??ㅼ떆 ?湲?({wrongCount})
             </button>
           )}
           <Link
@@ -521,3 +631,7 @@ function QuizResults({ session, results, onRetryWrong }) {
     </div>
   );
 }
+
+
+
+

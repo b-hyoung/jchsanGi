@@ -1,5 +1,9 @@
+﻿'use client';
+
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { Book, ChevronRight, Shuffle } from 'lucide-react';
+import { trackEvent } from '@/lib/analyticsClient';
 
 const sessionsByYear = [
   {
@@ -29,6 +33,13 @@ const sessionsByYear = [
 ];
 
 export default function TestSelectionPage() {
+  useEffect(() => {
+    const key = `visit_test_${new Date().toISOString().slice(0, 10)}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, '1');
+    trackEvent('visit_test', { path: '/test' });
+  }, []);
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white via-sky-50 to-sky-100 text-gray-800">
       <main className="container mx-auto px-4 py-16 md:py-24">
@@ -46,6 +57,19 @@ export default function TestSelectionPage() {
               <div className="flex items-center gap-3">
                 <Shuffle className="w-6 h-6" />
                 <h2 className="text-lg font-bold">랜덤풀기</h2>
+              </div>
+              <ChevronRight className="w-6 h-6" />
+            </div>
+          </Link>
+
+          <Link
+            href="/test/100"
+            className="mb-6 block p-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shuffle className="w-6 h-6" />
+                <h2 className="text-lg font-bold">100문제 풀어보기</h2>
               </div>
               <ChevronRight className="w-6 h-6" />
             </div>

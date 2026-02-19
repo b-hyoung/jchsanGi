@@ -1,4 +1,4 @@
-import fs from 'fs/promises';
+﻿import fs from 'fs/promises';
 import path from 'path';
 import { notFound } from 'next/navigation';
 import Quiz from '../[sessionId]/Quiz';
@@ -19,7 +19,7 @@ const SOURCES = [
 
 function shuffle(arr) {
   const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
+  for (let i = a.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
@@ -75,7 +75,6 @@ async function readSessionData(source) {
 
   return flatProblems.map((p) => ({
     sourceKey: source.key,
-    sourcePath: source.basePath.join('/'),
     problem_number: p.problem_number,
     question_text: p.question_text,
     options: p.options,
@@ -138,6 +137,14 @@ export default async function RandomTestPage() {
     console.error('Failed to build random quiz:', error);
     notFound();
   }
-  const session = { title: '랜덤 풀기 (회차별 5문항 x 4회차)' };
-  return <Quiz problems={data.problems} answersMap={data.answersMap} commentsMap={data.commentsMap} session={session} />;
+  const session = { title: '랜덤풀기 (회차별 5문항 x 4회차)' };
+  return (
+    <Quiz
+      problems={data.problems}
+      answersMap={data.answersMap}
+      commentsMap={data.commentsMap}
+      session={session}
+      sessionId="random"
+    />
+  );
 }

@@ -1,4 +1,4 @@
-import fs from 'fs/promises';
+﻿import fs from 'fs/promises';
 import path from 'path';
 import { notFound } from 'next/navigation';
 import Quiz from './Quiz';
@@ -22,8 +22,8 @@ async function fetchQuizDataFromPath(basePath) {
     const commentData = JSON.parse(commentStr);
 
     const problems = problemData.reduce((acc, section) => {
-      const problemsWithSection = section.problems.map((p) => ({ ...p, sectionTitle: section.title }));
-      return acc.concat(problemsWithSection);
+      const withSection = section.problems.map((p) => ({ ...p, sectionTitle: section.title }));
+      return acc.concat(withSection);
     }, []);
 
     const answersMap = answerData.reduce((acc, section) => {
@@ -42,68 +42,42 @@ async function fetchQuizDataFromPath(basePath) {
 
     return { problems, answersMap, commentsMap };
   } catch (error) {
-    console.error('Failed to read or parse quiz files:', error);
+    console.error('Failed to read quiz files:', error);
     return null;
   }
 }
 
-async function getQuizData(sessionId) {
-  let basePath;
-  if (sessionId === '1') {
-    basePath = path.join(process.cwd(), 'problem2024', 'first');
-    return fetchQuizDataFromPath(basePath);
-  } else if (sessionId === '4' || sessionId === '2') {
-    basePath = path.join(process.cwd(), 'problem2024', 'second');
-    return fetchQuizDataFromPath(basePath);
-  } else if (sessionId === '5' || sessionId === '3') {
-    basePath = path.join(process.cwd(), 'problem2024', 'third');
-    return fetchQuizDataFromPath(basePath);
-  } else if (sessionId === '6') {
-    basePath = path.join(process.cwd(), 'problem2023', 'first');
-    return fetchQuizDataFromPath(basePath);
-  } else if (sessionId === '7') {
-    basePath = path.join(process.cwd(), 'problem2023', 'second');
-    return fetchQuizDataFromPath(basePath);
-  } else if (sessionId === '8') {
-    basePath = path.join(process.cwd(), 'problem2023', 'third');
-    return fetchQuizDataFromPath(basePath);
-  } else if (sessionId === '9') {
-    basePath = path.join(process.cwd(), 'problem2022', 'first');
-    return fetchQuizDataFromPath(basePath);
-  } else if (sessionId === '10') {
-    basePath = path.join(process.cwd(), 'problem2022', 'second');
-    return fetchQuizDataFromPath(basePath);
-  } else if (sessionId === '11') {
-    basePath = path.join(process.cwd(), 'problem2022', 'third');
-    return fetchQuizDataFromPath(basePath);
-  }
-  return null;
-}
-
-const sessionDetails = {
-  1: { title: '정보처리산업기사 2024년 1회' },
-  2: { title: '정보처리산업기사 2024년 2회' },
-  3: { title: '정보처리산업기사 2024년 3회' },
-  4: { title: '정보처리산업기사 2024년 2회' },
-  5: { title: '정보처리산업기사 2024년 3회' },
-  6: { title: '정보처리산업기사 2023년 1회' },
-  7: { title: '정보처리산업기사 2023년 2회' },
-  8: { title: '정보처리산업기사 2023년 3회' },
-  9: { title: '정보처리산업기사 2022년 1회' },
-  10: { title: '정보처리산업기사 2022년 2회' },
-  11: { title: '정보처리산업기사 2022년 3회' },
+const sessionConfig = {
+  '1': { title: '정보처리산업기사 2024년 1회', basePath: ['problem2024', 'first'] },
+  '2': { title: '정보처리산업기사 2024년 2회', basePath: ['problem2024', 'second'] },
+  '3': { title: '정보처리산업기사 2024년 3회', basePath: ['problem2024', 'third'] },
+  '4': { title: '정보처리산업기사 2024년 2회', basePath: ['problem2024', 'second'] },
+  '5': { title: '정보처리산업기사 2024년 3회', basePath: ['problem2024', 'third'] },
+  '6': { title: '정보처리산업기사 2023년 1회', basePath: ['problem2023', 'first'] },
+  '7': { title: '정보처리산업기사 2023년 2회', basePath: ['problem2023', 'second'] },
+  '8': { title: '정보처리산업기사 2023년 3회', basePath: ['problem2023', 'third'] },
+  '9': { title: '정보처리산업기사 2022년 1회', basePath: ['problem2022', 'first'] },
+  '10': { title: '정보처리산업기사 2022년 2회', basePath: ['problem2022', 'second'] },
+  '11': { title: '정보처리산업기사 2022년 3회', basePath: ['problem2022', 'third'] },
 };
 
 export default async function TestPage({ params: paramsPromise }) {
   const params = await paramsPromise;
   const { sessionId } = params;
+  const cfg = sessionConfig[sessionId];
 
-  const data = await getQuizData(sessionId);
-  const session = sessionDetails[sessionId];
+  if (!cfg) notFound();
 
-  if (!data || !session) {
-    notFound();
-  }
+  const data = await fetchQuizDataFromPath(path.join(process.cwd(), ...cfg.basePath));
+  if (!data) notFound();
 
-  return <Quiz problems={data.problems} answersMap={data.answersMap} commentsMap={data.commentsMap} session={session} />;
+  return (
+    <Quiz
+      problems={data.problems}
+      answersMap={data.answersMap}
+      commentsMap={data.commentsMap}
+      session={{ title: cfg.title }}
+      sessionId={sessionId}
+    />
+  );
 }
