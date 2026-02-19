@@ -43,10 +43,12 @@ const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
 
 export default function Quiz({ problems, session, answersMap, commentsMap }) {
   const router = useRouter();
+  const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
   const [isStarted, setIsStarted] = useState(false);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [accumulatedAnswers, setAccumulatedAnswers] = useState({});
   const [checkedProblems, setCheckedProblems] = useState({});
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizResults, setQuizResults] = useState(null);
@@ -77,12 +79,13 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   };
 
   const handleSubmitQuiz = () => {
+    const mergedAnswers = { ...accumulatedAnswers, ...answers };
     let totalCorrect = 0;
     const subjectCorrectCounts = { 1: 0, 2: 0, 3: 0 };
 
-    quizProblems.forEach((problem) => {
+    allProblems.forEach((problem) => {
       const problemNum = parseInt(problem.problem_number, 10);
-      const userAnswer = answers[problem.problem_number];
+      const userAnswer = mergedAnswers[problem.problem_number];
       const correctAnswer = answersMap[problem.problem_number];
 
       if (userAnswer === correctAnswer) {
@@ -100,9 +103,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
     };
     const isOverallPass = totalCorrect >= 36 && subjectPassFail[1] && subjectPassFail[2] && subjectPassFail[3];
 
+    setAccumulatedAnswers(mergedAnswers);
     setQuizResults({
       totalCorrect,
-      wrongCount: quizProblems.length - totalCorrect,
+      wrongCount: allProblems.length - totalCorrect,
       subjectCorrectCounts,
       subjectPassFail,
       isOverallPass,
@@ -188,9 +192,11 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
   };
 
   const handleRetryWrongProblems = () => {
-    const wrongProblems = quizProblems.filter((p) => answers[p.problem_number] !== answersMap[p.problem_number]);
+    const mergedAnswers = { ...accumulatedAnswers, ...answers };
+    const wrongProblems = allProblems.filter((p) => mergedAnswers[p.problem_number] !== answersMap[p.problem_number]);
     if (wrongProblems.length === 0) return;
 
+    setAccumulatedAnswers(mergedAnswers);
     setQuizProblems(wrongProblems);
     setAnswers({});
     setCheckedProblems({});
@@ -203,15 +209,16 @@ export default function Quiz({ problems, session, answersMap, commentsMap }) {
     const shouldEnd = window.confirm('\uC885\uB8CC\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?');
     if (!shouldEnd) return;
 
+    const mergedAnswers = { ...accumulatedAnswers, ...answers };
     let totalCorrect = 0;
-    quizProblems.forEach((problem) => {
-      const userAnswer = answers[problem.problem_number];
+    allProblems.forEach((problem) => {
+      const userAnswer = mergedAnswers[problem.problem_number];
       const correctAnswer = answersMap[problem.problem_number];
       if (userAnswer === correctAnswer) totalCorrect++;
     });
 
-    const solvedCount = Object.keys(checkedProblems).length;
-    const totalCount = quizProblems.length;
+    const solvedCount = allProblems.filter((problem) => mergedAnswers[problem.problem_number] !== undefined).length;
+    const totalCount = allProblems.length;
     alert(
       `\uD604\uC7AC \uC810\uC218: ${totalCorrect} / ${totalCount}\n` +
       `\uD480\uC774 \uC644\uB8CC: ${solvedCount} / ${totalCount}`
