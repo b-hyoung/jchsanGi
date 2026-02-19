@@ -242,6 +242,24 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
         return;
       }
 
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (!currentProblem || isChecked) return;
+        const options = Array.isArray(currentProblem.options) ? currentProblem.options : [];
+        if (options.length === 0) return;
+
+        const currentIdx = selectedAnswer ? options.indexOf(selectedAnswer) : -1;
+        const nextIdx =
+          e.key === 'ArrowDown'
+            ? (currentIdx + 1 + options.length) % options.length
+            : (currentIdx - 1 + options.length) % options.length;
+        const nextOption = options[nextIdx];
+        if (!nextOption) return;
+
+        e.preventDefault();
+        handleSelectOption(currentProblem.problem_number, nextOption);
+        return;
+      }
+
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (!isChecked) {
