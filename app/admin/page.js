@@ -57,6 +57,19 @@ const SESSION_LABELS = {
   '100': '100문제 모드',
 };
 
+const SOURCE_KEY_TO_SESSION_ID = {
+  'NOW-60': '12',
+  '2024-1': '1',
+  '2024-2': '2',
+  '2024-3': '3',
+  '2023-1': '6',
+  '2023-2': '7',
+  '2023-3': '8',
+  '2022-1': '9',
+  '2022-2': '10',
+  '2022-3': '11',
+};
+
 function sessionLabel(sessionId) {
   const key = String(sessionId || '').trim();
   return SESSION_LABELS[key] || key || '-';
@@ -304,7 +317,9 @@ export default function AdminPage() {
     setDetailError('');
     setDetailLoading(true);
 
-    const sid = String(report?.originSessionId || report?.sessionId || '').trim();
+    const rawSid = String(report?.originSessionId || report?.sessionId || '').trim();
+    const sourceKey = String(report?.originSourceKey || '').trim();
+    const sid = rawSid && rawSid !== 'random' ? rawSid : SOURCE_KEY_TO_SESSION_ID[sourceKey] || rawSid;
     const pno = Number(report?.originProblemNumber || report?.problemNumber);
     if (!sid || sid === '-' || Number.isNaN(pno)) {
       setDetailLoading(false);

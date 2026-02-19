@@ -44,7 +44,7 @@ const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
 const REPORT_TIP_NOTICE_KEY = 'report_tip_notice_2026_02_once';
 const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
 
-export default function Quiz({ problems, session, answersMap, commentsMap, sessionId }) {
+export default function Quiz({ problems, session, answersMap, commentsMap, sessionId, initialProblemNumber = null }) {
   const router = useRouter();
   const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
@@ -65,6 +65,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const [reportReason, setReportReason] = useState('');
   const [reportEtcText, setReportEtcText] = useState('');
   const [reportedProblems, setReportedProblems] = useState({});
+  const [initialJumpApplied, setInitialJumpApplied] = useState(false);
 
   useEffect(() => {
     try {
@@ -74,6 +75,27 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       setShowUpdateNotice(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (initialJumpApplied) return;
+    if (!initialProblemNumber) return;
+    if (!Array.isArray(quizProblems) || quizProblems.length === 0) return;
+
+    const targetIndex = quizProblems.findIndex(
+      (p) => Number(p.problem_number) === Number(initialProblemNumber)
+    );
+    if (targetIndex < 0) {
+      setInitialJumpApplied(true);
+      return;
+    }
+
+    setCurrentProblemIndex(targetIndex);
+    if (!isStarted) {
+      setIsStarted(true);
+      trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
+    }
+    setInitialJumpApplied(true);
+  }, [initialJumpApplied, initialProblemNumber, isStarted, quizProblems, sessionId]);
 
   useEffect(() => {
     if (!isStarted) return;
@@ -239,6 +261,24 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
         if (!option) return;
         e.preventDefault();
         handleSelectOption(currentProblem.problem_number, option);
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (!currentProblem || isChecked) return;
+        const options = Array.isArray(currentProblem.options) ? currentProblem.options : [];
+        if (options.length === 0) return;
+
+        const currentIdx = selectedAnswer ? options.indexOf(selectedAnswer) : -1;
+        const nextIdx =
+          e.key === 'ArrowDown'
+            ? (currentIdx + 1 + options.length) % options.length
+            : (currentIdx - 1 + options.length) % options.length;
+        const nextOption = options[nextIdx];
+        if (!nextOption) return;
+
+        e.preventDefault();
+        handleSelectOption(currentProblem.problem_number, nextOption);
         return;
       }
 
@@ -487,6 +527,48 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
             <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6 leading-relaxed">
               {currentProblem.problem_number}. {currentProblem.question_text}
             </h2>
+
+            {currentProblem.examples && (
+              <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 overflow-hidden">
+                <div className="px-4 py-2 bg-sky-100 border-b border-sky-200">
+                  <span className="text-sm font-bold text-sky-800">보기</span>
+                </div>
+                <div className="p-4">
+                  {(() => {
+                    const lines = currentProblem.examples.split('\n');
+                    const nonEmpty = lines.filter((l) => l.trim());
+                    const isTable = nonEmpty.length > 1 && nonEmpty.every((l) => l.includes('|'));
+                    if (!isTable) {
+                      return <p className="text-gray-800 whitespace-pre-wrap leading-relaxed font-mono text-sm">{currentProblem.examples}</p>;
+                    }
+                    const tables = currentProblem.examples.split('\n\n').filter(Boolean);
+                    return (
+                      <div className="space-y-3">
+                        {tables.map((tbl, ti) => (
+                          <table key={ti} className="w-full text-sm border-collapse">
+                            <tbody>
+                              {tbl.split('\n').filter(Boolean).map((row, ri) => {
+                                const cells = row.split('|').map((c) => c.trim());
+                                const Tag = ri === 0 ? 'th' : 'td';
+                                return (
+                                  <tr key={ri} className={ri === 0 ? 'bg-sky-100' : ri % 2 === 0 ? 'bg-sky-50' : 'bg-white'}>
+                                    {cells.map((cell, ci) => (
+                                      <Tag key={ci} className="border border-sky-200 px-3 py-2 text-center text-gray-800 font-medium">
+                                        {cell}
+                                      </Tag>
+                                    ))}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               {currentProblem.options.map((option, index) => {
