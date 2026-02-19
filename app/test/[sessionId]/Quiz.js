@@ -483,6 +483,9 @@ function QuizResults({ session, results, onRetryWrong }) {
             <p className={`text-3xl font-extrabold ${isOverallPass ? 'text-green-600' : 'text-red-600'}`}>
               {isOverallPass ? T.pass : T.fail}
             </p>
+            {!isOverallPass && (
+              <p className="mt-2 text-sm font-semibold text-gray-600">이리 조금만 할까...?</p>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-lg">
             {[1, 2, 3].map((subjectNum) => (
