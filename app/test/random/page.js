@@ -6,16 +6,16 @@ import Quiz from '../[sessionId]/Quiz';
 export const dynamic = 'force-dynamic';
 
 const SOURCES = [
-  { key: 'NOW-60', basePath: ['problemNow_60', 'first'] },
-  { key: '2024-1', basePath: ['problem2024', 'first'] },
-  { key: '2024-2', basePath: ['problem2024', 'second'] },
-  { key: '2024-3', basePath: ['problem2024', 'third'] },
-  { key: '2023-1', basePath: ['problem2023', 'first'] },
-  { key: '2023-2', basePath: ['problem2023', 'second'] },
-  { key: '2023-3', basePath: ['problem2023', 'third'] },
-  { key: '2022-1', basePath: ['problem2022', 'first'] },
-  { key: '2022-2', basePath: ['problem2022', 'second'] },
-  { key: '2022-3', basePath: ['problem2022', 'third'] },
+  { key: 'NOW-60', basePath: ['datasets', 'problemNow_60', 'first'] },
+  { key: '2024-1', basePath: ['datasets', 'problem2024', 'first'] },
+  { key: '2024-2', basePath: ['datasets', 'problem2024', 'second'] },
+  { key: '2024-3', basePath: ['datasets', 'problem2024', 'third'] },
+  { key: '2023-1', basePath: ['datasets', 'problem2023', 'first'] },
+  { key: '2023-2', basePath: ['datasets', 'problem2023', 'second'] },
+  { key: '2023-3', basePath: ['datasets', 'problem2023', 'third'] },
+  { key: '2022-1', basePath: ['datasets', 'problem2022', 'first'] },
+  { key: '2022-2', basePath: ['datasets', 'problem2022', 'second'] },
+  { key: '2022-3', basePath: ['datasets', 'problem2022', 'third'] },
 ];
 
 function shuffle(arr) {

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import Quiz from '../[sessionId]/Quiz';
 
 async function loadData() {
-  const basePath = path.join(process.cwd(), 'problem100', 'first');
+  const basePath = path.join(process.cwd(), 'datasets', 'problem100', 'first');
   const [problemStr, answerStr, commentStr] = await Promise.all([
     fs.readFile(path.join(basePath, 'problem1.json'), 'utf8'),
     fs.readFile(path.join(basePath, 'answer1.json'), 'utf8'),
