@@ -44,7 +44,7 @@ const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
 const REPORT_TIP_NOTICE_KEY = 'report_tip_notice_2026_02_once';
 const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
 
-export default function Quiz({ problems, session, answersMap, commentsMap, sessionId }) {
+export default function Quiz({ problems, session, answersMap, commentsMap, sessionId, initialProblemNumber = null }) {
   const router = useRouter();
   const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
@@ -64,6 +64,8 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const [reportTipCountdown, setReportTipCountdown] = useState(5);
   const [reportReason, setReportReason] = useState('');
   const [reportEtcText, setReportEtcText] = useState('');
+  const [reportedProblems, setReportedProblems] = useState({});
+  const [initialJumpApplied, setInitialJumpApplied] = useState(false);
 
   useEffect(() => {
     try {
@@ -73,6 +75,27 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       setShowUpdateNotice(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (initialJumpApplied) return;
+    if (!initialProblemNumber) return;
+    if (!Array.isArray(quizProblems) || quizProblems.length === 0) return;
+
+    const targetIndex = quizProblems.findIndex(
+      (p) => Number(p.problem_number) === Number(initialProblemNumber)
+    );
+    if (targetIndex < 0) {
+      setInitialJumpApplied(true);
+      return;
+    }
+
+    setCurrentProblemIndex(targetIndex);
+    if (!isStarted) {
+      setIsStarted(true);
+      trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
+    }
+    setInitialJumpApplied(true);
+  }, [initialJumpApplied, initialProblemNumber, isStarted, quizProblems, sessionId]);
 
   useEffect(() => {
     if (!isStarted) return;
@@ -241,6 +264,24 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
         return;
       }
 
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (!currentProblem || isChecked) return;
+        const options = Array.isArray(currentProblem.options) ? currentProblem.options : [];
+        if (options.length === 0) return;
+
+        const currentIdx = selectedAnswer ? options.indexOf(selectedAnswer) : -1;
+        const nextIdx =
+          e.key === 'ArrowDown'
+            ? (currentIdx + 1 + options.length) % options.length
+            : (currentIdx - 1 + options.length) % options.length;
+        const nextOption = options[nextIdx];
+        if (!nextOption) return;
+
+        e.preventDefault();
+        handleSelectOption(currentProblem.problem_number, nextOption);
+        return;
+      }
+
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (!isChecked) {
@@ -290,6 +331,9 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       return;
     }
     const finalReason = reportReason === '기타' ? `기타: ${reportEtcText.trim()}` : reportReason;
+    const hasOrigin =
+      currentProblem.originSessionId !== undefined &&
+      currentProblem.originProblemNumber !== undefined;
     await trackEvent('report_problem', {
       sessionId,
       path: `/test/${sessionId}`,
@@ -297,9 +341,17 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
         problemNumber: currentProblem.problem_number,
         reason: finalReason,
         questionText: String(currentProblem.question_text || '').slice(0, 150),
+        ...(hasOrigin
+          ? {
+              originSessionId: String(currentProblem.originSessionId),
+              originProblemNumber: Number(currentProblem.originProblemNumber),
+              originSourceKey: String(currentProblem.originSourceKey || ''),
+            }
+          : {}),
       },
     });
     alert('신고가 접수되었습니다.');
+    setReportedProblems((prev) => ({ ...prev, [currentProblem.problem_number]: true }));
     setReportReason('');
     setReportEtcText('');
   };
@@ -570,42 +622,44 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
               </button>
             </div>
 
-            <div className="mt-4 border-t pt-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">문제 신고하기</p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <select
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  className="flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                  style={{ color: '#111827', backgroundColor: '#ffffff' }}
-                >
-                  <option value="" style={{ color: '#6b7280', backgroundColor: '#ffffff' }}>
-                    선택해주세요
-                  </option>
-                  {REPORT_REASONS.map((reason) => (
-                    <option key={reason} value={reason} style={{ color: '#111827', backgroundColor: '#ffffff' }}>
-                      {reason}
+            {!reportedProblems[currentProblem.problem_number] && (
+              <div className="mt-4 border-t pt-4">
+                <p className="text-sm font-semibold text-gray-700 mb-2">문제 신고하기</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                  >
+                    <option value="" style={{ color: '#6b7280', backgroundColor: '#ffffff' }}>
+                      선택해주세요
                     </option>
-                  ))}
-                </select>
-                {reportReason === '기타' && (
-                  <input
-                    type="text"
-                    value={reportEtcText}
-                    onChange={(e) => setReportEtcText(e.target.value)}
-                    placeholder="신고 사유를 입력해주세요"
-                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                )}
-                <button
-                  onClick={handleReportProblem}
-                  disabled={!reportReason || (reportReason === '기타' && !reportEtcText.trim())}
-                  className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:bg-rose-300 disabled:cursor-not-allowed"
-                >
-                  신고하기
-                </button>
+                    {REPORT_REASONS.map((reason) => (
+                      <option key={reason} value={reason} style={{ color: '#111827', backgroundColor: '#ffffff' }}>
+                        {reason}
+                      </option>
+                    ))}
+                  </select>
+                  {reportReason === '기타' && (
+                    <input
+                      type="text"
+                      value={reportEtcText}
+                      onChange={(e) => setReportEtcText(e.target.value)}
+                      placeholder="신고 사유를 입력해주세요"
+                      className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  )}
+                  <button
+                    onClick={handleReportProblem}
+                    disabled={!reportReason || (reportReason === '기타' && !reportEtcText.trim())}
+                    className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:bg-rose-300 disabled:cursor-not-allowed"
+                  >
+                    신고하기
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

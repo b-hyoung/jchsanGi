@@ -18,13 +18,37 @@ const SESSION_PATHS = {
   '11': ['problem2022', 'third'],
   '12': ['problemNow_60', 'first'],
   '100': ['problem100', 'first'],
+  'NOW-60': ['problemNow_60', 'first'],
+  '2024-1': ['problem2024', 'first'],
+  '2024-2': ['problem2024', 'second'],
+  '2024-3': ['problem2024', 'third'],
+  '2023-1': ['problem2023', 'first'],
+  '2023-2': ['problem2023', 'second'],
+  '2023-3': ['problem2023', 'third'],
+  '2022-1': ['problem2022', 'first'],
+  '2022-2': ['problem2022', 'second'],
+  '2022-3': ['problem2022', 'third'],
 };
 
 async function loadSessionData(sessionId) {
   const rel = SESSION_PATHS[sessionId];
   if (!rel) return null;
 
-  const basePath = path.join(process.cwd(), ...rel);
+  const candidateBasePaths = [
+    path.join(process.cwd(), 'datasets', ...rel),
+    path.join(process.cwd(), ...rel),
+  ];
+
+  let basePath = null;
+  for (const candidate of candidateBasePaths) {
+    try {
+      await fs.access(candidate);
+      basePath = candidate;
+      break;
+    } catch {}
+  }
+  if (!basePath) return null;
+
   const problemStr = await fs
     .readFile(path.join(basePath, 'problem1.json'), 'utf8')
     .catch(async (error) => {
@@ -92,7 +116,7 @@ export async function GET(request) {
       options: Array.isArray(problem.options) ? problem.options : [],
       answerText: data.answersMap[problem.problem_number] ?? '',
       commentText: data.commentsMap[problem.problem_number] ?? '',
-      gotoPath: `/test/${sessionId}`,
+      gotoPath: `/test/${sessionId}?p=${problemNumber}`,
     });
   } catch {
     return NextResponse.json({ message: 'failed to load problem detail' }, { status: 500 });
