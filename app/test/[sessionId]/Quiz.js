@@ -233,6 +233,8 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       .replace(/\s*(={3,})\s*/g, '\n\n')
       // 숫자 목록(1) / 1. / 1) 형태 줄바꿈
       .replace(/\s+(\d+[\)\.]\s)/g, '\n')
+      // 중점 불릿(·) 줄바꿈 (공백 유무와 무관하게 처리)
+      .replace(/\s*·\s*/g, '\n· ')
       // 불릿(-, *, •) 줄바꿈
       .replace(/\s+([\-\*•]\s+)/g, '\n')
       // 문장 단위 줄바꿈(. ! ? 뒤 공백 기준)
@@ -1264,6 +1266,8 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
                       ? 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500'
                       : 'bg-red-100 text-red-800 border-red-500 ring-2 ring-red-500';
                   }
+                } else if (showResult && !isCorrect && option === correctAnswer) {
+                  buttonClass = 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500';
                 }
                 return (
                   <button
