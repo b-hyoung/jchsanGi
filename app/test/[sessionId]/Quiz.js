@@ -290,6 +290,9 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       return;
     }
     const finalReason = reportReason === '기타' ? `기타: ${reportEtcText.trim()}` : reportReason;
+    const hasOrigin =
+      currentProblem.originSessionId !== undefined &&
+      currentProblem.originProblemNumber !== undefined;
     await trackEvent('report_problem', {
       sessionId,
       path: `/test/${sessionId}`,
@@ -297,6 +300,13 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
         problemNumber: currentProblem.problem_number,
         reason: finalReason,
         questionText: String(currentProblem.question_text || '').slice(0, 150),
+        ...(hasOrigin
+          ? {
+              originSessionId: String(currentProblem.originSessionId),
+              originProblemNumber: Number(currentProblem.originProblemNumber),
+              originSourceKey: String(currentProblem.originSourceKey || ''),
+            }
+          : {}),
       },
     });
     alert('신고가 접수되었습니다.');

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -41,6 +41,27 @@ const LIST_TABS = [
   { key: 'reports', label: '신고 리스트' },
 ];
 
+const SESSION_LABELS = {
+  '1': '2024년 1회차',
+  '2': '2024년 2회차',
+  '3': '2024년 3회차',
+  '4': '2024년 2회차',
+  '5': '2024년 3회차',
+  '6': '2023년 1회차',
+  '7': '2023년 2회차',
+  '8': '2023년 3회차',
+  '9': '2022년 1회차',
+  '10': '2022년 2회차',
+  '11': '2022년 3회차',
+  '12': '개발자 문제 60',
+  '100': '100문제 모드',
+};
+
+function sessionLabel(sessionId) {
+  const key = String(sessionId || '').trim();
+  return SESSION_LABELS[key] || key || '-';
+}
+
 function fmtTime(ts) {
   return String(ts || '').replace('T', ' ').slice(0, 19);
 }
@@ -59,6 +80,7 @@ export default function AdminPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [problemDetail, setProblemDetail] = useState(null);
+  const [expandedReportGroups, setExpandedReportGroups] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -86,6 +108,45 @@ export default function AdminPage() {
   }, []);
 
   const kpis = useMemo(() => metrics.kpis ?? emptyMetrics.kpis, [metrics]);
+  const groupedReports = useMemo(() => {
+    const rows = Array.isArray(metrics.recentReports) ? metrics.recentReports : [];
+    const map = new Map();
+
+    rows.forEach((r, idx) => {
+      const sourceSessionId = String(r.originSessionId || r.sessionId || '-').trim();
+      const sourceProblemNumber = String(r.originProblemNumber || r.problemNumber || '-').trim();
+      const key = `${sourceSessionId}:${sourceProblemNumber}`;
+      const ts = String(r.timestamp || '');
+
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          sourceSessionId,
+          sourceProblemNumber,
+          count: 0,
+          latestTimestamp: ts,
+          questionText: r.questionText || '',
+          reports: [],
+        });
+      }
+
+      const g = map.get(key);
+      g.count += 1;
+      if (ts > g.latestTimestamp) g.latestTimestamp = ts;
+      if (!g.questionText && r.questionText) g.questionText = r.questionText;
+      g.reports.push({ ...r, _idx: idx });
+    });
+
+    return Array.from(map.values())
+      .map((g) => ({
+        ...g,
+        reports: g.reports.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || ''))),
+      }))
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return String(b.latestTimestamp || '').localeCompare(String(a.latestTimestamp || ''));
+      });
+  }, [metrics.recentReports]);
 
   const handleUnlock = (e) => {
     e.preventDefault();
@@ -105,14 +166,18 @@ export default function AdminPage() {
     setDetailError('');
   };
 
+  const toggleReportGroup = (key) => {
+    setExpandedReportGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const openDetail = async (report) => {
     setSelectedReport(report);
     setProblemDetail(null);
     setDetailError('');
     setDetailLoading(true);
 
-    const sid = String(report?.sessionId || '').trim();
-    const pno = Number(report?.problemNumber);
+    const sid = String(report?.originSessionId || report?.sessionId || '').trim();
+    const pno = Number(report?.originProblemNumber || report?.problemNumber);
     if (!sid || sid === '-' || Number.isNaN(pno)) {
       setDetailLoading(false);
       setDetailError('이 신고는 회차/문항 정보가 부족해서 상세 조회가 어렵습니다.');
@@ -261,34 +326,103 @@ export default function AdminPage() {
             <h2 className="font-bold text-slate-900 mb-3">신고 리스트 (클릭하면 상세 확인)</h2>
             {loading ? (
               <div className="text-slate-500">로딩 중...</div>
-            ) : metrics.recentReports.length === 0 ? (
+            ) : groupedReports.length === 0 ? (
               <div className="text-slate-500">신고 내역이 없습니다.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 text-left text-slate-600">
-                      <th className="py-2 pr-3">시간</th>
+                      <th className="py-2 pr-3">원본 회차</th>
+                      <th className="py-2 pr-3">원본 문항</th>
+                      <th className="py-2 pr-3">신고 수</th>
+                      <th className="py-2 pr-3">최근 신고</th>
                       <th className="py-2 pr-3">회차</th>
-                      <th className="py-2 pr-3">문항</th>
-                      <th className="py-2 pr-3">사유</th>
                       <th className="py-2">문제 요약</th>
+                      <th className="py-2 pr-3">상세보기</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {metrics.recentReports.map((r, idx) => (
-                      <tr
-                        key={`${r.timestamp}_${idx}`}
-                        className="border-b border-slate-100 align-top hover:bg-slate-50 cursor-pointer"
-                        onClick={() => openDetail(r)}
-                      >
-                        <td className="py-2 pr-3 whitespace-nowrap">{fmtTime(r.timestamp)}</td>
-                        <td className="py-2 pr-3 whitespace-nowrap">{r.sessionId}</td>
-                        <td className="py-2 pr-3 whitespace-nowrap">{r.problemNumber}</td>
-                        <td className="py-2 pr-3 whitespace-nowrap">{r.reason}</td>
-                        <td className="py-2">{r.questionText}</td>
-                      </tr>
-                    ))}
+                    {groupedReports.map((g) => {
+                      const isOpen = Boolean(expandedReportGroups[g.key]);
+                      const firstReport = g.reports[0];
+                      return (
+                        <Fragment key={g.key}>
+                          <tr
+                            key={g.key}
+                            className="border-b border-slate-100 align-top hover:bg-slate-50 cursor-pointer"
+                            onClick={() => openDetail(firstReport)}
+                          >
+                            <td className="py-2 pr-3 whitespace-nowrap">{sessionLabel(g.sourceSessionId)}</td>
+                            <td className="py-2 pr-3 whitespace-nowrap">{g.sourceProblemNumber}</td>
+                            <td className="py-2 pr-3 whitespace-nowrap font-semibold text-slate-900">{g.count}</td>
+                            <td className="py-2 pr-3 whitespace-nowrap">{fmtTime(g.latestTimestamp)}</td>
+                            <td className="py-2 pr-3 whitespace-nowrap">{sessionLabel(firstReport?.sessionId || '-')}</td>
+                            <td className="py-2">{g.questionText || '-'}</td>
+                            <td className="py-2 pr-3 whitespace-nowrap">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleReportGroup(g.key);
+                                }}
+                                className="h-8 w-8 rounded-md border border-slate-300 hover:bg-slate-50 font-semibold inline-flex items-center justify-center"
+                                aria-label={isOpen ? '접기' : '펼치기'}
+                                title={isOpen ? '접기' : '펼치기'}
+                              >
+                                {'▾'}
+                              </button>
+                            </td>
+                          </tr>
+                          {isOpen && (
+                            <tr className="border-b border-slate-100 bg-slate-50/50">
+                              <td colSpan={7} className="py-3 pl-6 pr-3">
+                                <div className="rounded-lg border border-slate-200 bg-white p-3">
+                                  <p className="text-xs font-semibold text-slate-500 mb-2">개별 신고 이력</p>
+                                  <div className="overflow-x-auto">
+                                    <table className="min-w-full text-xs">
+                                      <thead>
+                                        <tr className="border-b border-slate-200 text-left text-slate-500">
+                                          <th className="py-1 pr-2">시간</th>
+                                          <th className="py-1 pr-2">회차</th>
+                                          <th className="py-1 pr-2">문항</th>
+                                          <th className="py-1 pr-2">사유</th>
+                                          <th className="py-1">상세</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {g.reports.map((r, i) => (
+                                          <tr
+                                            key={`${g.key}:${r.timestamp}:${i}`}
+                                            className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => openDetail(r)}
+                                          >
+                                            <td className="py-1 pr-2 whitespace-nowrap">{fmtTime(r.timestamp)}</td>
+                                            <td className="py-1 pr-2 whitespace-nowrap">{sessionLabel(r.sessionId)}</td>
+                                            <td className="py-1 pr-2 whitespace-nowrap">{r.problemNumber}</td>
+                                            <td className="py-1 pr-2">{r.reason}</td>
+                                            <td className="py-1">
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  openDetail(r);
+                                                }}
+                                                className="px-2 py-1 rounded border border-sky-300 text-sky-700 hover:bg-sky-50 font-semibold"
+                                              >
+                                                상세
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -340,6 +474,14 @@ export default function AdminPage() {
               <Info label="시간" value={fmtTime(selectedReport.timestamp)} />
               <Info label="회차" value={selectedReport.sessionId} />
               <Info label="문항" value={selectedReport.problemNumber} />
+              <Info
+                label="원본"
+                value={
+                  selectedReport.originSessionId && selectedReport.originProblemNumber
+                    ? `${sessionLabel(selectedReport.originSessionId)}-${selectedReport.originProblemNumber}`
+                    : '-'
+                }
+              />
               <Info label="사유" value={selectedReport.reason} />
             </div>
 
