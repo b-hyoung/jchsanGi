@@ -17,9 +17,10 @@ async function fetchQuizDataFromPath(basePath) {
       fs.readFile(path.join(basePath, 'comment1.json'), 'utf8'),
     ]);
 
-    const problemData = JSON.parse(problemStr);
-    const answerData = JSON.parse(answerStr);
-    const commentData = JSON.parse(commentStr);
+    const stripBom = (s) => String(s || '').replace(/^\uFEFF/, '');
+    const problemData = JSON.parse(stripBom(problemStr));
+    const answerData = JSON.parse(stripBom(answerStr));
+    const commentData = JSON.parse(stripBom(commentStr));
 
     const problems = problemData.reduce((acc, section) => {
       const withSection = section.problems.map((p) => ({ ...p, sectionTitle: section.title }));
@@ -59,6 +60,7 @@ const sessionConfig = {
   '9': { title: '정보처리산업기사 2022년 1회', basePath: ['problem2022', 'first'] },
   '10': { title: '정보처리산업기사 2022년 2회', basePath: ['problem2022', 'second'] },
   '11': { title: '정보처리산업기사 2022년 3회', basePath: ['problem2022', 'third'] },
+  '12': { title: '개발자가 방금만든 따끈 문제 60', basePath: ['problemNow_60', 'first'] },
 };
 
 export default async function TestPage({ params: paramsPromise }) {

@@ -7,6 +7,12 @@ import { trackEvent } from '@/lib/analyticsClient';
 
 const sessionsByYear = [
   {
+    year: 'Now',
+    sessions: [
+      { id: 12, title: '따끈 문제 60', description: '개발자가 방금 만든 신규 60문제 세트입니다.' },
+    ],
+  },
+  {
     year: 2024,
     sessions: [
       { id: 1, title: '1회', description: '2024년 1회 기출문제입니다.' },
@@ -80,14 +86,16 @@ export default function TestSelectionPage() {
               <details
                 key={yearGroup.year}
                 className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 open:border-sky-300"
-                open={yearGroup.year === 2024}
+                open={yearGroup.year === 'Now' || yearGroup.year === 2024}
               >
                 <summary className="list-none cursor-pointer p-6 md:p-7 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-12 h-12 bg-sky-100 rounded-xl">
                       <Book className="w-6 h-6 text-sky-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-sky-900">{yearGroup.year}년</h2>
+                    <h2 className="text-2xl font-bold text-sky-900">
+                      {typeof yearGroup.year === 'number' ? `${yearGroup.year}년` : `${yearGroup.year} 세트`}
+                    </h2>
                   </div>
                   <ChevronRight className="w-7 h-7 text-gray-400" />
                 </summary>

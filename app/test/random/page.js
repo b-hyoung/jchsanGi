@@ -6,6 +6,7 @@ import Quiz from '../[sessionId]/Quiz';
 export const dynamic = 'force-dynamic';
 
 const SOURCES = [
+  { key: 'NOW-60', basePath: ['problemNow_60', 'first'] },
   { key: '2024-1', basePath: ['problem2024', 'first'] },
   { key: '2024-2', basePath: ['problem2024', 'second'] },
   { key: '2024-3', basePath: ['problem2024', 'third'] },
@@ -53,9 +54,10 @@ async function readSessionData(source) {
     fs.readFile(path.join(basePath, 'comment1.json'), 'utf8'),
   ]);
 
-  const problemData = JSON.parse(problemStr);
-  const answerData = JSON.parse(answerStr);
-  const commentData = JSON.parse(commentStr);
+  const stripBom = (s) => String(s || '').replace(/^\uFEFF/, '');
+  const problemData = JSON.parse(stripBom(problemStr));
+  const answerData = JSON.parse(stripBom(answerStr));
+  const commentData = JSON.parse(stripBom(commentStr));
 
   const answersMap = answerData.reduce((acc, section) => {
     section.answers.forEach((a) => {
