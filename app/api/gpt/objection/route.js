@@ -29,14 +29,26 @@ function normalizeText(value) {
     .trim();
 }
 
-function buildCacheKey({ sourceSessionId, sourceProblemNumber, history }) {
+function buildCacheKey({
+  sourceSessionId,
+  sourceProblemNumber,
+  selectedAnswer = '',
+  correctAnswer = '',
+  history,
+}) {
   const historyKey = Array.isArray(history)
     ? history
         .filter((m) => m && (m.role === 'user' || m.role === 'assistant'))
         .map((m) => `${m.role}:${normalizeText(m.content)}`)
         .join('|')
     : '';
-  const raw = `${String(sourceSessionId)}::${String(sourceProblemNumber)}::${historyKey}`;
+  const raw = [
+    String(sourceSessionId),
+    String(sourceProblemNumber),
+    `selected:${normalizeText(selectedAnswer)}`,
+    `correct:${normalizeText(correctAnswer)}`,
+    historyKey,
+  ].join('::');
   return createHash('sha256').update(raw).digest('hex');
 }
 
@@ -150,7 +162,13 @@ export async function POST(req) {
       ? [...history].reverse().find((m) => m?.role === 'user')?.content || ''
       : '';
 
-    const cacheKey = buildCacheKey({ sourceSessionId, sourceProblemNumber, history });
+    const cacheKey = buildCacheKey({
+      sourceSessionId,
+      sourceProblemNumber,
+      selectedAnswer,
+      correctAnswer,
+      history,
+    });
 
     try {
       const cached = await readCache(cacheKey);
@@ -204,7 +222,7 @@ export async function POST(req) {
       body: JSON.stringify({
         model: 'gpt-4.1-mini',
         input: prompt,
-        max_output_tokens: 700,
+        max_output_tokens: 500,
       }),
     });
 
