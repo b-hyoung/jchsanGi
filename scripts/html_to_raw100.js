@@ -9,7 +9,7 @@ const path = require('path');
 
 const ROOT = process.cwd();
 const IN = path.join(ROOT, 'temp_9614352.html');
-const OUT = path.join(ROOT, 'problem100', 'raw.txt');
+const OUT = path.join(ROOT, 'datasets', 'problem100', 'raw.txt');
 
 function decodeHtml(s) {
   return (s || '')

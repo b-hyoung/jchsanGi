@@ -2,16 +2,16 @@
   Build problem100 JSON files directly from downloaded HTML page.
   Input: temp_9614352.html
   Output:
-    problem100/first/problem1.json
-    problem100/first/answer1.json
-    problem100/first/comment1.json
+    datasets/problem100/first/problem1.json
+    datasets/problem100/first/answer1.json
+    datasets/problem100/first/comment1.json
 */
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
 const IN = path.join(ROOT, 'temp_9614352.html');
-const OUT_DIR = path.join(ROOT, 'problem100', 'first');
+const OUT_DIR = path.join(ROOT, 'datasets', 'problem100', 'first');
 
 const SUBJECTS = [
   { name: '1과목 소프트웨어 설계', from: 1, to: 20 },
