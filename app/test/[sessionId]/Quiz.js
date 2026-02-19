@@ -41,6 +41,7 @@ const T = {
 };
 
 const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
+const REPORT_TIP_NOTICE_KEY = 'report_tip_notice_2026_02_once';
 const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
 
 export default function Quiz({ problems, session, answersMap, commentsMap, sessionId }) {
@@ -59,6 +60,8 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
   const [showExplanationWhenIncorrect, setShowExplanationWhenIncorrect] = useState(true);
   const [showUpdateNotice, setShowUpdateNotice] = useState(false);
+  const [showReportTipNotice, setShowReportTipNotice] = useState(false);
+  const [reportTipCountdown, setReportTipCountdown] = useState(5);
   const [reportReason, setReportReason] = useState('');
   const [reportEtcText, setReportEtcText] = useState('');
 
@@ -70,6 +73,37 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       setShowUpdateNotice(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isStarted) return;
+    try {
+      const seen = window.localStorage.getItem(REPORT_TIP_NOTICE_KEY);
+      if (!seen) setShowReportTipNotice(true);
+    } catch {
+      setShowReportTipNotice(true);
+    }
+  }, [isStarted]);
+
+  useEffect(() => {
+    if (!showReportTipNotice) return;
+    setReportTipCountdown(5);
+
+    const interval = window.setInterval(() => {
+      setReportTipCountdown((prev) => (prev > 1 ? prev - 1 : 1));
+    }, 1000);
+
+    const timer = window.setTimeout(() => {
+      setShowReportTipNotice(false);
+      try {
+        window.localStorage.setItem(REPORT_TIP_NOTICE_KEY, 'seen');
+      } catch {}
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(interval);
+    };
+  }, [showReportTipNotice]);
 
   const handleStartQuiz = () => {
     setIsStarted(true);
@@ -521,6 +555,23 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
         </button>
         <div />
       </footer>
+
+      {showReportTipNotice && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pointer-events-none">
+          <div className="mt-4 w-full max-w-md rounded-2xl bg-white shadow-2xl border border-amber-200 p-4 text-center animate-in fade-in slide-in-from-top-2 duration-300">
+            <p className="text-base md:text-lg font-bold text-gray-800 leading-relaxed">
+              문제에 버그가 있다면 화면 하단의
+              <br />
+              신고하기로 제보해주세요.
+            </p>
+            <p className="mt-2 text-sm font-semibold text-amber-700">
+              {reportTipCountdown <= 3
+                ? `${reportTipCountdown}초 후 닫힙니다.`
+                : '잠시 후 자동으로 닫힙니다.'}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -647,4 +698,3 @@ function QuizResults({ session, results, onRetryWrong }) {
     </div>
   );
 }
-
