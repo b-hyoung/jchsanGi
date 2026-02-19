@@ -1,14 +1,14 @@
 ﻿/*
   Usage:
-  1) Save source text to problem100/raw.txt
+  1) Save source text to datasets/problem100/raw.txt
   2) node scripts/build_problem100_from_txt.js
 */
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
-const RAW = path.join(ROOT, 'problem100', 'raw.txt');
-const OUT_DIR = path.join(ROOT, 'problem100', 'first');
+const RAW = path.join(ROOT, 'datasets', 'problem100', 'raw.txt');
+const OUT_DIR = path.join(ROOT, 'datasets', 'problem100', 'first');
 
 const SUBJECTS = [
   { name: '1과목 소프트웨어 설계', from: 1, to: 20 },
@@ -173,5 +173,5 @@ function buildOutputs(parsed) {
   fs.writeFileSync(path.join(OUT_DIR, 'answer1.json'), JSON.stringify(answerSections, null, 2) + '\n', 'utf8');
   fs.writeFileSync(path.join(OUT_DIR, 'comment1.json'), JSON.stringify(commentSections, null, 2) + '\n', 'utf8');
 
-  console.log('done:', parsed.length, 'questions -> problem100/first');
+  console.log('done:', parsed.length, 'questions -> datasets/problem100/first');
 })();

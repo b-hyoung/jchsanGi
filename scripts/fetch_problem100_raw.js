@@ -10,7 +10,7 @@ const path = require('path');
 
 const SOURCE_URL = 'https://www.comcbt.com/xe/webhaesul/9614352';
 const ROOT = process.cwd();
-const OUT = path.join(ROOT, 'problem100', 'raw.txt');
+const OUT = path.join(ROOT, 'datasets', 'problem100', 'raw.txt');
 
 function decodeHtml(s) {
   return (s || '')

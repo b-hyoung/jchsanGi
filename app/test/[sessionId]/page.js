@@ -49,18 +49,18 @@ async function fetchQuizDataFromPath(basePath) {
 }
 
 const sessionConfig = {
-  '1': { title: '정보처리산업기사 2024년 1회', basePath: ['problem2024', 'first'] },
-  '2': { title: '정보처리산업기사 2024년 2회', basePath: ['problem2024', 'second'] },
-  '3': { title: '정보처리산업기사 2024년 3회', basePath: ['problem2024', 'third'] },
-  '4': { title: '정보처리산업기사 2024년 2회', basePath: ['problem2024', 'second'] },
-  '5': { title: '정보처리산업기사 2024년 3회', basePath: ['problem2024', 'third'] },
-  '6': { title: '정보처리산업기사 2023년 1회', basePath: ['problem2023', 'first'] },
-  '7': { title: '정보처리산업기사 2023년 2회', basePath: ['problem2023', 'second'] },
-  '8': { title: '정보처리산업기사 2023년 3회', basePath: ['problem2023', 'third'] },
-  '9': { title: '정보처리산업기사 2022년 1회', basePath: ['problem2022', 'first'] },
-  '10': { title: '정보처리산업기사 2022년 2회', basePath: ['problem2022', 'second'] },
-  '11': { title: '정보처리산업기사 2022년 3회', basePath: ['problem2022', 'third'] },
-  '12': { title: '개발자가 방금만든 따끈 문제 60', basePath: ['problemNow_60', 'first'] },
+  '1': { title: '정보처리산업기사 2024년 1회', basePath: ['datasets', 'problem2024', 'first'] },
+  '2': { title: '정보처리산업기사 2024년 2회', basePath: ['datasets', 'problem2024', 'second'] },
+  '3': { title: '정보처리산업기사 2024년 3회', basePath: ['datasets', 'problem2024', 'third'] },
+  '4': { title: '정보처리산업기사 2024년 2회', basePath: ['datasets', 'problem2024', 'second'] },
+  '5': { title: '정보처리산업기사 2024년 3회', basePath: ['datasets', 'problem2024', 'third'] },
+  '6': { title: '정보처리산업기사 2023년 1회', basePath: ['datasets', 'problem2023', 'first'] },
+  '7': { title: '정보처리산업기사 2023년 2회', basePath: ['datasets', 'problem2023', 'second'] },
+  '8': { title: '정보처리산업기사 2023년 3회', basePath: ['datasets', 'problem2023', 'third'] },
+  '9': { title: '정보처리산업기사 2022년 1회', basePath: ['datasets', 'problem2022', 'first'] },
+  '10': { title: '정보처리산업기사 2022년 2회', basePath: ['datasets', 'problem2022', 'second'] },
+  '11': { title: '정보처리산업기사 2022년 3회', basePath: ['datasets', 'problem2022', 'third'] },
+  '12': { title: '개발자가 방금만든 따끈 문제 60', basePath: ['datasets', 'problemNow_60', 'first'] },
 };
 
 export default async function TestPage({ params: paramsPromise }) {
