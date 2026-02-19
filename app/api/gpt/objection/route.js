@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+﻿import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -29,6 +29,11 @@ function normalizeText(value) {
     .trim();
 }
 
+function safeCount(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
 function buildCacheKey({
   sourceSessionId,
   sourceProblemNumber,
@@ -42,6 +47,7 @@ function buildCacheKey({
         .map((m) => `${m.role}:${normalizeText(m.content)}`)
         .join('|')
     : '';
+
   const raw = [
     String(sourceSessionId),
     String(sourceProblemNumber),
@@ -49,15 +55,14 @@ function buildCacheKey({
     `correct:${normalizeText(correctAnswer)}`,
     historyKey,
   ].join('::');
+
   return createHash('sha256').update(raw).digest('hex');
 }
 
 function extractAnswerText(data) {
-  // 1) Preferred convenience field
   const direct = String(data?.output_text || '').trim();
   if (direct) return direct;
 
-  // 2) Walk output[] -> content[] -> text
   const output = Array.isArray(data?.output) ? data.output : [];
   const chunks = [];
   for (const item of output) {
@@ -69,7 +74,6 @@ function extractAnswerText(data) {
   }
   if (chunks.length > 0) return chunks.join('\n\n');
 
-  // 3) Refusal fallback
   const refusal = output
     .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
     .find((c) => typeof c?.refusal === 'string' && c.refusal.trim());
@@ -80,7 +84,7 @@ function extractAnswerText(data) {
 
 async function readCache(cacheKey) {
   if (!hasSupabaseConfig()) return null;
-  const url = `${supabaseRestUrl()}?select=cache_key,answer,hit_count&cache_key=eq.${cacheKey}&limit=1`;
+  const url = `${supabaseRestUrl()}?select=*&cache_key=eq.${cacheKey}&limit=1`;
   const response = await fetch(url, {
     method: 'GET',
     headers: supabaseHeaders(),
@@ -129,9 +133,7 @@ async function writeCache({
   };
   await fetch(supabaseRestUrl(), {
     method: 'POST',
-    headers: supabaseHeaders({
-      Prefer: 'resolution=ignore-duplicates,return=minimal',
-    }),
+    headers: supabaseHeaders({ Prefer: 'resolution=ignore-duplicates,return=minimal' }),
     body: JSON.stringify(payload),
   });
 }
@@ -140,10 +142,7 @@ export async function POST(req) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json(
-        { ok: false, message: 'OPENAI_API_KEY is not configured.' },
-        { status: 500 }
-      );
+      return NextResponse.json({ ok: false, message: 'OPENAI_API_KEY is not configured.' }, { status: 500 });
     }
 
     const body = await req.json();
@@ -173,9 +172,18 @@ export async function POST(req) {
     try {
       const cached = await readCache(cacheKey);
       const cachedAnswer = String(cached?.answer || '').trim();
-      if (cachedAnswer && cachedAnswer !== '답변이 비어 있습니다.') {
+      if (cachedAnswer) {
         await bumpCacheHit(cacheKey, cached.hit_count);
-        return NextResponse.json({ ok: true, answer: cachedAnswer, cached: true });
+        return NextResponse.json({
+          ok: true,
+          answer: cachedAnswer,
+          cached: true,
+          cacheKey: String(cached?.cache_key || cacheKey),
+          feedback: {
+            like: safeCount(cached?.like_count),
+            dislike: safeCount(cached?.dislike_count),
+          },
+        });
       }
     } catch {
       // Continue without cache on cache errors.
@@ -189,9 +197,9 @@ export async function POST(req) {
       : '';
 
     const prompt = [
-      '사용자는 한국어 객관식 시험 문제를 푸는 중이다.',
-      '문제/선택지/정답/해설을 바탕으로 왜 정답인지 이해하기 쉽게 설명하라.',
-      '반드시 한국어로, 아래 4개 항목 형식으로 답하라:',
+      '사용자는 정보처리 기사/산업기사 문제를 학습 중입니다.',
+      '문제/선택지/정답/기존 해설을 바탕으로 왜 정답인지 쉽게 설명하세요.',
+      '아래 4개 섹션을 반드시 포함하세요.',
       '1) 정답 근거',
       '2) 헷갈린 포인트',
       '3) 오답이 틀린 이유',
@@ -228,15 +236,12 @@ export async function POST(req) {
 
     if (!response.ok) {
       const errText = await response.text();
-      return NextResponse.json(
-        { ok: false, message: 'OpenAI request failed', detail: errText },
-        { status: 502 }
-      );
+      return NextResponse.json({ ok: false, message: 'OpenAI request failed', detail: errText }, { status: 502 });
     }
 
     const data = await response.json();
     const answer = extractAnswerText(data);
-    const safeAnswer = answer || '답변을 생성하지 못했습니다. 질문을 조금 더 구체적으로 다시 보내주세요.';
+    const safeAnswer = answer || '답변 생성에 실패했습니다. 질문을 조금 더 구체적으로 적어주세요.';
 
     try {
       await writeCache({
@@ -255,7 +260,13 @@ export async function POST(req) {
       // Ignore cache write failures.
     }
 
-    return NextResponse.json({ ok: true, answer: safeAnswer, cached: false });
+    return NextResponse.json({
+      ok: true,
+      answer: safeAnswer,
+      cached: false,
+      cacheKey,
+      feedback: { like: 0, dislike: 0 },
+    });
   } catch (e) {
     return NextResponse.json(
       { ok: false, message: 'failed to process objection', detail: String(e?.message || e) },

@@ -28,6 +28,10 @@ const emptyMetrics = {
   subjectAverages: [],
   reportReasons: [],
   recentReports: [],
+  gptFeedback: {
+    summary: { total: 0, liked: 0, disliked: 0, netLikeRatio: 0 },
+    items: [],
+  },
 };
 
 const ADMIN_PASSWORD = 'testbob';
@@ -532,6 +536,50 @@ export default function AdminPage() {
                 >
                   선택 삭제
                 </button>
+              </div>
+            </div>
+            <div className="mb-4 rounded-lg border border-violet-200 bg-violet-50 p-3">
+              <p className="mb-2 text-sm font-bold text-violet-900">GPT 답변 좋아요/싫어요 집계</p>
+              <div className="mb-2 grid grid-cols-2 gap-2 text-xs md:grid-cols-4">
+                <div className="rounded border border-violet-200 bg-white px-2 py-1">
+                  총 평가: <span className="font-extrabold">{metrics?.gptFeedback?.summary?.total ?? 0}</span>
+                </div>
+                <div className="rounded border border-emerald-200 bg-white px-2 py-1 text-emerald-700">
+                  좋아요: <span className="font-extrabold">{metrics?.gptFeedback?.summary?.liked ?? 0}</span>
+                </div>
+                <div className="rounded border border-rose-200 bg-white px-2 py-1 text-rose-700">
+                  싫어요: <span className="font-extrabold">{metrics?.gptFeedback?.summary?.disliked ?? 0}</span>
+                </div>
+                <div className="rounded border border-violet-200 bg-white px-2 py-1">
+                  호감도: <span className="font-extrabold">{metrics?.gptFeedback?.summary?.netLikeRatio ?? 0}%</span>
+                </div>
+              </div>
+              <div className="max-h-48 overflow-y-auto rounded border border-violet-200 bg-white">
+                <table className="min-w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-violet-100 bg-violet-50 text-left text-violet-900">
+                      <th className="px-2 py-1">원본</th>
+                      <th className="px-2 py-1">좋아요</th>
+                      <th className="px-2 py-1">싫어요</th>
+                      <th className="px-2 py-1">캐시사용</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(metrics?.gptFeedback?.items || []).slice(0, 30).map((r, i) => (
+                      <tr key={`${r.cacheKey || i}`} className="border-b border-violet-50">
+                        <td className="px-2 py-1">{sessionLabel(r.sourceSessionId)}-{r.sourceProblemNumber}</td>
+                        <td className="px-2 py-1 font-semibold text-emerald-700">{r.like}</td>
+                        <td className="px-2 py-1 font-semibold text-rose-700">{r.dislike}</td>
+                        <td className="px-2 py-1">{r.hitCount}</td>
+                      </tr>
+                    ))}
+                    {(!metrics?.gptFeedback?.items || metrics.gptFeedback.items.length === 0) && (
+                      <tr>
+                        <td colSpan={4} className="px-2 py-2 text-slate-500">아직 GPT 평가 데이터가 없습니다.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
             {loading ? (

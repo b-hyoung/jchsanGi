@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight, Settings, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { trackEvent } from '@/lib/analyticsClient';
 
 const T = {
@@ -74,8 +74,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const [gptError, setGptError] = useState('');
   const [gptUsedProblems, setGptUsedProblems] = useState({});
   const [gptConversationsByProblem, setGptConversationsByProblem] = useState({});
+  const [gptVoteMap, setGptVoteMap] = useState({});
   const [initialJumpApplied, setInitialJumpApplied] = useState(false);
   const gptStateStorageKey = `gpt_objection_state_${sessionId}`;
+  const gptVoteStorageKey = `gpt_feedback_votes_${sessionId}`;
 
   useEffect(() => {
     try {
@@ -104,6 +106,21 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       );
     } catch {}
   }, [gptConversationsByProblem, gptStateStorageKey, gptUsedProblems]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(gptVoteStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') setGptVoteMap(parsed);
+    } catch {}
+  }, [gptVoteStorageKey]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(gptVoteStorageKey, JSON.stringify(gptVoteMap));
+    } catch {}
+  }, [gptVoteMap, gptVoteStorageKey]);
 
   useEffect(() => {
     try {
@@ -457,6 +474,11 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
           role: 'assistant',
           content: assistantText,
           cached: !!data.cached,
+          cacheKey: String(data?.cacheKey || ''),
+          feedback: {
+            like: Number(data?.feedback?.like || 0),
+            dislike: Number(data?.feedback?.dislike || 0),
+          },
         },
       ];
       setGptMessages(finalMessages);
@@ -556,6 +578,43 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       return;
     }
     setShowGptHelp(true);
+  };
+
+  const handleVoteGpt = async (msgIndex, vote) => {
+    const msg = gptMessages[msgIndex];
+    if (!msg || msg.role !== 'assistant') return;
+    const cacheKey = String(msg.cacheKey || '').trim();
+    if (!cacheKey) return;
+    if (gptVoteMap[cacheKey]) return;
+
+    try {
+      const res = await fetch('/api/gpt/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cacheKey, vote }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.message || '피드백 저장 실패');
+
+      const nextMessages = gptMessages.map((m, i) => {
+        if (i !== msgIndex) return m;
+        return {
+          ...m,
+          feedback: {
+            like: Number(data?.feedback?.like || 0),
+            dislike: Number(data?.feedback?.dislike || 0),
+          },
+        };
+      });
+      setGptMessages(nextMessages);
+      setGptConversationsByProblem((prev) => ({
+        ...prev,
+        [currentGptProblemKey]: nextMessages,
+      }));
+      setGptVoteMap((prev) => ({ ...prev, [cacheKey]: vote }));
+    } catch (e) {
+      setGptError(String(e?.message || e));
+    }
   };
 
   const getStatusClass = (status) => {
@@ -1638,6 +1697,31 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
                       <p className="mt-1 text-[11px] font-semibold text-emerald-700">
                         이전에 나눈 대화를 통한 해석(캐시)
                       </p>
+                    )}
+                    {m.role === 'assistant' && (
+                      <div className="mt-2 flex items-center justify-end gap-2">
+                        {m.cacheKey && gptVoteMap[String(m.cacheKey)] && (
+                          <span className="text-[11px] font-semibold text-gray-500">평가 완료</span>
+                        )}
+                        <button
+                          type="button"
+                          disabled={!m.cacheKey || Boolean(gptVoteMap[String(m.cacheKey)])}
+                          onClick={() => handleVoteGpt(idx, 'up')}
+                          className="inline-flex h-8 min-w-[56px] items-center justify-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ThumbsUp className="h-4 w-4" />
+                          {Number(m?.feedback?.like || 0)}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!m.cacheKey || Boolean(gptVoteMap[String(m.cacheKey)])}
+                          onClick={() => handleVoteGpt(idx, 'down')}
+                          className="inline-flex h-8 min-w-[56px] items-center justify-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ThumbsDown className="h-4 w-4" />
+                          {Number(m?.feedback?.dislike || 0)}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))
