@@ -44,6 +44,8 @@ const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
 const REPORT_TIP_NOTICE_KEY = 'report_tip_notice_2026_02_once';
 const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
 const GPT_MAX_TURNS = 2;
+const RESUME_STATE_KEY_PREFIX = 'quiz_resume_state_';
+const UNKNOWN_OPTION = '__UNKNOWN_OPTION__';
 
 export default function Quiz({ problems, session, answersMap, commentsMap, sessionId, initialProblemNumber = null }) {
   const router = useRouter();
@@ -76,8 +78,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const [gptConversationsByProblem, setGptConversationsByProblem] = useState({});
   const [gptVoteMap, setGptVoteMap] = useState({});
   const [initialJumpApplied, setInitialJumpApplied] = useState(false);
+  const [resumeProblemNumber, setResumeProblemNumber] = useState(null);
   const gptStateStorageKey = `gpt_objection_state_${sessionId}`;
   const gptVoteStorageKey = `gpt_feedback_votes_${sessionId}`;
+  const resumeStorageKey = `${RESUME_STATE_KEY_PREFIX}${sessionId}`;
 
   useEffect(() => {
     try {
@@ -121,6 +125,18 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       window.localStorage.setItem(gptVoteStorageKey, JSON.stringify(gptVoteMap));
     } catch {}
   }, [gptVoteMap, gptVoteStorageKey]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(resumeStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const nextNumber = Number(parsed?.problemNumber);
+      if (!Number.isNaN(nextNumber) && nextNumber > 0) {
+        setResumeProblemNumber(nextNumber);
+      }
+    } catch {}
+  }, [resumeStorageKey]);
 
   useEffect(() => {
     try {
@@ -186,6 +202,23 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const handleStartQuiz = () => {
     setIsStarted(true);
     trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
+  };
+
+  const handleResumeQuiz = () => {
+    if (!resumeProblemNumber) {
+      handleStartQuiz();
+      return;
+    }
+    setIsStarted(true);
+    trackEvent('resume_exam', {
+      sessionId,
+      path: `/test/${sessionId}`,
+      payload: { problemNumber: resumeProblemNumber },
+    });
+    const targetIndex = quizProblems.findIndex(
+      (p) => Number(p.problem_number) === Number(resumeProblemNumber)
+    );
+    if (targetIndex >= 0) setCurrentProblemIndex(targetIndex);
   };
 
   const handleSelectOption = (problemNumber, option) => {
@@ -263,10 +296,17 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       currentSetTotal,
     });
     setQuizCompleted(true);
+    try {
+      window.localStorage.removeItem(resumeStorageKey);
+    } catch {}
   };
 
   const currentProblem = quizProblems[currentProblemIndex] ?? null;
   const currentProblemNumber = currentProblem?.problem_number;
+  const getOptionList = (problem) => {
+    const base = Array.isArray(problem?.options) ? problem.options : [];
+    return [...base, UNKNOWN_OPTION];
+  };
   const getGptProblemKey = (problem) => {
     if (!problem) return '';
     const srcSession = String(problem.originSessionId || sessionId || 'unknown');
@@ -283,6 +323,20 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const shouldShowExplanation = showResult && ((isCorrect && showExplanationWhenCorrect) || (!isCorrect && showExplanationWhenIncorrect));
   const explanationText =
     currentProblemNumber && commentsMap ? commentsMap[currentProblemNumber] : '';
+
+  useEffect(() => {
+    if (!isStarted || quizCompleted || !currentProblemNumber) return;
+    try {
+      window.localStorage.setItem(
+        resumeStorageKey,
+        JSON.stringify({
+          problemNumber: Number(currentProblemNumber),
+          updatedAt: Date.now(),
+        })
+      );
+      setResumeProblemNumber(Number(currentProblemNumber));
+    } catch {}
+  }, [currentProblemNumber, isStarted, quizCompleted, resumeStorageKey]);
 
   const formatExplanation = (text) => {
     if (!text) return '';
@@ -318,10 +372,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
       const isEditable = tag === 'input' || tag === 'textarea' || (target && target.isContentEditable);
       if (isEditable) return;
 
-      if (['1', '2', '3', '4'].includes(e.key)) {
+      if (['1', '2', '3', '4', '5'].includes(e.key)) {
         if (!currentProblem || isChecked) return;
         const idx = Number(e.key) - 1;
-        const option = currentProblem.options[idx];
+        const option = getOptionList(currentProblem)[idx];
         if (!option) return;
         e.preventDefault();
         handleSelectOption(currentProblem.problem_number, option);
@@ -330,7 +384,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
 
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         if (!currentProblem || isChecked) return;
-        const options = Array.isArray(currentProblem.options) ? currentProblem.options : [];
+        const options = getOptionList(currentProblem);
         if (options.length === 0) return;
 
         const currentIdx = selectedAnswer ? options.indexOf(selectedAnswer) : -1;
@@ -1185,7 +1239,13 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   if (!isStarted) {
     return (
       <>
-        <TestLobby session={session} onStart={handleStartQuiz} problemCount={quizProblems.length} />
+        <TestLobby
+          session={session}
+          onStart={handleStartQuiz}
+          onResume={handleResumeQuiz}
+          problemCount={quizProblems.length}
+          resumeProblemNumber={resumeProblemNumber}
+        />
         <UpdateNoticeModal
           isOpen={showUpdateNotice}
           onClose={() => {
@@ -1214,6 +1274,14 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
           {T.problem} {currentProblemIndex + 1} / {quizProblems.length}
         </div>
         <div className="flex items-center gap-2">
+          {resumeProblemNumber && Number(resumeProblemNumber) !== Number(currentProblemNumber) && (
+            <button
+              onClick={handleResumeQuiz}
+              className="hidden sm:inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-800 hover:bg-indigo-100"
+            >
+              이어풀기: {resumeProblemNumber}번
+            </button>
+          )}
           <div className="relative">
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -1457,9 +1525,10 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
             )}
 
             <div className="space-y-4">
-              {currentProblem.options.map((option, index) => {
+              {getOptionList(currentProblem).map((option, index) => {
                 let buttonClass = 'bg-white hover:bg-indigo-50 border-indigo-200 text-gray-800';
                 const optionIsCode = isCodeLikeText(option);
+                const isUnknownOption = option === UNKNOWN_OPTION;
                 if (selectedAnswer === option) {
                   buttonClass = 'bg-indigo-100 text-indigo-700 border-indigo-500 ring-2 ring-indigo-500 font-bold';
                   if (showResult) {
@@ -1477,7 +1546,9 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
                     disabled={isChecked}
                     className={`w-full text-left p-4 rounded-lg border-2 transition-all ${buttonClass} ${isChecked ? 'cursor-not-allowed opacity-90' : ''}`}
                   >
-                    {isFramesetChoiceQuestion ? (
+                    {isUnknownOption ? (
+                      `${index + 1}. 모르겠어요 (찍는건 시험장에서 ㅎ)`
+                    ) : isFramesetChoiceQuestion ? (
                       <div className="flex items-center gap-3">
                         <div className="font-semibold">{index + 1}.</div>
                         <FramesetOptionFigure idx={index} />
@@ -1795,7 +1866,7 @@ function UpdateNoticeModal({ isOpen, onClose }) {
   );
 }
 
-function TestLobby({ session, onStart, problemCount }) {
+function TestLobby({ session, onStart, onResume, problemCount, resumeProblemNumber }) {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl text-center">
@@ -1807,13 +1878,23 @@ function TestLobby({ session, onStart, problemCount }) {
           <p className="text-indigo-600 font-semibold">{T.lobbyTitle}</p>
           <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title}</h1>
           <p className="text-gray-700 mb-8">총 {problemCount}문항 / 90분(3과목)</p>
-          <button
-            onClick={onStart}
-            className="w-full max-w-xs mx-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
-          >
-            <PlayCircle className="w-6 h-6 mr-3" />
-            {T.start}
-          </button>
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={onStart}
+              className="w-full max-w-xs px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
+            >
+              <PlayCircle className="w-6 h-6 mr-3" />
+              {T.start}
+            </button>
+            {typeof onResume === 'function' && resumeProblemNumber && (
+              <button
+                onClick={onResume}
+                className="w-full max-w-xs px-8 py-3 border-2 border-indigo-200 text-indigo-800 font-bold rounded-full hover:bg-indigo-50 transition"
+              >
+                이어풀기: {resumeProblemNumber}번부터
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
