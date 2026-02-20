@@ -47,7 +47,15 @@ const GPT_MAX_TURNS = 2;
 const RESUME_STATE_KEY_PREFIX = 'quiz_resume_state_';
 const UNKNOWN_OPTION = '__UNKNOWN_OPTION__';
 
-export default function Quiz({ problems, session, answersMap, commentsMap, sessionId, initialProblemNumber = null }) {
+export default function Quiz({
+  problems,
+  session,
+  answersMap,
+  commentsMap,
+  sessionId,
+  initialProblemNumber = null,
+  shouldResume = false,
+}) {
   const router = useRouter();
   const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
@@ -78,7 +86,6 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   const [gptConversationsByProblem, setGptConversationsByProblem] = useState({});
   const [gptVoteMap, setGptVoteMap] = useState({});
   const [initialJumpApplied, setInitialJumpApplied] = useState(false);
-  const [resumeProblemNumber, setResumeProblemNumber] = useState(null);
   const gptStateStorageKey = `gpt_objection_state_${sessionId}`;
   const gptVoteStorageKey = `gpt_feedback_votes_${sessionId}`;
   const resumeStorageKey = `${RESUME_STATE_KEY_PREFIX}${sessionId}`;
@@ -127,16 +134,19 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   }, [gptVoteMap, gptVoteStorageKey]);
 
   useEffect(() => {
+    if (!shouldResume) return;
     try {
       const raw = window.localStorage.getItem(resumeStorageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      const nextNumber = Number(parsed?.problemNumber);
-      if (!Number.isNaN(nextNumber) && nextNumber > 0) {
-        setResumeProblemNumber(nextNumber);
+      if (parsed?.answers && typeof parsed.answers === 'object') {
+        setAnswers(parsed.answers);
+      }
+      if (parsed?.checkedProblems && typeof parsed.checkedProblems === 'object') {
+        setCheckedProblems(parsed.checkedProblems);
       }
     } catch {}
-  }, [resumeStorageKey]);
+  }, [resumeStorageKey, shouldResume]);
 
   useEffect(() => {
     try {
@@ -200,25 +210,15 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   }, [showReportTipNotice]);
 
   const handleStartQuiz = () => {
-    setIsStarted(true);
-    trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
-  };
-
-  const handleResumeQuiz = () => {
-    if (!resumeProblemNumber) {
-      handleStartQuiz();
-      return;
+    if (!shouldResume) {
+      setAnswers({});
+      setCheckedProblems({});
+      try {
+        window.localStorage.removeItem(resumeStorageKey);
+      } catch {}
     }
     setIsStarted(true);
-    trackEvent('resume_exam', {
-      sessionId,
-      path: `/test/${sessionId}`,
-      payload: { problemNumber: resumeProblemNumber },
-    });
-    const targetIndex = quizProblems.findIndex(
-      (p) => Number(p.problem_number) === Number(resumeProblemNumber)
-    );
-    if (targetIndex >= 0) setCurrentProblemIndex(targetIndex);
+    trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
   };
 
   const handleSelectOption = (problemNumber, option) => {
@@ -331,12 +331,13 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
         resumeStorageKey,
         JSON.stringify({
           problemNumber: Number(currentProblemNumber),
+          answers,
+          checkedProblems,
           updatedAt: Date.now(),
         })
       );
-      setResumeProblemNumber(Number(currentProblemNumber));
     } catch {}
-  }, [currentProblemNumber, isStarted, quizCompleted, resumeStorageKey]);
+  }, [answers, checkedProblems, currentProblemNumber, isStarted, quizCompleted, resumeStorageKey]);
 
   const formatExplanation = (text) => {
     if (!text) return '';
@@ -1239,13 +1240,7 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
   if (!isStarted) {
     return (
       <>
-        <TestLobby
-          session={session}
-          onStart={handleStartQuiz}
-          onResume={handleResumeQuiz}
-          problemCount={quizProblems.length}
-          resumeProblemNumber={resumeProblemNumber}
-        />
+        <TestLobby session={session} onStart={handleStartQuiz} problemCount={quizProblems.length} />
         <UpdateNoticeModal
           isOpen={showUpdateNotice}
           onClose={() => {
@@ -1274,14 +1269,6 @@ export default function Quiz({ problems, session, answersMap, commentsMap, sessi
           {T.problem} {currentProblemIndex + 1} / {quizProblems.length}
         </div>
         <div className="flex items-center gap-2">
-          {resumeProblemNumber && Number(resumeProblemNumber) !== Number(currentProblemNumber) && (
-            <button
-              onClick={handleResumeQuiz}
-              className="hidden sm:inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-800 hover:bg-indigo-100"
-            >
-              이어풀기: {resumeProblemNumber}번
-            </button>
-          )}
           <div className="relative">
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -1866,7 +1853,7 @@ function UpdateNoticeModal({ isOpen, onClose }) {
   );
 }
 
-function TestLobby({ session, onStart, onResume, problemCount, resumeProblemNumber }) {
+function TestLobby({ session, onStart, problemCount }) {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl text-center">
@@ -1878,23 +1865,13 @@ function TestLobby({ session, onStart, onResume, problemCount, resumeProblemNumb
           <p className="text-indigo-600 font-semibold">{T.lobbyTitle}</p>
           <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title}</h1>
           <p className="text-gray-700 mb-8">총 {problemCount}문항 / 90분(3과목)</p>
-          <div className="flex flex-col items-center gap-3">
-            <button
-              onClick={onStart}
-              className="w-full max-w-xs px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
-            >
-              <PlayCircle className="w-6 h-6 mr-3" />
-              {T.start}
-            </button>
-            {typeof onResume === 'function' && resumeProblemNumber && (
-              <button
-                onClick={onResume}
-                className="w-full max-w-xs px-8 py-3 border-2 border-indigo-200 text-indigo-800 font-bold rounded-full hover:bg-indigo-50 transition"
-              >
-                이어풀기: {resumeProblemNumber}번부터
-              </button>
-            )}
-          </div>
+          <button
+            onClick={onStart}
+            className="w-full max-w-xs mx-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
+          >
+            <PlayCircle className="w-6 h-6 mr-3" />
+            {T.start}
+          </button>
         </div>
       </div>
     </div>

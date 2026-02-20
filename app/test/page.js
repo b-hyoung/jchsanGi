@@ -1,9 +1,11 @@
 ﻿'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Book, ChevronRight, Shuffle } from 'lucide-react';
 import { trackEvent } from '@/lib/analyticsClient';
+
+const RESUME_STATE_KEY_PREFIX = 'quiz_resume_state_';
 
 const sessionsByYear = [
   {
@@ -39,11 +41,29 @@ const sessionsByYear = [
 ];
 
 export default function TestSelectionPage() {
+  const [resumeMap, setResumeMap] = useState({});
+
   useEffect(() => {
     const key = `visit_test_${new Date().toISOString().slice(0, 10)}`;
     if (window.sessionStorage.getItem(key)) return;
     window.sessionStorage.setItem(key, '1');
     trackEvent('visit_test', { path: '/test' });
+  }, []);
+
+  useEffect(() => {
+    const allSessionIds = sessionsByYear.flatMap((group) => group.sessions.map((session) => String(session.id)));
+    const nextMap = {};
+    for (const id of allSessionIds) {
+      try {
+        const raw = window.localStorage.getItem(`${RESUME_STATE_KEY_PREFIX}${id}`);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        const problemNumber = Number(parsed?.problemNumber);
+        if (Number.isNaN(problemNumber) || problemNumber <= 0) continue;
+        nextMap[id] = { problemNumber };
+      } catch {}
+    }
+    setResumeMap(nextMap);
   }, []);
 
   return (
@@ -101,21 +121,33 @@ export default function TestSelectionPage() {
                 </summary>
 
                 <div className="px-4 pb-4 md:px-6 md:pb-6 space-y-3">
-                  {yearGroup.sessions.map((session) => (
-                    <Link
-                      key={session.id}
-                      href={`/test/${session.id}`}
-                      className="block p-5 bg-white rounded-xl border border-gray-200 hover:border-sky-300 hover:bg-sky-50 transition-all"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-lg font-bold text-sky-900">{session.title}</h3>
-                          <p className="text-gray-600 mt-1">{session.description}</p>
-                        </div>
-                        <ChevronRight className="w-6 h-6 text-gray-400" />
+                  {yearGroup.sessions.map((session) => {
+                    const resume = resumeMap[String(session.id)];
+                    return (
+                      <div key={session.id} className="space-y-2">
+                        <Link
+                          href={`/test/${session.id}`}
+                          className="block p-5 bg-white rounded-xl border border-gray-200 hover:border-sky-300 hover:bg-sky-50 transition-all"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-bold text-sky-900">{session.title}</h3>
+                              <p className="text-gray-600 mt-1">{session.description}</p>
+                            </div>
+                            <ChevronRight className="w-6 h-6 text-gray-400" />
+                          </div>
+                        </Link>
+                        {resume && (
+                          <Link
+                            href={`/test/${session.id}?p=${resume.problemNumber}&resume=1`}
+                            className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-sm font-bold text-indigo-800 hover:bg-indigo-100"
+                          >
+                            이어풀기 {resume.problemNumber}번
+                          </Link>
+                        )}
                       </div>
-                    </Link>
-                  ))}
+                    );
+                  })}
                 </div>
               </details>
             ))}

@@ -70,6 +70,7 @@ export default async function TestPage({ params: paramsPromise, searchParams: se
   const cfg = sessionConfig[sessionId];
   const initialProblemNumber = Number(searchParams?.p);
   const validInitialProblemNumber = Number.isNaN(initialProblemNumber) ? null : initialProblemNumber;
+  const shouldResume = String(searchParams?.resume) === '1';
 
   if (!cfg) notFound();
 
@@ -84,6 +85,7 @@ export default async function TestPage({ params: paramsPromise, searchParams: se
       session={{ title: cfg.title }}
       sessionId={sessionId}
       initialProblemNumber={validInitialProblemNumber}
+      shouldResume={shouldResume}
     />
   );
 }
