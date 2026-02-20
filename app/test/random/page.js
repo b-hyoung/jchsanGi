@@ -124,6 +124,7 @@ async function buildRandomQuizData() {
       problem_number: newNo,
       question_text: `[${item.sourceKey}] ${item.question_text}`,
       options: item.options,
+      examples: item.examples || null,
       sectionTitle: sectionTitleOf(subject),
       originSessionId: item.sourceSessionId,
       originProblemNumber: item.problem_number,
