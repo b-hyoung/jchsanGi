@@ -303,6 +303,7 @@ export default function Quiz({
 
   const currentProblem = quizProblems[currentProblemIndex] ?? null;
   const currentProblemNumber = currentProblem?.problem_number;
+  const actualProblemNumber = Number(currentProblem?.originProblemNumber ?? currentProblemNumber ?? 0);
   const getOptionList = (problem) => {
     const base = Array.isArray(problem?.options) ? problem.options : [];
     return [...base, UNKNOWN_OPTION];
@@ -796,25 +797,25 @@ export default function Quiz({
   const relationDegreeVisual = parseRelationDegreeVisual(currentProblem?.question_text);
   const tradeMaxVisual = parseTradeMaxVisual(currentProblem?.question_text);
   const showTree44 =
-    currentProblem?.problem_number === 44 &&
+    actualProblemNumber === 44 &&
     /이진 트리|binary tree|트리/i.test(String(currentProblem?.question_text || ''));
   const showTree51 =
-    currentProblem?.problem_number === 51 &&
+    actualProblemNumber === 51 &&
     /다음 트리|트리를 전위 순서|전위 순회|트리/i.test(String(currentProblem?.question_text || ''));
   const showTree56 =
-    currentProblem?.problem_number === 56 &&
+    actualProblemNumber === 56 &&
     /다음 그림에서 트리|터미널 노드|Degree|트리/i.test(String(currentProblem?.question_text || ''));
   const showTree46 =
-    currentProblem?.problem_number === 46 &&
+    actualProblemNumber === 46 &&
     /이진 트리|전위|preorder/i.test(String(currentProblem?.question_text || ''));
   const showFan36 =
-    currentProblem?.problem_number === 36 &&
+    actualProblemNumber === 36 &&
     /fan-in|fan-out/i.test(String(currentProblem?.question_text || ''));
   const showGraph43 =
-    currentProblem?.problem_number === 43 &&
+    actualProblemNumber === 43 &&
     /그래프|간선/.test(String(currentProblem?.question_text || ''));
   const showMemory14 =
-    currentProblem?.problem_number === 14 &&
+    actualProblemNumber === 14 &&
     /(5K|10K|15K|20K|3K|11K|7K|메모리|버디)/i.test(String(currentProblem?.question_text || ''));
   const showPromptFigure = (() => {
     const qText = String(currentProblem?.question_text || '');
@@ -822,7 +823,7 @@ export default function Quiz({
     const hasPromptOption = opts.some((opt) => /prompt\s*\(|alert\s*\(|title|default/i.test(String(opt || '')));
     if (!hasPromptOption) return false;
     // 본문/보기에 키워드가 있거나, JavaScript 창(대화상자) 문제면 도식 표시
-    return /이 페이지 내용|prompt|title|default|JavaScript|창을 띄우기|대화상자/i.test(qText) || currentProblem?.problem_number === 22;
+    return /이 페이지 내용|prompt|title|default|JavaScript|창을 띄우기|대화상자/i.test(qText) || actualProblemNumber === 22;
   })();
 
   const parseQuestionCodeBlock = (text) => {
@@ -903,7 +904,7 @@ export default function Quiz({
     const q = String(currentProblem?.question_text || '');
     const ex = String(currentProblem?.examples || '');
     return (
-      currentProblem?.problem_number === 28 &&
+      actualProblemNumber === 28 &&
       /frameset/i.test(q) &&
       /<FRAMESET/i.test(ex) &&
       /cols=/i.test(ex) &&
@@ -951,8 +952,8 @@ export default function Quiz({
 
   const safeQuestionText = normalizeKnownCorruptedQuestion(
     currentProblem?.question_text,
-    currentProblem?.problem_number,
-    session?.id
+    actualProblemNumber,
+    currentProblem?.originSessionId || session?.id || sessionId
   );
   const rawQuestionText = bookPriceVisual
     ? bookPriceVisual.stem
