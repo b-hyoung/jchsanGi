@@ -310,16 +310,17 @@ export default function Quiz({
     const base = Array.isArray(problem?.options) ? problem.options : [];
     return [...base, UNKNOWN_OPTION];
   };
-  const getGptProblemKey = (problem) => {
+  const getGptProblemKey = (problem, answerValue = '') => {
     if (!problem) return '';
     const srcSession = String(problem.originSessionId || sessionId || 'unknown');
     const srcNumber = String(problem.originProblemNumber || problem.problem_number || '0');
-    return `${srcSession}:${srcNumber}`;
+    const selected = String(answerValue || '').trim();
+    return `${srcSession}:${srcNumber}::selected:${selected}`;
   };
-  const currentGptProblemKey = getGptProblemKey(currentProblem);
   const isChecked = currentProblemNumber ? checkedProblems[currentProblemNumber] : false;
   const selectedAnswer = currentProblemNumber ? answers[currentProblemNumber] : null;
   const correctAnswer = currentProblemNumber && answersMap ? answersMap[currentProblemNumber] : null;
+  const currentGptProblemKey = getGptProblemKey(currentProblem, selectedAnswer);
   const isCorrect = selectedAnswer === correctAnswer;
   const correctAnswerIndex = currentProblem ? currentProblem.options.indexOf(correctAnswer) : -1;
   const showResult = isChecked;
@@ -481,7 +482,7 @@ export default function Quiz({
 
   const handleAskGptObjection = async () => {
     if (!currentProblem) return;
-    const problemKey = getGptProblemKey(currentProblem);
+    const problemKey = getGptProblemKey(currentProblem, selectedAnswer);
     const userTurns = gptMessages.filter((m) => m.role === 'user').length;
     if (userTurns >= GPT_MAX_TURNS) {
       setGptError(`대화는 최대 ${GPT_MAX_TURNS}번까지 가능합니다.`);
