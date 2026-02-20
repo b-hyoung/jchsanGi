@@ -18,10 +18,31 @@ const SOURCES = [
   { key: '2022-3', sessionId: '11', basePath: ['datasets', 'problem2022', 'third'] },
 ];
 
-function shuffle(arr) {
+function stringToSeed(value) {
+  const text = String(value || 'seed');
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function createSeededRandom(seedValue) {
+  let t = stringToSeed(seedValue);
+  return () => {
+    t += 0x6D2B79F5;
+    let x = t;
+    x = Math.imul(x ^ (x >>> 15), x | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffle(arr, rnd = Math.random) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rnd() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
@@ -87,7 +108,8 @@ async function readSessionData(source) {
   }));
 }
 
-async function buildRandomQuizData() {
+async function buildRandomQuizData(seedValue) {
+  const rnd = createSeededRandom(seedValue);
   const allBySession = await Promise.all(SOURCES.map(readSessionData));
   const bySessionMap = {};
   SOURCES.forEach((s, idx) => {
@@ -97,20 +119,20 @@ async function buildRandomQuizData() {
   const selectedBySubject = { 1: [], 2: [], 3: [] };
 
   for (const subject of [1, 2, 3]) {
-    const pickedSessions = shuffle(SOURCES).slice(0, 4);
+    const pickedSessions = shuffle(SOURCES, rnd).slice(0, 4);
     for (const src of pickedSessions) {
       const pool = bySessionMap[src.key].filter((p) => subjectOf(p.problem_number) === subject);
       if (pool.length < 5) {
         throw new Error(`Not enough questions in ${src.key} subject ${subject}`);
       }
-      selectedBySubject[subject].push(...shuffle(pool).slice(0, 5));
+      selectedBySubject[subject].push(...shuffle(pool, rnd).slice(0, 5));
     }
   }
 
   const ordered = [
-    ...shuffle(selectedBySubject[1]),
-    ...shuffle(selectedBySubject[2]),
-    ...shuffle(selectedBySubject[3]),
+    ...shuffle(selectedBySubject[1], rnd),
+    ...shuffle(selectedBySubject[2], rnd),
+    ...shuffle(selectedBySubject[3], rnd),
   ];
 
   const problems = [];
@@ -134,13 +156,19 @@ async function buildRandomQuizData() {
     commentsMap[newNo] = item.comment_text;
   });
 
-  return { problems, answersMap, commentsMap };
+  return { problems, answersMap, commentsMap, seed: String(seedValue) };
 }
 
-export default async function RandomTestPage() {
+export default async function RandomTestPage({ searchParams: searchParamsPromise }) {
+  const searchParams = await searchParamsPromise;
+  const shouldResume = String(searchParams?.resume) === '1';
+  const initialProblemNumber = Number(searchParams?.p);
+  const validInitialProblemNumber = Number.isNaN(initialProblemNumber) ? null : initialProblemNumber;
+  const seed = String(searchParams?.seed || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+
   let data;
   try {
-    data = await buildRandomQuizData();
+    data = await buildRandomQuizData(seed);
   } catch (error) {
     console.error('Failed to build random quiz:', error);
     notFound();
@@ -153,6 +181,9 @@ export default async function RandomTestPage() {
       commentsMap={data.commentsMap}
       session={session}
       sessionId="random"
+      initialProblemNumber={validInitialProblemNumber}
+      shouldResume={shouldResume}
+      resumeToken={data.seed}
     />
   );
 }

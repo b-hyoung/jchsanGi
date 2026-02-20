@@ -43,7 +43,7 @@ const T = {
 const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
 const REPORT_TIP_NOTICE_KEY = 'report_tip_notice_2026_02_once';
 const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
-const GPT_MAX_TURNS = 2;
+const GPT_MAX_TURNS = 3;
 const RESUME_STATE_KEY_PREFIX = 'quiz_resume_state_';
 const UNKNOWN_OPTION = '__UNKNOWN_OPTION__';
 
@@ -55,6 +55,7 @@ export default function Quiz({
   sessionId,
   initialProblemNumber = null,
   shouldResume = false,
+  resumeToken = '',
 }) {
   const router = useRouter();
   const [allProblems] = useState(problems);
@@ -139,6 +140,7 @@ export default function Quiz({
       const raw = window.localStorage.getItem(resumeStorageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw);
+      if (resumeToken && String(parsed?.resumeToken || '') !== String(resumeToken)) return;
       if (parsed?.answers && typeof parsed.answers === 'object') {
         setAnswers(parsed.answers);
       }
@@ -146,7 +148,7 @@ export default function Quiz({
         setCheckedProblems(parsed.checkedProblems);
       }
     } catch {}
-  }, [resumeStorageKey, shouldResume]);
+  }, [resumeStorageKey, resumeToken, shouldResume]);
 
   useEffect(() => {
     try {
@@ -334,11 +336,12 @@ export default function Quiz({
           problemNumber: Number(currentProblemNumber),
           answers,
           checkedProblems,
+          resumeToken: String(resumeToken || ''),
           updatedAt: Date.now(),
         })
       );
     } catch {}
-  }, [answers, checkedProblems, currentProblemNumber, isStarted, quizCompleted, resumeStorageKey]);
+  }, [answers, checkedProblems, currentProblemNumber, isStarted, quizCompleted, resumeStorageKey, resumeToken]);
 
   const formatExplanation = (text) => {
     if (!text) return '';

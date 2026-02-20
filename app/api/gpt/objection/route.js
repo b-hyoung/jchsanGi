@@ -39,21 +39,12 @@ function buildCacheKey({
   sourceProblemNumber,
   selectedAnswer = '',
   correctAnswer = '',
-  history,
 }) {
-  const historyKey = Array.isArray(history)
-    ? history
-        .filter((m) => m && (m.role === 'user' || m.role === 'assistant'))
-        .map((m) => `${m.role}:${normalizeText(m.content)}`)
-        .join('|')
-    : '';
-
   const raw = [
     String(sourceSessionId),
     String(sourceProblemNumber),
     `selected:${normalizeText(selectedAnswer)}`,
     `correct:${normalizeText(correctAnswer)}`,
-    historyKey,
   ].join('::');
 
   return createHash('sha256').update(raw).digest('hex');
@@ -80,6 +71,12 @@ function extractAnswerText(data) {
   if (refusal?.refusal) return refusal.refusal.trim();
 
   return '';
+}
+
+function getLastAssistantAnswer(history) {
+  if (!Array.isArray(history)) return '';
+  const lastAssistant = [...history].reverse().find((m) => m?.role === 'assistant');
+  return String(lastAssistant?.content || '').trim();
 }
 
 async function readCache(cacheKey) {
@@ -160,66 +157,78 @@ export async function POST(req) {
     const lastUserQuestion = Array.isArray(history)
       ? [...history].reverse().find((m) => m?.role === 'user')?.content || ''
       : '';
+    const userTurns = Array.isArray(history) ? history.filter((m) => m?.role === 'user').length : 0;
+    const isFollowUp = userTurns > 1;
+    const lastAssistantAnswer = getLastAssistantAnswer(history);
 
     const cacheKey = buildCacheKey({
       sourceSessionId,
       sourceProblemNumber,
       selectedAnswer,
       correctAnswer,
-      history,
     });
 
-    try {
-      const cached = await readCache(cacheKey);
-      const cachedAnswer = String(cached?.answer || '').trim();
-      if (cachedAnswer) {
-        await bumpCacheHit(cacheKey, cached.hit_count);
-        return NextResponse.json({
-          ok: true,
-          answer: cachedAnswer,
-          cached: true,
-          cacheKey: String(cached?.cache_key || cacheKey),
-          feedback: {
-            like: safeCount(cached?.like_count),
-            dislike: safeCount(cached?.dislike_count),
-          },
-        });
+    if (!isFollowUp) {
+      try {
+        const cached = await readCache(cacheKey);
+        const cachedAnswer = String(cached?.answer || '').trim();
+        if (cachedAnswer) {
+          await bumpCacheHit(cacheKey, cached.hit_count);
+          return NextResponse.json({
+            ok: true,
+            answer: cachedAnswer,
+            cached: true,
+            cacheKey: String(cached?.cache_key || cacheKey),
+            feedback: {
+              like: safeCount(cached?.like_count),
+              dislike: safeCount(cached?.dislike_count),
+            },
+          });
+        }
+      } catch {
+        // Continue without cache on cache errors.
       }
-    } catch {
-      // Continue without cache on cache errors.
     }
 
-    const chatHistory = Array.isArray(history)
-      ? history
-          .filter((m) => m && (m.role === 'user' || m.role === 'assistant'))
-          .map((m) => `${m.role === 'user' ? '사용자' : 'GPT'}: ${String(m.content || '')}`)
-          .join('\n\n')
-      : '';
-
-    const prompt = [
-      '사용자는 정보처리 기사/산업기사 문제를 학습 중입니다.',
-      '문제/선택지/정답/기존 해설을 바탕으로 왜 정답인지 쉽게 설명하세요.',
-      '아래 4개 섹션을 반드시 포함하세요.',
-      '1) 정답 근거',
-      '2) 헷갈린 포인트',
-      '3) 오답이 틀린 이유',
-      '4) 한 줄 암기',
-      '',
-      '[문제]',
-      String(questionText),
-      '',
-      '[선택지]',
-      Array.isArray(options) ? options.map((opt, i) => `${i + 1}. ${String(opt)}`).join('\n') : '',
-      '',
-      `[사용자 선택] ${String(selectedAnswer || '없음')}`,
-      `[정답] ${String(correctAnswer || '없음')}`,
-      '',
-      '[기존 해설]',
-      String(explanationText || '없음'),
-      '',
-      '[대화 이력]',
-      chatHistory || '없음',
-    ].join('\n');
+    const prompt = isFollowUp
+      ? [
+          '사용자는 정보처리 기사/산업기사 문제를 학습 중입니다.',
+          '이전 프롬프트(문제/보기/해설)를 다시 풀어 설명하지 말고, 직전 GPT 답변과 사용자 추가 질문만 보고 이어서 답하세요.',
+          '아래 3개를 지키세요.',
+          '1) 직전 답변의 핵심을 2~3문장으로 재정리',
+          '2) 사용자 추가 질문에 직접 답변',
+          '3) 마지막에 확인용 한 줄 요약',
+          '',
+          '[직전 GPT 답변]',
+          lastAssistantAnswer || '없음',
+          '',
+          '[사용자 추가 질문]',
+          String(lastUserQuestion || '없음'),
+        ].join('\n')
+      : [
+          '사용자는 정보처리 기사/산업기사 문제를 학습 중입니다.',
+          '문제/선택지/정답/기존 해설을 바탕으로 왜 정답인지 쉽게 설명하세요.',
+          '아래 4개 섹션을 반드시 포함하세요.',
+          '1) 정답 근거',
+          '2) 헷갈린 포인트',
+          '3) 오답이 틀린 이유',
+          '4) 한 줄 암기',
+          '',
+          '[문제]',
+          String(questionText),
+          '',
+          '[선택지]',
+          Array.isArray(options) ? options.map((opt, i) => `${i + 1}. ${String(opt)}`).join('\n') : '',
+          '',
+          `[사용자 선택] ${String(selectedAnswer || '없음')}`,
+          `[정답] ${String(correctAnswer || '없음')}`,
+          '',
+          '[기존 해설]',
+          String(explanationText || '없음'),
+          '',
+          '[사용자 질문]',
+          String(lastUserQuestion || '없음'),
+        ].join('\n');
 
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -243,21 +252,23 @@ export async function POST(req) {
     const answer = extractAnswerText(data);
     const safeAnswer = answer || '답변 생성에 실패했습니다. 질문을 조금 더 구체적으로 적어주세요.';
 
-    try {
-      await writeCache({
-        cacheKey,
-        sourceSessionId,
-        sourceProblemNumber,
-        questionText,
-        options,
-        selectedAnswer,
-        correctAnswer,
-        explanationText,
-        userQuestion: lastUserQuestion,
-        answer: safeAnswer,
-      });
-    } catch {
-      // Ignore cache write failures.
+    if (!isFollowUp) {
+      try {
+        await writeCache({
+          cacheKey,
+          sourceSessionId,
+          sourceProblemNumber,
+          questionText,
+          options,
+          selectedAnswer,
+          correctAnswer,
+          explanationText,
+          userQuestion: lastUserQuestion,
+          answer: safeAnswer,
+        });
+      } catch {
+        // Ignore cache write failures.
+      }
     }
 
     return NextResponse.json({

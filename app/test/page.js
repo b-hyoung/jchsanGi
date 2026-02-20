@@ -51,7 +51,7 @@ export default function TestSelectionPage() {
   }, []);
 
   useEffect(() => {
-    const allSessionIds = sessionsByYear.flatMap((group) => group.sessions.map((session) => String(session.id)));
+    const allSessionIds = ['random', ...sessionsByYear.flatMap((group) => group.sessions.map((session) => String(session.id)))];
     const nextMap = {};
     for (const id of allSessionIds) {
       try {
@@ -60,7 +60,7 @@ export default function TestSelectionPage() {
         const parsed = JSON.parse(raw);
         const problemNumber = Number(parsed?.problemNumber);
         if (Number.isNaN(problemNumber) || problemNumber <= 0) continue;
-        nextMap[id] = { problemNumber };
+        nextMap[id] = { problemNumber, resumeToken: String(parsed?.resumeToken || '') };
       } catch {}
     }
     setResumeMap(nextMap);
@@ -75,18 +75,28 @@ export default function TestSelectionPage() {
             <p className="mt-4 text-lg text-gray-600">원하는 회차를 선택하여 실전처럼 연습을 시작하세요.</p>
           </div>
 
-          <Link
-            href="/test/random"
-            className="mb-4 block p-5 bg-gradient-to-r from-indigo-500 to-sky-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Shuffle className="w-6 h-6" />
-                <h2 className="text-lg font-bold">랜덤풀기</h2>
+          <div className="mb-4 space-y-2">
+            <Link
+              href="/test/random"
+              className="block p-5 bg-gradient-to-r from-indigo-500 to-sky-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Shuffle className="w-6 h-6" />
+                  <h2 className="text-lg font-bold">랜덤풀기</h2>
+                </div>
+                <ChevronRight className="w-6 h-6" />
               </div>
-              <ChevronRight className="w-6 h-6" />
-            </div>
-          </Link>
+            </Link>
+            {resumeMap.random?.problemNumber && resumeMap.random?.resumeToken && (
+              <Link
+                href={`/test/random?p=${resumeMap.random.problemNumber}&resume=1&seed=${encodeURIComponent(resumeMap.random.resumeToken)}`}
+                className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-sm font-bold text-indigo-800 hover:bg-indigo-100"
+              >
+                랜덤 이어풀기 {resumeMap.random.problemNumber}번
+              </Link>
+            )}
+          </div>
 
           <Link
             href="/test/100"
