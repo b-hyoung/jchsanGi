@@ -11,8 +11,9 @@ const T = {
   needSelect: '답을 선택해주세요.',
   problem: '문제',
   settings: '해설 설정',
-  showCorrect: '정답일 때 해설 보기',
-  showWrong: '오답일 때 해설 보기',
+  enableCheck: '문제 정답 여부 확인',
+  showCorrect: '해설보기 (정답 선택 시)',
+  showWrong: '해설보기 (오답 선택 시)',
   end: '종료',
   navTitle: '문제 네비게이션',
   statusCorrect: '정답',
@@ -44,10 +45,17 @@ const T = {
 
 const UPDATE_NOTICE_KEY = 'update_notice_2026_02_keyboard_nav';
 const REPORT_TIP_NOTICE_KEY = 'report_tip_notice_2026_02_once';
+const SETTINGS_AUTO_OPEN_KEY = 'settings_auto_open_seen_2026_02';
 const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없음', '문제가 이상함', '문제가없음', '기타'];
 const GPT_MAX_TURNS = 3;
 const RESUME_STATE_KEY_PREFIX = 'quiz_resume_state_';
 const UNKNOWN_OPTION = '__UNKNOWN_OPTION__';
+const FAIL_QUOTES = [
+  '이터널 리턴.. 조금만 할까?',
+  '시험 며칠 안 남았는데 이 점수?\n앞에 창문 열고 뛰어내리자.',
+  '과락 ㅋㅋㅋㅋㅋㅋ\n숨참고 한강 다이브~',
+  '증바람 한판하고 뛰어내릴까?.',
+];
 
 export default function Quiz({
   problems,
@@ -72,6 +80,7 @@ export default function Quiz({
   const [isRealExamMode, setIsRealExamMode] = useState(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [enableAnswerCheck, setEnableAnswerCheck] = useState(true);
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
   const [showExplanationWhenIncorrect, setShowExplanationWhenIncorrect] = useState(true);
   const [showUpdateNotice, setShowUpdateNotice] = useState(false);
@@ -206,6 +215,17 @@ export default function Quiz({
     } catch {
       setShowReportTipNotice(true);
     }
+  }, [isStarted]);
+
+  useEffect(() => {
+    if (!isStarted) return;
+    try {
+      const seen = window.localStorage.getItem(SETTINGS_AUTO_OPEN_KEY);
+      if (!seen) {
+        setIsSettingsOpen(true);
+        window.localStorage.setItem(SETTINGS_AUTO_OPEN_KEY, 'seen');
+      }
+    } catch {}
   }, [isStarted]);
 
   useEffect(() => {
@@ -347,6 +367,7 @@ export default function Quiz({
   const correctAnswer = currentProblemNumber && answersMap ? answersMap[currentProblemNumber] : null;
   const currentGptProblemKey = getGptProblemKey(currentProblem, selectedAnswer);
   const isCorrect = selectedAnswer === correctAnswer;
+  const isDirectProgressMode = isRealExamMode || !enableAnswerCheck;
   const correctAnswerIndex = currentProblem ? currentProblem.options.indexOf(correctAnswer) : -1;
   const showResult = isChecked;
   const shouldShowExplanation =
@@ -436,7 +457,7 @@ export default function Quiz({
 
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        if (isRealExamMode) {
+        if (isDirectProgressMode) {
           if (!selectedAnswer) return;
           if (currentProblemIndex === quizProblems.length - 1) {
             handleSubmitQuiz();
@@ -464,6 +485,7 @@ export default function Quiz({
     isStarted,
     quizCompleted,
     isRealExamMode,
+    enableAnswerCheck,
     isChecked,
     selectedAnswer,
     currentProblem,
@@ -473,7 +495,7 @@ export default function Quiz({
 
   const handleNextClick = () => {
     if (!currentProblem) return;
-    if (isRealExamMode) {
+    if (isDirectProgressMode) {
       if (!selectedAnswer) {
         alert(T.needSelect);
         return;
@@ -662,7 +684,7 @@ export default function Quiz({
 
   const getProblemStatus = (problem) => {
     const num = problem.problem_number;
-    if (isRealExamMode && answers[num] !== undefined && !checkedProblems[num]) return '●';
+    if (isDirectProgressMode && answers[num] !== undefined && !checkedProblems[num]) return '●';
     if (!checkedProblems[num]) return '?';
     return answers[num] === answersMap[num] ? 'O' : 'X';
   };
@@ -1331,7 +1353,7 @@ export default function Quiz({
         <div className="flex items-center gap-2">
           <div className="relative">
             <button
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              onClick={() => setIsSettingsOpen((prev) => !prev)}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
               aria-label="Settings"
             >
@@ -1339,8 +1361,27 @@ export default function Quiz({
             </button>
             {isSettingsOpen && (
               <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20">
-                <h3 className="font-bold text-gray-900 mb-3 pb-2 border-b">{T.settings}</h3>
+                <div className="mb-3 flex items-center justify-between border-b pb-2">
+                  <h3 className="font-bold text-gray-900">{T.settings}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsSettingsOpen(false)}
+                    className="rounded px-2 py-0.5 text-sm font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                    aria-label="설정 닫기"
+                  >
+                    X
+                  </button>
+                </div>
                 <div className="space-y-3">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={enableAnswerCheck}
+                      onChange={(e) => setEnableAnswerCheck(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">{T.enableCheck}</span>
+                  </label>
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1395,7 +1436,7 @@ export default function Quiz({
             <div className="mt-4 text-xs text-gray-600 space-y-1">
               <p><span className="font-bold text-green-700">O</span> {T.statusCorrect}</p>
               <p><span className="font-bold text-red-700">X</span> {T.statusWrong}</p>
-              {isRealExamMode && <p><span className="font-bold text-blue-700">●</span> {T.statusSolved}</p>}
+              {isDirectProgressMode && <p><span className="font-bold text-blue-700">●</span> {T.statusSolved}</p>}
               <p><span className="font-bold text-gray-700">?</span> {T.statusUnsolved}</p>
             </div>
           </aside>
@@ -1698,12 +1739,12 @@ export default function Quiz({
             <div className="mt-6 flex justify-end">
               {(() => {
                 const isLast = currentProblemIndex === quizProblems.length - 1;
-                const primaryLabel = isRealExamMode
+                const primaryLabel = isDirectProgressMode
                   ? (isLast ? T.resultView : T.next)
                   : (isChecked ? (isLast ? T.resultView : T.next) : T.check);
                 const primaryDisabled = !selectedAnswer;
                 const handlePrimaryClick = () => {
-                  if (isRealExamMode) {
+                  if (isDirectProgressMode) {
                     if (!selectedAnswer) {
                       alert(T.needSelect);
                       return;
@@ -1729,7 +1770,7 @@ export default function Quiz({
                 className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed inline-flex items-center"
               >
                 {primaryLabel}
-                {(isRealExamMode ? !isLast : (isChecked && !isLast)) && <ChevronRight className="ml-2 w-5 h-5" />}
+                {(isDirectProgressMode ? !isLast : (isChecked && !isLast)) && <ChevronRight className="ml-2 w-5 h-5" />}
               </button>
                 );
               })()}
@@ -1912,6 +1953,7 @@ export default function Quiz({
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -1926,6 +1968,7 @@ function UpdateNoticeModal({ isOpen, onClose }) {
         <div className="space-y-2 text-sm md:text-base text-gray-700">
           <p>사용자 편의성 개선 사항이 적용되었습니다.</p>
           <p>문제 네비게이션(1~60)에서 O / X / ? 상태를 바로 확인할 수 있습니다.</p>
+          <p>좌측 상단 설정(톱니)에서 정답 확인 사용을 켜고 끌 수 있습니다.</p>
           <p>키보드만으로 진행할 수 있습니다: 1~4 선택, Enter/Space 정답확인/다음.</p>
           <p>정답확인/다음 버튼은 문제 컨테이너 오른쪽 아래로 이동했습니다.</p>
           <p>종료 시 확인 후 현재 점수를 보여주고 회차 선택으로 이동합니다.</p>
@@ -1971,6 +2014,10 @@ function TestLobby({ session, onStart, onStartReal, problemCount }) {
               {T.realStart}
             </button>
           </div>
+          <p className="mt-4 text-sm text-gray-600">
+            시작 후 좌측 상단 <span className="font-semibold">설정(톱니)</span>에서
+            <span className="font-semibold"> 정답 확인 사용</span>을 켜고 끌 수 있습니다.
+          </p>
         </div>
       </div>
     </div>
@@ -1990,6 +2037,7 @@ function QuizResults({ session, results, onRetryWrong }) {
     currentSetTotal,
   } = results;
   const [showFailModal, setShowFailModal] = useState(!isRetryMode && !isOverallPass);
+  const [failQuote] = useState(() => FAIL_QUOTES[Math.floor(Math.random() * FAIL_QUOTES.length)]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
@@ -2047,7 +2095,7 @@ function QuizResults({ session, results, onRetryWrong }) {
       {!isRetryMode && !isOverallPass && showFailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 text-center">
-            <p className="text-lg font-bold text-gray-800 mb-5">이터널 리턴.. 조금만 할까?</p>
+            <p className="text-lg font-bold text-gray-800 mb-5 whitespace-pre-line">{failQuote}</p>
             <button
               onClick={() => setShowFailModal(false)}
               className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700"
