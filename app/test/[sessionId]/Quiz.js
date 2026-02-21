@@ -77,8 +77,6 @@ export default function Quiz({
   const [checkedProblems, setCheckedProblems] = useState({});
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizResults, setQuizResults] = useState(null);
-  const [isRealExamMode, setIsRealExamMode] = useState(false);
-
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [enableAnswerCheck, setEnableAnswerCheck] = useState(true);
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
@@ -257,15 +255,8 @@ export default function Quiz({
         window.localStorage.removeItem(resumeStorageKey);
       } catch {}
     }
-    setIsRealExamMode(false);
     setIsStarted(true);
     trackEvent('start_exam', { sessionId, path: `/test/${sessionId}`, payload: { mode: 'normal' } });
-  };
-
-  const handleStartRealQuiz = () => {
-    setIsRealExamMode(true);
-    setIsStarted(true);
-    trackEvent('start_exam', { sessionId, path: `/test/${sessionId}`, payload: { mode: 'real' } });
   };
 
   const handleSelectOption = (problemNumber, option) => {
@@ -367,11 +358,12 @@ export default function Quiz({
   const correctAnswer = currentProblemNumber && answersMap ? answersMap[currentProblemNumber] : null;
   const currentGptProblemKey = getGptProblemKey(currentProblem, selectedAnswer);
   const isCorrect = selectedAnswer === correctAnswer;
-  const isDirectProgressMode = isRealExamMode || !enableAnswerCheck;
+  const isExamLikePreset =
+    !enableAnswerCheck && !showExplanationWhenCorrect && !showExplanationWhenIncorrect;
+  const isDirectProgressMode = !enableAnswerCheck;
   const correctAnswerIndex = currentProblem ? currentProblem.options.indexOf(correctAnswer) : -1;
   const showResult = isChecked;
   const shouldShowExplanation =
-    !isRealExamMode &&
     showResult &&
     ((isCorrect && showExplanationWhenCorrect) || (!isCorrect && showExplanationWhenIncorrect));
   const explanationText =
@@ -484,7 +476,6 @@ export default function Quiz({
   }, [
     isStarted,
     quizCompleted,
-    isRealExamMode,
     enableAnswerCheck,
     isChecked,
     selectedAnswer,
@@ -1320,7 +1311,6 @@ export default function Quiz({
         <TestLobby
           session={session}
           onStart={handleStartQuiz}
-          onStartReal={handleStartRealQuiz}
           problemCount={quizProblems.length}
         />
         <UpdateNoticeModal
@@ -1351,6 +1341,28 @@ export default function Quiz({
           {T.problem} {currentProblemIndex + 1} / {quizProblems.length}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (isExamLikePreset) {
+                setEnableAnswerCheck(true);
+                setShowExplanationWhenCorrect(true);
+                setShowExplanationWhenIncorrect(true);
+              } else {
+                setEnableAnswerCheck(false);
+                setShowExplanationWhenCorrect(false);
+                setShowExplanationWhenIncorrect(false);
+              }
+              setIsSettingsOpen(false);
+            }}
+            className={`px-3 py-2 rounded-lg text-xs md:text-sm font-bold text-white ${
+              isExamLikePreset
+                ? 'bg-emerald-600 hover:bg-emerald-700'
+                : 'bg-slate-700 hover:bg-slate-800'
+            }`}
+          >
+            {isExamLikePreset ? '해설 및 정답 다시 보기' : T.realStart}
+          </button>
           <div className="relative">
             <button
               onClick={() => setIsSettingsOpen((prev) => !prev)}
@@ -1986,7 +1998,7 @@ function UpdateNoticeModal({ isOpen, onClose }) {
   );
 }
 
-function TestLobby({ session, onStart, onStartReal, problemCount }) {
+function TestLobby({ session, onStart, problemCount }) {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl text-center">
@@ -2005,13 +2017,6 @@ function TestLobby({ session, onStart, onStartReal, problemCount }) {
             >
               <PlayCircle className="w-6 h-6 mr-3" />
               {T.start}
-            </button>
-            <button
-              onClick={onStartReal}
-              className="w-full md:w-auto px-8 py-4 bg-slate-700 text-white font-bold text-lg rounded-full hover:bg-slate-800 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-slate-300 inline-flex items-center justify-center"
-            >
-              <PlayCircle className="w-6 h-6 mr-3" />
-              {T.realStart}
             </button>
           </div>
           <p className="mt-4 text-sm text-gray-600">
