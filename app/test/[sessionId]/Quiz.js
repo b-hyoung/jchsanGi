@@ -18,6 +18,7 @@ const T = {
   statusCorrect: '정답',
   statusWrong: '오답',
   statusUnsolved: '미풀이',
+  statusSolved: '풀이함',
   correct: '정답입니다!',
   wrong: '오답입니다!',
   answer: '정답',
@@ -661,6 +662,7 @@ export default function Quiz({
 
   const getProblemStatus = (problem) => {
     const num = problem.problem_number;
+    if (isRealExamMode && answers[num] !== undefined && !checkedProblems[num]) return '●';
     if (!checkedProblems[num]) return '?';
     return answers[num] === answersMap[num] ? 'O' : 'X';
   };
@@ -727,6 +729,7 @@ export default function Quiz({
   const getStatusClass = (status) => {
     if (status === 'O') return 'bg-green-100 text-green-700 border-green-300';
     if (status === 'X') return 'bg-red-100 text-red-700 border-red-300';
+    if (status === '●') return 'bg-blue-100 text-blue-700 border-blue-300';
     return 'bg-gray-100 text-gray-700 border-gray-300';
   };
 
@@ -1392,6 +1395,7 @@ export default function Quiz({
             <div className="mt-4 text-xs text-gray-600 space-y-1">
               <p><span className="font-bold text-green-700">O</span> {T.statusCorrect}</p>
               <p><span className="font-bold text-red-700">X</span> {T.statusWrong}</p>
+              {isRealExamMode && <p><span className="font-bold text-blue-700">●</span> {T.statusSolved}</p>}
               <p><span className="font-bold text-gray-700">?</span> {T.statusUnsolved}</p>
             </div>
           </aside>
