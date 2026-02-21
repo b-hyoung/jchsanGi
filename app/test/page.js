@@ -99,6 +99,19 @@ export default function TestSelectionPage() {
           </div>
 
           <Link
+            href="/test/random22"
+            className="mb-4 block p-5 bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shuffle className="w-6 h-6" />
+                <h2 className="text-lg font-bold">랜덤22 (보기 셔플 테스트)</h2>
+              </div>
+              <ChevronRight className="w-6 h-6" />
+            </div>
+          </Link>
+
+          <Link
             href="/test/100"
             className="mb-6 block p-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
           >

@@ -30,6 +30,7 @@ const T = {
   backToSession: '회차 선택으로 돌아가기',
   lobbyTitle: '모의시험 준비',
   start: '시험 시작',
+  realStart: '실제 시험처럼 풀기',
   score: '총 점수',
   pass: '합격입니다!',
   fail: '불합격입니다!',
@@ -67,6 +68,7 @@ export default function Quiz({
   const [checkedProblems, setCheckedProblems] = useState({});
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizResults, setQuizResults] = useState(null);
+  const [isRealExamMode, setIsRealExamMode] = useState(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
@@ -160,6 +162,21 @@ export default function Quiz({
   }, []);
 
   useEffect(() => {
+    const sid = String(sessionId || '');
+    if (sid !== 'random' && sid !== '100' && sid !== 'random22') return;
+
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      const key = `visit_test_${sid}_${day}`;
+      if (window.localStorage.getItem(key)) return;
+      window.localStorage.setItem(key, 'seen');
+      trackEvent('visit_test', { sessionId: sid, path: `/test/${sid}` });
+    } catch {
+      trackEvent('visit_test', { sessionId: sid, path: `/test/${sid}` });
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
     if (initialJumpApplied) return;
     if (!initialProblemNumber) return;
     if (!Array.isArray(quizProblems) || quizProblems.length === 0) return;
@@ -219,8 +236,15 @@ export default function Quiz({
         window.localStorage.removeItem(resumeStorageKey);
       } catch {}
     }
+    setIsRealExamMode(false);
     setIsStarted(true);
-    trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
+    trackEvent('start_exam', { sessionId, path: `/test/${sessionId}`, payload: { mode: 'normal' } });
+  };
+
+  const handleStartRealQuiz = () => {
+    setIsRealExamMode(true);
+    setIsStarted(true);
+    trackEvent('start_exam', { sessionId, path: `/test/${sessionId}`, payload: { mode: 'real' } });
   };
 
   const handleSelectOption = (problemNumber, option) => {
@@ -324,7 +348,10 @@ export default function Quiz({
   const isCorrect = selectedAnswer === correctAnswer;
   const correctAnswerIndex = currentProblem ? currentProblem.options.indexOf(correctAnswer) : -1;
   const showResult = isChecked;
-  const shouldShowExplanation = showResult && ((isCorrect && showExplanationWhenCorrect) || (!isCorrect && showExplanationWhenIncorrect));
+  const shouldShowExplanation =
+    !isRealExamMode &&
+    showResult &&
+    ((isCorrect && showExplanationWhenCorrect) || (!isCorrect && showExplanationWhenIncorrect));
   const explanationText =
     currentProblemNumber && commentsMap ? commentsMap[currentProblemNumber] : '';
 
@@ -408,6 +435,15 @@ export default function Quiz({
 
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        if (isRealExamMode) {
+          if (!selectedAnswer) return;
+          if (currentProblemIndex === quizProblems.length - 1) {
+            handleSubmitQuiz();
+          } else {
+            setCurrentProblemIndex(currentProblemIndex + 1);
+          }
+          return;
+        }
         if (!isChecked) {
           if (selectedAnswer) handleNextClick();
           return;
@@ -426,6 +462,7 @@ export default function Quiz({
   }, [
     isStarted,
     quizCompleted,
+    isRealExamMode,
     isChecked,
     selectedAnswer,
     currentProblem,
@@ -435,6 +472,16 @@ export default function Quiz({
 
   const handleNextClick = () => {
     if (!currentProblem) return;
+    if (isRealExamMode) {
+      if (!selectedAnswer) {
+        alert(T.needSelect);
+        return;
+      }
+      if (currentProblemIndex < quizProblems.length - 1) {
+        setCurrentProblemIndex(currentProblemIndex + 1);
+      }
+      return;
+    }
     if (!isChecked) {
       if (!selectedAnswer) {
         alert(T.needSelect);
@@ -1245,7 +1292,12 @@ export default function Quiz({
   if (!isStarted) {
     return (
       <>
-        <TestLobby session={session} onStart={handleStartQuiz} problemCount={quizProblems.length} />
+        <TestLobby
+          session={session}
+          onStart={handleStartQuiz}
+          onStartReal={handleStartRealQuiz}
+          problemCount={quizProblems.length}
+        />
         <UpdateNoticeModal
           isOpen={showUpdateNotice}
           onClose={() => {
@@ -1640,14 +1692,43 @@ export default function Quiz({
             )}
 
             <div className="mt-6 flex justify-end">
+              {(() => {
+                const isLast = currentProblemIndex === quizProblems.length - 1;
+                const primaryLabel = isRealExamMode
+                  ? (isLast ? T.resultView : T.next)
+                  : (isChecked ? (isLast ? T.resultView : T.next) : T.check);
+                const primaryDisabled = !selectedAnswer;
+                const handlePrimaryClick = () => {
+                  if (isRealExamMode) {
+                    if (!selectedAnswer) {
+                      alert(T.needSelect);
+                      return;
+                    }
+                    if (isLast) {
+                      handleSubmitQuiz();
+                    } else {
+                      setCurrentProblemIndex(currentProblemIndex + 1);
+                    }
+                    return;
+                  }
+                  if (isChecked) {
+                    if (isLast) handleSubmitQuiz();
+                    else handleNextClick();
+                    return;
+                  }
+                  handleNextClick();
+                };
+                return (
               <button
-                onClick={isChecked ? (currentProblemIndex === quizProblems.length - 1 ? handleSubmitQuiz : handleNextClick) : handleNextClick}
-                disabled={!isChecked && !selectedAnswer}
+                onClick={handlePrimaryClick}
+                disabled={primaryDisabled}
                 className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed inline-flex items-center"
               >
-                {isChecked ? (currentProblemIndex === quizProblems.length - 1 ? T.resultView : T.next) : T.check}
-                {isChecked && currentProblemIndex !== quizProblems.length - 1 && <ChevronRight className="ml-2 w-5 h-5" />}
+                {primaryLabel}
+                {(isRealExamMode ? !isLast : (isChecked && !isLast)) && <ChevronRight className="ml-2 w-5 h-5" />}
               </button>
+                );
+              })()}
             </div>
 
             {!reportedProblems[currentProblem.problem_number] && (
@@ -1858,7 +1939,7 @@ function UpdateNoticeModal({ isOpen, onClose }) {
   );
 }
 
-function TestLobby({ session, onStart, problemCount }) {
+function TestLobby({ session, onStart, onStartReal, problemCount }) {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl text-center">
@@ -1870,13 +1951,22 @@ function TestLobby({ session, onStart, problemCount }) {
           <p className="text-indigo-600 font-semibold">{T.lobbyTitle}</p>
           <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title}</h1>
           <p className="text-gray-700 mb-8">총 {problemCount}문항 / 90분(3과목)</p>
-          <button
-            onClick={onStart}
-            className="w-full max-w-xs mx-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
-          >
-            <PlayCircle className="w-6 h-6 mr-3" />
-            {T.start}
-          </button>
+          <div className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-3 md:flex-row">
+            <button
+              onClick={onStart}
+              className="w-full md:w-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
+            >
+              <PlayCircle className="w-6 h-6 mr-3" />
+              {T.start}
+            </button>
+            <button
+              onClick={onStartReal}
+              className="w-full md:w-auto px-8 py-4 bg-slate-700 text-white font-bold text-lg rounded-full hover:bg-slate-800 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-slate-300 inline-flex items-center justify-center"
+            >
+              <PlayCircle className="w-6 h-6 mr-3" />
+              {T.realStart}
+            </button>
+          </div>
         </div>
       </div>
     </div>
