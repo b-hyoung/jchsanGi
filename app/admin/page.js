@@ -130,14 +130,14 @@ const emptyGptCacheAdmin = {
 };
 
 const emptyIpSearchAdmin = {
-  summary: { query: '', totalEvents: 0, totalEventsWithIp: 0, matchedIps: 0 },
+  summary: { query: '', totalEvents: 0, totalEventsWithIp: 0, matchedRows: 0, entity: 'ip', scope: 'all' },
   rows: [],
   page: 1,
   pageSize: 20,
   totalPages: 1,
   sortBy: 'lastSeen',
   sortDir: 'desc',
-  filters: { q: '' },
+  filters: { q: '', entity: 'ip', scope: 'all' },
 };
 
 export default function AdminPage() {
@@ -177,6 +177,8 @@ export default function AdminPage() {
   const [ipSearchLoading, setIpSearchLoading] = useState(false);
   const [ipSearchError, setIpSearchError] = useState('');
   const [ipSearchQuery, setIpSearchQuery] = useState('');
+  const [ipSearchEntity, setIpSearchEntity] = useState('client');
+  const [ipSearchScope, setIpSearchScope] = useState('today');
   const [ipSearchSortBy, setIpSearchSortBy] = useState('lastSeen');
   const [ipSearchSortDir, setIpSearchSortDir] = useState('desc');
   const [ipSearchPage, setIpSearchPage] = useState(1);
@@ -232,7 +234,7 @@ export default function AdminPage() {
       return;
     }
     setIpSearchSortBy(column);
-    setIpSearchSortDir(column === 'ip' ? 'asc' : 'desc');
+    setIpSearchSortDir(column === 'identifier' ? 'asc' : 'desc');
     setIpSearchPage(1);
   };
 
@@ -333,6 +335,8 @@ export default function AdminPage() {
         pageSize: String(ipSearchPageSize),
         sortBy: ipSearchSortBy,
         sortDir: ipSearchSortDir,
+        entity: ipSearchEntity,
+        scope: ipSearchScope,
       });
       if (ipSearchQuery.trim()) qs.set('q', ipSearchQuery.trim());
 
@@ -378,9 +382,13 @@ export default function AdminPage() {
     if (!unlocked) return;
     if (tab !== 'ipSearch') return;
     loadIpSearch();
-  }, [unlocked, tab, ipSearchPage, ipSearchPageSize, ipSearchSortBy, ipSearchSortDir]);
+  }, [unlocked, tab, ipSearchPage, ipSearchPageSize, ipSearchSortBy, ipSearchSortDir, ipSearchEntity, ipSearchScope]);
 
   const kpis = useMemo(() => metrics.kpis ?? emptyMetrics.kpis, [metrics]);
+  const ipEntityLabel = ipSearchEntity === 'client' ? 'clientId (사람 추정)' : 'IP';
+  const ipCounterpartLabel = ipSearchEntity === 'client' ? '고유 IP' : '고유 clientId';
+  const ipTodayCounterpartLabel = ipSearchEntity === 'client' ? '오늘 고유 IP' : '오늘 고유 clientId';
+  const ipRowsLabel = ipSearchEntity === 'client' ? '명' : '개 IP';
   const sortedGptTopProblems = useMemo(() => {
     const rows = [...(gptCacheData?.topProblems || [])];
     const dir = gptTopSortDir === 'asc' ? 1 : -1;
@@ -789,11 +797,44 @@ export default function AdminPage() {
 
               <div className="flex flex-wrap items-end gap-2 mb-3">
                 <label className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600">IP 검색</span>
+                  <span className="text-sm text-slate-600">기준</span>
+                  <select
+                    value={ipSearchEntity}
+                    onChange={(e) => {
+                      setIpSearchEntity(e.target.value);
+                      setIpSearchPage(1);
+                      setExpandedIpRows({});
+                    }}
+                    className="rounded border border-slate-300 px-2 py-1.5 text-sm"
+                  >
+                    <option value="client">사람(clientId)</option>
+                    <option value="ip">IP</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">기간</span>
+                  <select
+                    value={ipSearchScope}
+                    onChange={(e) => {
+                      setIpSearchScope(e.target.value);
+                      setIpSearchPage(1);
+                      setExpandedIpRows({});
+                    }}
+                    className="rounded border border-slate-300 px-2 py-1.5 text-sm"
+                  >
+                    <option value="today">오늘 들어온 사람 보기</option>
+                    <option value="all">지금까지 들어온 사람들 보기</option>
+                    <option value="todayVisit">오늘 visit_test 있는 사람</option>
+                    <option value="7d">최근 7일</option>
+                    <option value="30d">최근 30일</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">{ipSearchEntity === 'client' ? 'clientId 검색' : 'IP 검색'}</span>
                   <input
                     value={ipSearchQuery}
-                    onChange={(e) => setIpSearchQuery(e.target.value.trim())}
-                    placeholder="예: 123.45 또는 192.168"
+                    onChange={(e) => setIpSearchQuery(e.target.value)}
+                    placeholder={ipSearchEntity === 'client' ? '예: anon_ 또는 clientId 일부' : '예: 123.45 또는 192.168'}
                     className="w-56 rounded border border-slate-300 px-2 py-1.5 text-sm"
                   />
                 </label>
@@ -810,6 +851,7 @@ export default function AdminPage() {
                   onClick={() => {
                     setIpSearchQuery('');
                     setIpSearchPage(1);
+                    setExpandedIpRows({});
                     setTimeout(loadIpSearch, 0);
                   }}
                   className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold hover:bg-slate-50"
@@ -836,7 +878,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                 <Info label="전체 이벤트" value={ipSearchData?.summary?.totalEvents ?? 0} />
                 <Info label="IP 포함 이벤트" value={ipSearchData?.summary?.totalEventsWithIp ?? 0} />
-                <Info label="검색된 IP 수" value={ipSearchData?.summary?.matchedIps ?? 0} />
+                <Info label={`검색된 ${ipSearchEntity === 'client' ? '사람(clientId)' : 'IP'} 수`} value={ipSearchData?.summary?.matchedRows ?? ipSearchData?.summary?.matchedIps ?? 0} />
                 <Info label="검색어" value={ipSearchData?.summary?.query || '전체'} />
               </div>
 
@@ -860,8 +902,8 @@ export default function AdminPage() {
                         <tr className="border-b border-slate-200 text-left text-slate-600">
                           <th className="py-2 pr-3">상세</th>
                           <th className="py-2 pr-3">
-                            <button onClick={() => toggleIpSort('ip')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
-                              <span>IP</span><span>{ipSortMark('ip')}</span>
+                            <button onClick={() => toggleIpSort('identifier')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>{ipEntityLabel}</span><span>{ipSortMark('identifier')}</span>
                             </button>
                           </th>
                           <th className="py-2 pr-3">
@@ -869,7 +911,11 @@ export default function AdminPage() {
                               <span>총 이벤트</span><span>{ipSortMark('totalEvents')}</span>
                             </button>
                           </th>
-                          <th className="py-2 pr-3">오늘 방문(이벤트)</th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleIpSort('todayEvents')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>오늘 이벤트</span><span>{ipSortMark('todayEvents')}</span>
+                            </button>
+                          </th>
                           <th className="py-2 pr-3">
                             <button onClick={() => toggleIpSort('todayVisits')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
                               <span>오늘 visit_test</span><span>{ipSortMark('todayVisits')}</span>
@@ -877,10 +923,10 @@ export default function AdminPage() {
                           </th>
                           <th className="py-2 pr-3">
                             <button onClick={() => toggleIpSort('uniqueClients')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
-                              <span>고유 clientId</span><span>{ipSortMark('uniqueClients')}</span>
+                              <span>{ipCounterpartLabel}</span><span>{ipSortMark('uniqueClients')}</span>
                             </button>
                           </th>
-                          <th className="py-2 pr-3">오늘 고유 clientId</th>
+                          <th className="py-2 pr-3">{ipTodayCounterpartLabel}</th>
                           <th className="py-2 pr-3">회차 수</th>
                           <th className="py-2 pr-3">
                             <button onClick={() => toggleIpSort('lastSeen')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
@@ -891,24 +937,25 @@ export default function AdminPage() {
                       </thead>
                       <tbody>
                         {(ipSearchData.rows || []).map((r) => {
-                          const isOpen = Boolean(expandedIpRows[r.ipAddress]);
+                          const rowKey = r.identifier || r.ipAddress || r.clientIdKey;
+                          const isOpen = Boolean(expandedIpRows[rowKey]);
                           return (
-                            <Fragment key={r.ipAddress}>
+                            <Fragment key={rowKey}>
                               <tr className="border-b border-slate-100">
                                 <td className="py-2 pr-3">
                                   <button
-                                    onClick={() => toggleIpRow(r.ipAddress)}
+                                    onClick={() => toggleIpRow(rowKey)}
                                     className="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50"
                                   >
                                     {isOpen ? '▲' : '▼'}
                                   </button>
                                 </td>
-                                <td className="py-2 pr-3 font-mono text-xs md:text-sm">{r.ipAddress}</td>
+                                <td className="py-2 pr-3 font-mono text-xs md:text-sm">{r.identifier || '-'}</td>
                                 <td className="py-2 pr-3 font-semibold">{r.totalEvents}</td>
                                 <td className="py-2 pr-3">{r.todayEventCount}</td>
                                 <td className="py-2 pr-3">{r.todayVisitCount}</td>
-                                <td className="py-2 pr-3">{r.uniqueClientCount}</td>
-                                <td className="py-2 pr-3">{r.todayUniqueClientCount}</td>
+                                <td className="py-2 pr-3">{ipSearchEntity === 'client' ? r.uniqueIpCount : r.uniqueClientCount}</td>
+                                <td className="py-2 pr-3">{ipSearchEntity === 'client' ? r.todayUniqueIpCount : r.todayUniqueClientCount}</td>
                                 <td className="py-2 pr-3">{r.uniqueSessionCount}</td>
                                 <td className="py-2 pr-3 whitespace-nowrap">{fmtTime(r.lastSeen)}</td>
                               </tr>
@@ -927,10 +974,12 @@ export default function AdminPage() {
                                         </div>
                                       </div>
                                       <div className="mb-3">
-                                        <p className="text-xs font-semibold text-slate-600 mb-1">clientId 미리보기 (최대 5개)</p>
+                                        <p className="text-xs font-semibold text-slate-600 mb-1">
+                                          {ipSearchEntity === 'client' ? 'IP 미리보기 (최대 5개)' : 'clientId 미리보기 (최대 5개)'}
+                                        </p>
                                         <div className="flex flex-wrap gap-1">
-                                          {(r.clientIdsPreview || []).length > 0 ? (
-                                            r.clientIdsPreview.map((cid) => (
+                                          {(ipSearchEntity === 'client' ? r.ipAddressesPreview : r.clientIdsPreview || []).length > 0 ? (
+                                            (ipSearchEntity === 'client' ? r.ipAddressesPreview : r.clientIdsPreview).map((cid) => (
                                               <span key={cid} className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-mono">
                                                 {cid}
                                               </span>
@@ -947,7 +996,7 @@ export default function AdminPage() {
                                               <th className="px-2 py-1">시간</th>
                                               <th className="px-2 py-1">타입</th>
                                               <th className="px-2 py-1">세션</th>
-                                              <th className="px-2 py-1">clientId</th>
+                                              <th className="px-2 py-1">{ipSearchEntity === 'client' ? 'IP' : 'clientId'}</th>
                                               <th className="px-2 py-1">path</th>
                                             </tr>
                                           </thead>
@@ -957,7 +1006,7 @@ export default function AdminPage() {
                                                 <td className="px-2 py-1 whitespace-nowrap">{fmtTime(ev.timestamp)}</td>
                                                 <td className="px-2 py-1">{ev.type || '-'}</td>
                                                 <td className="px-2 py-1">{sessionLabel(ev.sessionId)}</td>
-                                                <td className="px-2 py-1 font-mono">{ev.clientId || '-'}</td>
+                                                <td className="px-2 py-1 font-mono">{ipSearchEntity === 'client' ? (ev.ipAddress || '-') : (ev.clientId || '-')}</td>
                                                 <td className="px-2 py-1">{ev.path || '-'}</td>
                                               </tr>
                                             ))}
@@ -977,7 +1026,7 @@ export default function AdminPage() {
 
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
                     <div className="text-slate-600">
-                      페이지 {ipSearchData.page} / {ipSearchData.totalPages} · 현재 {ipSearchData.rows.length}개 IP 표시
+                      페이지 {ipSearchData.page} / {ipSearchData.totalPages} · 현재 {ipSearchData.rows.length}{ipRowsLabel} 표시
                     </div>
                     <div className="flex items-center gap-2">
                       <button
