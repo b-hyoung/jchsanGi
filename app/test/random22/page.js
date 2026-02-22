@@ -67,6 +67,7 @@ async function readSessionData(source) {
     problem_number: p.problem_number,
     question_text: p.question_text,
     options: p.options,
+    examples: p.examples || null,
     answer_text: answersMap[p.problem_number],
     comment_text: commentsMap[p.problem_number] ?? '',
   }));
@@ -113,6 +114,7 @@ async function buildRandom22QuizData() {
       problem_number: newNo,
       question_text: `[보기셔플][${item.sourceKey}] ${item.question_text}`,
       options: shuffledOpts,
+      examples: item.examples || null,
       sectionTitle: sectionTitleOf(subject),
       originSessionId: item.sourceSessionId,
       originProblemNumber: item.problem_number,
