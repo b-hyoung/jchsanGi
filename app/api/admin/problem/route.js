@@ -31,6 +31,63 @@ const SESSION_PATHS = {
 };
 
 async function loadSessionData(sessionId) {
+  if (String(sessionId).startsWith('pdfpack-')) {
+    const slug = String(sessionId).slice('pdfpack-'.length);
+    const rel = ['pdfPacks', slug];
+    const candidateBasePaths = [
+      path.join(process.cwd(), 'datasets', ...rel),
+      path.join(process.cwd(), ...rel),
+    ];
+
+    let basePath = null;
+    for (const candidate of candidateBasePaths) {
+      try {
+        await fs.access(candidate);
+        basePath = candidate;
+        break;
+      } catch {}
+    }
+    if (!basePath) return null;
+
+    const [problemStr, answerStr, commentStr] = await Promise.all([
+      fs
+        .readFile(path.join(basePath, 'problem1.json'), 'utf8')
+        .catch(async (error) => {
+          if (error?.code === 'ENOENT') {
+            return fs.readFile(path.join(basePath, 'problem1.temp3.json'), 'utf8');
+          }
+          throw error;
+        }),
+      fs.readFile(path.join(basePath, 'answer1.json'), 'utf8'),
+      fs.readFile(path.join(basePath, 'comment1.json'), 'utf8'),
+    ]);
+
+    const stripBom = (s) => String(s || '').replace(/^\uFEFF/, '');
+    const problemData = JSON.parse(stripBom(problemStr));
+    const answerData = JSON.parse(stripBom(answerStr));
+    const commentData = JSON.parse(stripBom(commentStr));
+
+    const problems = problemData.flatMap((section) =>
+      (section.problems || []).map((p) => ({ ...p, sectionTitle: section.title }))
+    );
+
+    const answersMap = answerData.reduce((acc, section) => {
+      (section.answers || []).forEach((a) => {
+        acc[a.problem_number] = a.correct_answer_text;
+      });
+      return acc;
+    }, {});
+
+    const commentsMap = commentData.reduce((acc, section) => {
+      (section.comments || []).forEach((c) => {
+        acc[c.problem_number] = c.comment ?? c.comment_text ?? '';
+      });
+      return acc;
+    }, {});
+
+    return { problems, answersMap, commentsMap };
+  }
+
   const rel = SESSION_PATHS[sessionId];
   if (!rel) return null;
 
