@@ -45,17 +45,17 @@ const pdfExamPacks = [
   {
     slug: 'industrial-2025-1',
     title: '2025년 1회 산업기사 필기 (PDF 추출본)',
-    description: '문제/보기/정답 추출본 검수 세트',
+    description: '2025년 1회 정보처리산업기사 필기 문제 세트',
   },
   {
     slug: 'industrial-2025-2',
     title: '2025년 2회 산업기사 필기 (PDF 추출본)',
-    description: '문제/보기/정답 추출본 검수 세트',
+    description: '2025년 2회 정보처리산업기사 필기 문제 세트',
   },
   {
     slug: 'industrial-2025-3',
     title: '2025년 3회 산업기사 필기 (PDF 추출본)',
-    description: '문제/보기/정답 추출본 검수 세트',
+    description: '2025년 3회 정보처리산업기사 필기 문제 세트',
   },
 ];
 
@@ -223,8 +223,8 @@ export default function TestSelectionPage() {
                   <Book className="w-6 h-6 text-sky-600" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-sky-900">PDF 추출 검수 세트</h2>
-                  <p className="text-sm text-gray-600 mt-1">2025년 정보처리산업기사 필기 PDF 기반</p>
+                  <h2 className="text-2xl font-bold text-sky-900">정보처리산업기사 (2025)</h2>
+                  <p className="text-sm text-gray-600 mt-1">2025년 정보처리산업기사 필기 PDF 기반 문제 세트</p>
                 </div>
               </div>
               <ChevronRight className="w-7 h-7 text-gray-400" />
