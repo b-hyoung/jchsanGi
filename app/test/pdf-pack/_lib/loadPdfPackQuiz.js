@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { getPdfPackConfig } from './pdfPackCatalog';
 
 const stripBom = (s) => String(s || '').replace(/^\uFEFF/, '');
 
@@ -23,6 +24,8 @@ export async function loadPdfPackFiles(slug) {
 
 export async function buildPdfPackQuiz(slug) {
   const { problemData, answerData, commentData, meta } = await loadPdfPackFiles(slug);
+  const cfg = getPdfPackConfig(slug);
+  const displayTitle = cfg?.title || meta?.title || `문제 세트 (${slug})`;
 
   const problems = problemData.flatMap((section) =>
     (section.problems || []).map((p) => ({
@@ -30,7 +33,7 @@ export async function buildPdfPackQuiz(slug) {
       sectionTitle: section.title,
       originSessionId: `pdfpack-${slug}`,
       originProblemNumber: Number(p.problem_number),
-      originSourceKey: meta?.title || `pdfpack-${slug}`,
+      originSourceKey: displayTitle,
     }))
   );
 
@@ -54,9 +57,9 @@ export async function buildPdfPackQuiz(slug) {
     answersMap,
     commentsMap,
     session: {
-      title: meta?.title || `PDF 세트 (${slug})`,
+      title: displayTitle,
       reviewOnly: true,
-      lobbySubtitle: `총 ${problems.length}문항 / PDF 추출 검수용 세트`,
+      lobbySubtitle: `총 ${problems.length}문항`,
     },
   };
 }
