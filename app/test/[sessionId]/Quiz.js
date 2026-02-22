@@ -72,7 +72,7 @@ export default function Quiz({
   resumeToken = '',
 }) {
   const router = useRouter();
-  const isReviewOnlySession = Boolean(session?.reviewOnly) || String(sessionId || '').startsWith('pdfpack-');
+  const isReviewOnlySession = Boolean(session?.reviewOnly);
   const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
   const [isStarted, setIsStarted] = useState(false);

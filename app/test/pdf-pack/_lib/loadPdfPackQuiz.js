@@ -58,9 +58,8 @@ export async function buildPdfPackQuiz(slug) {
     commentsMap,
     session: {
       title: displayTitle,
-      reviewOnly: true,
+      reviewOnly: Boolean(cfg?.reviewOnly),
       lobbySubtitle: `총 ${problems.length}문항`,
     },
   };
 }
-
