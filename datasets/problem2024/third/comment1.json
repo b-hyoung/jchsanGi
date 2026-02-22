@@ -56,7 +56,7 @@
       },
       {
         "problem_number": 14,
-        "comment": "문항은 \"라우팅(Routing) 프로토콜이 아닌 것은?\"에 대한 이해를 묻고 있으며, 이에 해당하는 선택지는 SMTP입니다. BGP, OSPF, RIP는 라우팅 프로토콜이므로 문항 조건에 맞지 않습니다."
+        "comment": "SMTP입니다. BGP, OSPF, RIP는 라우팅 프로토콜이므로 문항 조건에 맞지 않습니다."
       },
       {
         "problem_number": 15,
