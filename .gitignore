@@ -46,3 +46,5 @@ next-env.d.ts
 # local extraction temp files
 temp_*.html
 .claude
+scripts/__pycache__/
+pdf/extracted/
