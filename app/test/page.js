@@ -226,7 +226,7 @@ export default function TestSelectionPage() {
                   {yearGroup.sessions.map((session) => {
                     const resume = resumeMap[String(session.id)];
                     const targetHref = String(session.id).startsWith('pdfpack-')
-                      ? `/test/pdf-pack/${String(session.id).slice('pdfpack-'.length)}`
+                      ? `/test/pdf-pack/${String(session.id).slice('pdfpack-'.length)}/quiz`
                       : `/test/${session.id}`;
                     const resumeHref = String(session.id).startsWith('pdfpack-')
                       ? `/test/pdf-pack/${String(session.id).slice('pdfpack-'.length)}/quiz?p=${resume?.problemNumber}&resume=1`
