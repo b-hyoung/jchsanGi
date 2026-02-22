@@ -40,6 +40,7 @@ export function UpdateNoticeModal({ isOpen, onClose }) {
 }
 
 export function TestLobby({ session, onStart, problemCount, labels }) {
+  const lobbySubtitle = String(session?.lobbySubtitle || `총 ${problemCount}문항 / 90분(3과목)`);
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl text-center">
@@ -50,7 +51,7 @@ export function TestLobby({ session, onStart, problemCount, labels }) {
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200/50">
           <p className="text-indigo-600 font-semibold">{labels.lobbyTitle}</p>
           <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title}</h1>
-          <p className="text-gray-700 mb-8">총 {problemCount}문항 / 90분(3과목)</p>
+          <p className="text-gray-700 mb-8">{lobbySubtitle}</p>
           <div className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-3 md:flex-row">
             <button
               onClick={onStart}
@@ -70,9 +71,10 @@ export function TestLobby({ session, onStart, problemCount, labels }) {
   );
 }
 
-export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, labels }) {
+export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, labels, isReviewOnly = false }) {
   const {
     totalCorrect,
+    totalCount = 60,
     wrongCount,
     unknownCount = 0,
     subjectCorrectCounts,
@@ -82,7 +84,7 @@ export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, la
     isRetryMode,
     elapsedSeconds = 0,
   } = results;
-  const [showFailModal, setShowFailModal] = useState(!isRetryMode && !isOverallPass);
+  const [showFailModal, setShowFailModal] = useState(!isReviewOnly && !isRetryMode && !isOverallPass);
   const [failQuote] = useState(() => FAIL_QUOTES[Math.floor(Math.random() * FAIL_QUOTES.length)]);
   const safeElapsed = Math.max(0, Number(elapsedSeconds) || 0);
   const elapsedH = String(Math.floor(safeElapsed / 3600)).padStart(2, '0');
@@ -103,31 +105,49 @@ export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, la
           )}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              {labels.score}: {totalCorrect} / 60
+              {labels.score}: {totalCorrect} / {totalCount}
             </h2>
             <p className="text-sm md:text-base font-semibold text-gray-600 mb-2">
               푸는데 걸린 시간: {elapsedH}:{elapsedM}:{elapsedS}
             </p>
-            <p className={`text-3xl font-extrabold ${isOverallPass ? 'text-green-600' : 'text-red-600'}`}>
-              {isOverallPass ? labels.pass : labels.fail}
-            </p>
+            {!isReviewOnly ? (
+              <p className={`text-3xl font-extrabold ${isOverallPass ? 'text-green-600' : 'text-red-600'}`}>
+                {isOverallPass ? labels.pass : labels.fail}
+              </p>
+            ) : (
+              <p className="text-2xl font-extrabold text-sky-700">PDF 검수 결과</p>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-lg">
-            {[1, 2, 3].map((subjectNum) => (
-              <div
-                key={subjectNum}
-                className={`p-4 rounded-lg border-2 ${subjectPassFail[subjectNum] ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'}`}
-              >
-                <p className="font-semibold text-gray-700">{labels.subject} {subjectNum}</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {subjectCorrectCounts[subjectNum]} / {subjectTotalCounts?.[subjectNum] ?? 20} {labels.qCount}
+          {!isReviewOnly ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-lg">
+              {[1, 2, 3].map((subjectNum) => (
+                <div
+                  key={subjectNum}
+                  className={`p-4 rounded-lg border-2 ${subjectPassFail[subjectNum] ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'}`}
+                >
+                  <p className="font-semibold text-gray-700">{labels.subject} {subjectNum}</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {subjectCorrectCounts[subjectNum]} / {subjectTotalCounts?.[subjectNum] ?? 20} {labels.qCount}
+                  </p>
+                  <p className={`font-semibold ${subjectPassFail[subjectNum] ? 'text-green-600' : 'text-red-600'}`}>
+                    {subjectPassFail[subjectNum] ? labels.avoidFail : labels.failSubject}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mb-8 grid grid-cols-1 gap-3 text-left">
+              <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
+                <p className="text-sm font-semibold text-sky-900">검수용 점수 요약</p>
+                <p className="mt-1 text-sm text-sky-800">
+                  정답 기준으로 맞춘 문항 수만 표시합니다. 과락/합격 판정은 적용하지 않습니다.
                 </p>
-                <p className={`font-semibold ${subjectPassFail[subjectNum] ? 'text-green-600' : 'text-red-600'}`}>
-                  {subjectPassFail[subjectNum] ? labels.avoidFail : labels.failSubject}
+                <p className="mt-2 text-sm text-sky-800">
+                  틀림 {wrongCount}개 / 모르겠어요 {unknownCount}개
                 </p>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
           {wrongCount > 0 && (
             <button
               onClick={onRetryWrong}
@@ -153,7 +173,7 @@ export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, la
           </Link>
         </div>
       </div>
-      {!isRetryMode && !isOverallPass && showFailModal && (
+      {!isReviewOnly && !isRetryMode && !isOverallPass && showFailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 text-center">
             <p className="text-lg font-bold text-gray-800 mb-5 whitespace-pre-line">{failQuote}</p>

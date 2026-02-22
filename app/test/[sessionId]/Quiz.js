@@ -72,6 +72,7 @@ export default function Quiz({
   resumeToken = '',
 }) {
   const router = useRouter();
+  const isReviewOnlySession = Boolean(session?.reviewOnly) || String(sessionId || '').startsWith('pdfpack-');
   const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
   const [isStarted, setIsStarted] = useState(false);
@@ -316,15 +317,17 @@ export default function Quiz({
     let currentSetCorrect = 0;
     let unknownCount = 0;
     const currentSetTotal = quizProblems.length;
-    const subjectCorrectCounts = { 1: 0, 2: 0, 3: 0 };
-    const subjectTotalCounts = { 1: 0, 2: 0, 3: 0 };
+    const subjectCorrectCounts = isReviewOnlySession ? {} : { 1: 0, 2: 0, 3: 0 };
+    const subjectTotalCounts = isReviewOnlySession ? {} : { 1: 0, 2: 0, 3: 0 };
 
-    quizProblems.forEach((problem) => {
-      const problemNum = parseInt(problem.problem_number, 10);
-      if (problemNum >= 1 && problemNum <= 20) subjectTotalCounts[1]++;
-      else if (problemNum >= 21 && problemNum <= 40) subjectTotalCounts[2]++;
-      else if (problemNum >= 41 && problemNum <= 60) subjectTotalCounts[3]++;
-    });
+    if (!isReviewOnlySession) {
+      quizProblems.forEach((problem) => {
+        const problemNum = parseInt(problem.problem_number, 10);
+        if (problemNum >= 1 && problemNum <= 20) subjectTotalCounts[1]++;
+        else if (problemNum >= 21 && problemNum <= 40) subjectTotalCounts[2]++;
+        else if (problemNum >= 41 && problemNum <= 60) subjectTotalCounts[3]++;
+      });
+    }
 
     allProblems.forEach((problem) => {
       const problemNum = parseInt(problem.problem_number, 10);
@@ -334,9 +337,11 @@ export default function Quiz({
 
       if (userAnswer === correctAnswer) {
         totalCorrect++;
-        if (problemNum >= 1 && problemNum <= 20) subjectCorrectCounts[1]++;
-        else if (problemNum >= 21 && problemNum <= 40) subjectCorrectCounts[2]++;
-        else if (problemNum >= 41 && problemNum <= 60) subjectCorrectCounts[3]++;
+        if (!isReviewOnlySession) {
+          if (problemNum >= 1 && problemNum <= 20) subjectCorrectCounts[1]++;
+          else if (problemNum >= 21 && problemNum <= 40) subjectCorrectCounts[2]++;
+          else if (problemNum >= 41 && problemNum <= 60) subjectCorrectCounts[3]++;
+        }
       }
     });
 
@@ -346,15 +351,34 @@ export default function Quiz({
       if (userAnswer === correctAnswer) currentSetCorrect++;
     });
 
-    const subjectPassFail = {
-      1: subjectCorrectCounts[1] >= 8,
-      2: subjectCorrectCounts[2] >= 8,
-      3: subjectCorrectCounts[3] >= 8,
-    };
-    const isOverallPass = totalCorrect >= 36 && subjectPassFail[1] && subjectPassFail[2] && subjectPassFail[3];
+    const subjectPassFail = isReviewOnlySession
+      ? {}
+      : {
+          1: subjectCorrectCounts[1] >= 8,
+          2: subjectCorrectCounts[2] >= 8,
+          3: subjectCorrectCounts[3] >= 8,
+        };
+    const isOverallPass = isReviewOnlySession
+      ? totalCorrect === allProblems.length
+      : totalCorrect >= 36 && subjectPassFail[1] && subjectPassFail[2] && subjectPassFail[3];
     const elapsedSeconds = quizStartedAtMs
       ? Math.max(0, Math.floor((Date.now() - quizStartedAtMs) / 1000))
       : 0;
+    // 현재 제출 세트 기준 문항별 결과(오답률 집계용)
+    const problemOutcomes = quizProblems.map((problem) => {
+      const problemNum = Number(problem.problem_number);
+      const userAnswer = mergedAnswers[problem.problem_number];
+      const correctAnswer = answersMap[problem.problem_number];
+      return {
+        sessionId: String(problem.originSessionId || sessionId || ''),
+        problemNumber: Number(problem.originProblemNumber || problemNum || 0),
+        localProblemNumber: problemNum,
+        selectedAnswer: userAnswer == null ? '' : String(userAnswer),
+        correctAnswer: correctAnswer == null ? '' : String(correctAnswer),
+        isCorrect: userAnswer === correctAnswer,
+        isUnknown: userAnswer === UNKNOWN_OPTION,
+      };
+    });
 
     setAccumulatedAnswers(mergedAnswers);
     trackEvent('finish_exam', {
@@ -372,10 +396,13 @@ export default function Quiz({
         elapsedSeconds,
         completionScope: quizProblems.length,
         completionTotal: allProblems.length,
+        reviewOnly: isReviewOnlySession,
+        problemOutcomes,
       },
     });
     setQuizResults({
       totalCorrect,
+      totalCount: allProblems.length,
       wrongCount: allProblems.length - totalCorrect,
       unknownCount,
       subjectCorrectCounts,
@@ -386,6 +413,7 @@ export default function Quiz({
       currentSetCorrect,
       currentSetTotal,
       elapsedSeconds,
+      reviewOnly: isReviewOnlySession,
     });
     setQuizCompleted(true);
     try {
@@ -1419,14 +1447,15 @@ export default function Quiz({
 
   if (quizCompleted) {
     return (
-      <QuizResults
-        session={session}
-        results={quizResults}
-        onRetryWrong={handleRetryWrongProblems}
-        onRetryUnknown={handleRetryUnknownProblems}
-        labels={T}
-      />
-    );
+        <QuizResults
+          session={session}
+          results={quizResults}
+          onRetryWrong={handleRetryWrongProblems}
+          onRetryUnknown={handleRetryUnknownProblems}
+          labels={T}
+          isReviewOnly={isReviewOnlySession}
+        />
+      );
   }
 
   return (
@@ -1524,6 +1553,23 @@ export default function Quiz({
 
           <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg">
             <p className="text-sm font-semibold text-indigo-600 mb-2">{currentProblem.sectionTitle}</p>
+            {typeof currentProblem?.wrongRatePercent === 'number' && (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
+                  오답률 {Number(currentProblem.wrongRatePercent).toFixed(1)}%
+                </span>
+                {Number.isFinite(Number(currentProblem?.attemptCount)) && (
+                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                    시도 {Number(currentProblem.attemptCount)}회
+                  </span>
+                )}
+                {Number.isFinite(Number(currentProblem?.wrongCountStat)) && Number.isFinite(Number(currentProblem?.unknownCountStat)) && (
+                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                    틀림 {Number(currentProblem.wrongCountStat)} / 모르겠어요 {Number(currentProblem.unknownCountStat)}
+                  </span>
+                )}
+              </div>
+            )}
             <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6 leading-relaxed whitespace-pre-wrap">
               {currentProblem.problem_number}. {formatQuestionTitle(questionTitle)}
             </h2>

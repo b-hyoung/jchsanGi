@@ -20,6 +20,7 @@ const SESSION_LABELS = {
   '12': '개발자 문제 60',
   '100': '100문제 모드',
   random: '랜덤풀기',
+  'high-wrong': '오답률 높은 문제 풀기',
   random22: '랜덤보기22',
 };
 
