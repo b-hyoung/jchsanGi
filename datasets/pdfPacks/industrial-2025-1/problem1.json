@@ -524,7 +524,7 @@
       },
       {
         "problem_number": 52,
-        "question_text": "n?? ???? ??? ??? ???? ?? ?????",
+        "question_text": "n개의 정점으로 구성된 무방향 그래프의 최대 간선수는?",
         "options": [
           "n(n+1)",
           "n(n-1)/2",
@@ -554,13 +554,14 @@
       },
       {
         "problem_number": 55,
-        "question_text": "?? ?? ??? ??(Preorder) ?? ????",
+        "question_text": "다음 이진 트리의 전위(Preorder) 순회 결과는?",
         "options": [
           "A B C D E F",
           "D B A E C F",
           "D B E C F A",
           "A B D C E F"
-        ]
+        ],
+        "examples": "    A\n   / \\\n  B   C\n /   / \\\nD   E   F"
       },
       {
         "problem_number": 56,

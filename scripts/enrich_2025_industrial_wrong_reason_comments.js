@@ -10,6 +10,10 @@ function writeJson(filePath, data) {
   fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
 }
 
+function toCircled(no) {
+  return ['①', '②', '③', '④'][no - 1] || `${no}`;
+}
+
 function norm(text) {
   return String(text ?? '')
     .replace(/\u00A0/g, ' ')
@@ -46,10 +50,13 @@ function parseReferenceSummary(comment) {
   const joined = filtered.join(' ');
   if (!joined) return '';
 
-  const parts = joined
+  let parts = joined
     .split(/(?<=[.!?。])\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
+
+  // 2025 해설에서 아래 오답 상세 라인과 중복되는 문장은 제거한다.
+  parts = parts.filter((s) => !/^다른 선택지는\b/.test(s));
 
   let summary = parts.slice(0, 2).join(' ');
   if (!summary) summary = joined;
@@ -160,7 +167,11 @@ function buildCorrectReason({ q, correctText, refSummary }) {
   const wantsWrong = questionWantsWrongChoice(qText);
 
   if (refSummary) {
-    return `기출 해설 기준으로 ${refSummary}`;
+    const cleanedRef = String(refSummary)
+      .replace(/\s*다른 선택지는[^.?!。\n]*(?:[.?!。]|$)/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleanedRef) return `기출 해설 기준으로 ${cleanedRef}`;
   }
 
   const meaning = explainOptionMeaning(ct);
@@ -190,7 +201,7 @@ function buildWrongReason({ q, optionText }) {
   }
 
   if (wantsWrong) {
-    if (meaning) return `${meaning} 즉, 이 보기는 문제에서 찾는 '틀린 항목'이 아니라 맞는 설명/개념에 해당해 정답이 아닙니다.`;
+    if (meaning) return `${meaning} 문제에서 찾는 틀린 항목이 아니므로 정답이 아닙니다.`;
     return `"${t}"는 문제에서 찾는 틀린 항목이 아니라 정답 조건에 해당하지 않아 정답이 아닙니다.`;
   }
 
@@ -299,7 +310,13 @@ function regenerate2025Comments() {
         const correctIdx = Number.isInteger(a.correct_answer_index) ? a.correct_answer_index : null;
 
         if (correctIdx == null || correctIdx < 0 || correctIdx >= options.length) {
-          c.comment = '정답은 확인이 필요합니다.\n아닌 이유 :\n 1번: 정답 데이터 검수 후 해설을 보강해야 합니다.\n 2번: 정답 데이터 검수 후 해설을 보강해야 합니다.\n 3번: 정답 데이터 검수 후 해설을 보강해야 합니다.\n 4번: 정답 데이터 검수 후 해설을 보강해야 합니다.';
+          c.comment = [
+            '정답은 확인이 필요합니다.',
+            `- ${toCircled(1)} 정답 데이터 검수 후 해설을 보강해야 합니다.`,
+            `- ${toCircled(2)} 정답 데이터 검수 후 해설을 보강해야 합니다.`,
+            `- ${toCircled(3)} 정답 데이터 검수 후 해설을 보강해야 합니다.`,
+            `- ${toCircled(4)} 정답 데이터 검수 후 해설을 보강해야 합니다.`,
+          ].join('\n');
           continue;
         }
 
@@ -313,12 +330,10 @@ function regenerate2025Comments() {
           refSummary: ref?.summary || '',
         });
 
-        lines.push(`정답은 ${correctIdx + 1}번입니다. ${correctReason}`);
-        lines.push('아닌 이유 :');
-
+        lines.push(`정답은 ${toCircled(correctIdx + 1)}입니다. ${correctReason}`);
         for (let oi = 0; oi < options.length; oi += 1) {
           if (oi === correctIdx) continue;
-          lines.push(` ${oi + 1}번: ${buildWrongReason({ q, optionText: options[oi] })}`);
+          lines.push(`- ${toCircled(oi + 1)} ${buildWrongReason({ q, optionText: options[oi] })}`);
         }
 
         c.comment = lines.join('\n');
