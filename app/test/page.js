@@ -16,6 +16,14 @@ const sessionsByYear = [
     ],
   },
   {
+    year: 2025,
+    sessions: [
+      { id: 'pdfpack-industrial-2025-1', title: '1회', description: '2025년 1회 정보처리산업기사 필기 문제입니다.' },
+      { id: 'pdfpack-industrial-2025-2', title: '2회', description: '2025년 2회 정보처리산업기사 필기 문제입니다.' },
+      { id: 'pdfpack-industrial-2025-3', title: '3회', description: '2025년 3회 정보처리산업기사 필기 문제입니다.' },
+    ],
+  },
+  {
     year: 2024,
     sessions: [
       { id: 1, title: '1회', description: '2024년 1회 기출문제입니다.' },
@@ -38,24 +46,6 @@ const sessionsByYear = [
       { id: 10, title: '2회', description: '2022년 2회 기출문제입니다.' },
       { id: 11, title: '3회', description: '2022년 3회 기출문제입니다.' },
     ],
-  },
-];
-
-const pdfExamPacks = [
-  {
-    slug: 'industrial-2025-1',
-    title: '2025년 1회 산업기사 필기 (PDF 추출본)',
-    description: '2025년 1회 정보처리산업기사 필기 문제 세트',
-  },
-  {
-    slug: 'industrial-2025-2',
-    title: '2025년 2회 산업기사 필기 (PDF 추출본)',
-    description: '2025년 2회 정보처리산업기사 필기 문제 세트',
-  },
-  {
-    slug: 'industrial-2025-3',
-    title: '2025년 3회 산업기사 필기 (PDF 추출본)',
-    description: '2025년 3회 정보처리산업기사 필기 문제 세트',
   },
 ];
 
@@ -213,48 +203,12 @@ export default function TestSelectionPage() {
             </Link>
           )}
 
-          <details
-            className="mb-6 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 open:border-sky-300"
-            open
-          >
-            <summary className="list-none cursor-pointer p-6 md:p-7 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-12 h-12 bg-sky-100 rounded-xl">
-                  <Book className="w-6 h-6 text-sky-600" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-sky-900">정보처리산업기사 (2025)</h2>
-                  <p className="text-sm text-gray-600 mt-1">2025년 정보처리산업기사 필기 PDF 기반 문제 세트</p>
-                </div>
-              </div>
-              <ChevronRight className="w-7 h-7 text-gray-400" />
-            </summary>
-
-            <div className="px-4 pb-4 md:px-6 md:pb-6 space-y-3">
-              {pdfExamPacks.map((pack) => (
-                <Link
-                  key={pack.slug}
-                  href={`/test/pdf-pack/${pack.slug}`}
-                  className="block p-5 bg-white rounded-xl border border-gray-200 hover:border-sky-300 hover:bg-sky-50 transition-all"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-sky-900">{pack.title}</h3>
-                      <p className="text-gray-600 mt-1">{pack.description}</p>
-                    </div>
-                    <ChevronRight className="w-6 h-6 text-gray-400" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </details>
-
           <div className="space-y-4">
             {sessionsByYear.map((yearGroup) => (
               <details
                 key={yearGroup.year}
                 className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 open:border-sky-300"
-                open={yearGroup.year === 'Now' || yearGroup.year === 2024}
+                open={yearGroup.year === 'Now' || yearGroup.year === 2025 || yearGroup.year === 2024}
               >
                 <summary className="list-none cursor-pointer p-6 md:p-7 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -271,10 +225,16 @@ export default function TestSelectionPage() {
                 <div className="px-4 pb-4 md:px-6 md:pb-6 space-y-3">
                   {yearGroup.sessions.map((session) => {
                     const resume = resumeMap[String(session.id)];
+                    const targetHref = String(session.id).startsWith('pdfpack-')
+                      ? `/test/pdf-pack/${String(session.id).slice('pdfpack-'.length)}`
+                      : `/test/${session.id}`;
+                    const resumeHref = String(session.id).startsWith('pdfpack-')
+                      ? `/test/pdf-pack/${String(session.id).slice('pdfpack-'.length)}/quiz?p=${resume?.problemNumber}&resume=1`
+                      : `/test/${session.id}?p=${resume?.problemNumber}&resume=1`;
                     return (
                       <div key={session.id} className="space-y-2">
                         <Link
-                          href={`/test/${session.id}`}
+                          href={targetHref}
                           className="block p-5 bg-white rounded-xl border border-gray-200 hover:border-sky-300 hover:bg-sky-50 transition-all"
                         >
                           <div className="flex items-center justify-between">
@@ -287,7 +247,7 @@ export default function TestSelectionPage() {
                         </Link>
                         {resume && (
                           <Link
-                            href={`/test/${session.id}?p=${resume.problemNumber}&resume=1`}
+                            href={resumeHref}
                             className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-sm font-bold text-indigo-800 hover:bg-indigo-100"
                           >
                             이어풀기 {resume.problemNumber}번
