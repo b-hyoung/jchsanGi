@@ -1,7 +1,7 @@
 {
   "format": "random-option-shuffle-year-v1",
   "year": 2024,
-  "generatedAt": "2026-02-22T07:23:41.524Z",
+  "generatedAt": "2026-02-22T18:57:49.637Z",
   "sessions": [
     {
       "key": "2024-1",
@@ -2335,7 +2335,7 @@
       ],
       "examples": null,
       "answer_text": "splice( ) : 배열에서 지정한 범위의 데이터를 가져온다.",
-      "comment_text": "slice( ) .③ ㆍ 는 배열에서 지정한 범위의 요소를 제거할 때 사splice( ) 용하는 메소드입니다."
+      "comment_text": "자바스크립트에서 slice()는 배열에서 지정한 범위의 요소를 잘라 새 배열로 반환하는 메서드이고, splice()는 배열 원본에서 요소를 추가/삭제/교체할 때 사용한다. 따라서 \"splice( ) : 배열에서 지정한 범위의 데이터를 가져온다.\"는 틀린 설명이므로 정답은 ③이다."
     },
     {
       "sourceKey": "2024-3",

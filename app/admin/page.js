@@ -42,6 +42,7 @@ const LIST_TABS = [
   { key: 'daily', label: '일자별 리스트' },
   { key: 'session', label: '회차별 리스트' },
   { key: 'subject', label: '과목별 리스트' },
+  { key: 'ipSearch', label: 'IP 조회' },
   { key: 'gptCache', label: 'GPT 캐시 조회' },
   { key: 'reports', label: '신고 리스트' },
 ];
@@ -60,8 +61,9 @@ const SESSION_LABELS = {
   '11': '2022년 3회차',
   '12': '개발자 문제 60',
   'high-wrong': '오답률 높은 문제 풀기',
+  'high-unknown': '모르겠어요 많이 누른 문제 풀기',
   'random': '랜덤 모드',
-  'random22': '랜덤22 셔플 테스트',
+  'random22': '랜덤보기22 (문제 셔플형)',
   '100': '100문제 모드',
 };
 
@@ -80,7 +82,21 @@ const SOURCE_KEY_TO_SESSION_ID = {
 
 function sessionLabel(sessionId) {
   const key = String(sessionId || '').trim();
+  const random22Year = key.match(/^random22-(\d{4})$/);
+  if (random22Year) return `랜덤보기22 (${random22Year[1]}년)`;
+
+  const industrial2025 = key.match(/^pdfpack-industrial-2025-(\d)$/);
+  if (industrial2025) return `2025년 ${industrial2025[1]}회 정보처리산업기사 필기`;
+
   return SESSION_LABELS[key] || key || '-';
+}
+
+function sessionLabelWithCode(sessionId) {
+  const raw = String(sessionId || '').trim();
+  const label = sessionLabel(raw);
+  if (!raw) return '-';
+  if (label === raw) return raw;
+  return `${label} (${raw})`;
 }
 
 function fmtTime(ts) {
@@ -111,6 +127,17 @@ const emptyGptCacheAdmin = {
   sortBy: 'created_at',
   sortDir: 'desc',
   filters: { sessionId: '', problemNumber: '' },
+};
+
+const emptyIpSearchAdmin = {
+  summary: { query: '', totalEvents: 0, totalEventsWithIp: 0, matchedIps: 0 },
+  rows: [],
+  page: 1,
+  pageSize: 20,
+  totalPages: 1,
+  sortBy: 'lastSeen',
+  sortDir: 'desc',
+  filters: { q: '' },
 };
 
 export default function AdminPage() {
@@ -146,6 +173,15 @@ export default function AdminPage() {
   const [gptTopSortBy, setGptTopSortBy] = useState('hits');
   const [gptTopSortDir, setGptTopSortDir] = useState('desc');
   const [selectedGptCacheRow, setSelectedGptCacheRow] = useState(null);
+  const [ipSearchData, setIpSearchData] = useState(emptyIpSearchAdmin);
+  const [ipSearchLoading, setIpSearchLoading] = useState(false);
+  const [ipSearchError, setIpSearchError] = useState('');
+  const [ipSearchQuery, setIpSearchQuery] = useState('');
+  const [ipSearchSortBy, setIpSearchSortBy] = useState('lastSeen');
+  const [ipSearchSortDir, setIpSearchSortDir] = useState('desc');
+  const [ipSearchPage, setIpSearchPage] = useState(1);
+  const [ipSearchPageSize, setIpSearchPageSize] = useState(20);
+  const [expandedIpRows, setExpandedIpRows] = useState({});
 
   const toggleReportSort = (column) => {
     if (reportSortBy === column) {
@@ -188,6 +224,21 @@ export default function AdminPage() {
   const gptTopSortMark = (column) => {
     if (gptTopSortBy !== column) return '↕';
     return gptTopSortDir === 'asc' ? '▲' : '▼';
+  };
+
+  const toggleIpSort = (column) => {
+    if (ipSearchSortBy === column) {
+      setIpSearchSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setIpSearchSortBy(column);
+    setIpSearchSortDir(column === 'ip' ? 'asc' : 'desc');
+    setIpSearchPage(1);
+  };
+
+  const ipSortMark = (column) => {
+    if (ipSearchSortBy !== column) return '↕';
+    return ipSearchSortDir === 'asc' ? '▲' : '▼';
   };
 
   const toggleDetailSort = (groupKey, column) => {
@@ -273,6 +324,30 @@ export default function AdminPage() {
     }
   };
 
+  const loadIpSearch = async () => {
+    setIpSearchLoading(true);
+    setIpSearchError('');
+    try {
+      const qs = new URLSearchParams({
+        page: String(ipSearchPage),
+        pageSize: String(ipSearchPageSize),
+        sortBy: ipSearchSortBy,
+        sortDir: ipSearchSortDir,
+      });
+      if (ipSearchQuery.trim()) qs.set('q', ipSearchQuery.trim());
+
+      const res = await fetch(`/api/admin/ip-search?${qs.toString()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      if (!data?.ok) throw new Error(data?.message || 'failed');
+      setIpSearchData({ ...emptyIpSearchAdmin, ...data });
+    } catch {
+      setIpSearchError('IP 조회 데이터를 불러오지 못했습니다.');
+    } finally {
+      setIpSearchLoading(false);
+    }
+  };
+
   useEffect(() => {
     const ok = window.sessionStorage.getItem(ADMIN_AUTH_KEY) === '1';
     if (ok) {
@@ -298,6 +373,12 @@ export default function AdminPage() {
     gptCacheProblemFilter,
     gptCacheFeedbackFilter,
   ]);
+
+  useEffect(() => {
+    if (!unlocked) return;
+    if (tab !== 'ipSearch') return;
+    loadIpSearch();
+  }, [unlocked, tab, ipSearchPage, ipSearchPageSize, ipSearchSortBy, ipSearchSortDir]);
 
   const kpis = useMemo(() => metrics.kpis ?? emptyMetrics.kpis, [metrics]);
   const sortedGptTopProblems = useMemo(() => {
@@ -437,6 +518,15 @@ export default function AdminPage() {
 
   const closeGptCacheDetail = () => {
     setSelectedGptCacheRow(null);
+  };
+
+  const toggleIpRow = (ipAddress) => {
+    setExpandedIpRows((prev) => {
+      const key = String(ipAddress || '');
+      const isOpen = Boolean(prev[key]);
+      if (isOpen) return {};
+      return { [key]: true };
+    });
   };
 
   const toggleReportGroup = (key) => {
@@ -626,6 +716,9 @@ export default function AdminPage() {
         {tab === 'kpi' && (
           <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
             <h2 className="font-bold text-slate-900 mb-3">요약 리스트</h2>
+            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              방문자 수는 <span className="font-semibold">전체 누적 clientId 기준</span>입니다. 같은 사람이 여러 번 들어와도 같은 clientId면 방문자 수는 늘지 않고, <span className="font-semibold">일자별 방문</span>은 <span className="font-semibold">visit_test 이벤트 건수</span>라서 같은 사람이 여러 번 들어오면 증가합니다.
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
@@ -663,7 +756,7 @@ export default function AdminPage() {
             loading={loading}
             emptyText="데이터가 없습니다."
             headers={['회차', '시작', '완료', '합격률']}
-            rows={metrics.sessionStats.map((r) => [r.session, r.시작, r.완료, `${r.합격률}%`])}
+            rows={metrics.sessionStats.map((r) => [sessionLabelWithCode(r.session), r.시작, r.완료, `${r.합격률}%`])}
           />
         )}
 
@@ -675,6 +768,238 @@ export default function AdminPage() {
             headers={['과목', '평균 정답률']}
             rows={metrics.subjectAverages.map((r) => [r.subject, `${r.정답률}%`])}
           />
+        )}
+
+        {tab === 'ipSearch' && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h2 className="font-bold text-slate-900">접속 IP 조회</h2>
+                <button
+                  onClick={loadIpSearch}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm font-semibold"
+                >
+                  새로고침
+                </button>
+              </div>
+
+              <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+                Netlify 배포 환경에서는 요청 헤더에서 IP를 읽어 analytics 이벤트 payload에 저장합니다. 기존 이벤트(기능 추가 전)는 IP가 비어 있을 수 있습니다.
+              </div>
+
+              <div className="flex flex-wrap items-end gap-2 mb-3">
+                <label className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">IP 검색</span>
+                  <input
+                    value={ipSearchQuery}
+                    onChange={(e) => setIpSearchQuery(e.target.value.trim())}
+                    placeholder="예: 123.45 또는 192.168"
+                    className="w-56 rounded border border-slate-300 px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <button
+                  onClick={() => {
+                    setIpSearchPage(1);
+                    loadIpSearch();
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700"
+                >
+                  검색
+                </button>
+                <button
+                  onClick={() => {
+                    setIpSearchQuery('');
+                    setIpSearchPage(1);
+                    setTimeout(loadIpSearch, 0);
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold hover:bg-slate-50"
+                >
+                  초기화
+                </button>
+                <label className="ml-auto flex items-center gap-1 text-sm">
+                  <span className="text-slate-600">페이지 크기</span>
+                  <select
+                    value={ipSearchPageSize}
+                    onChange={(e) => {
+                      setIpSearchPageSize(Number(e.target.value));
+                      setIpSearchPage(1);
+                    }}
+                    className="rounded border border-slate-300 px-2 py-1"
+                  >
+                    {[10, 20, 50, 100].map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <Info label="전체 이벤트" value={ipSearchData?.summary?.totalEvents ?? 0} />
+                <Info label="IP 포함 이벤트" value={ipSearchData?.summary?.totalEventsWithIp ?? 0} />
+                <Info label="검색된 IP 수" value={ipSearchData?.summary?.matchedIps ?? 0} />
+                <Info label="검색어" value={ipSearchData?.summary?.query || '전체'} />
+              </div>
+
+              {ipSearchError && (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
+                  {ipSearchError}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+              {ipSearchLoading ? (
+                <div className="text-slate-500">로딩 중...</div>
+              ) : (ipSearchData?.rows || []).length === 0 ? (
+                <div className="text-slate-500">IP 데이터가 없습니다.</div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-left text-slate-600">
+                          <th className="py-2 pr-3">상세</th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleIpSort('ip')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>IP</span><span>{ipSortMark('ip')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleIpSort('totalEvents')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>총 이벤트</span><span>{ipSortMark('totalEvents')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2 pr-3">오늘 방문(이벤트)</th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleIpSort('todayVisits')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>오늘 visit_test</span><span>{ipSortMark('todayVisits')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleIpSort('uniqueClients')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>고유 clientId</span><span>{ipSortMark('uniqueClients')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2 pr-3">오늘 고유 clientId</th>
+                          <th className="py-2 pr-3">회차 수</th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleIpSort('lastSeen')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>최근 접속</span><span>{ipSortMark('lastSeen')}</span>
+                            </button>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(ipSearchData.rows || []).map((r) => {
+                          const isOpen = Boolean(expandedIpRows[r.ipAddress]);
+                          return (
+                            <Fragment key={r.ipAddress}>
+                              <tr className="border-b border-slate-100">
+                                <td className="py-2 pr-3">
+                                  <button
+                                    onClick={() => toggleIpRow(r.ipAddress)}
+                                    className="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50"
+                                  >
+                                    {isOpen ? '▲' : '▼'}
+                                  </button>
+                                </td>
+                                <td className="py-2 pr-3 font-mono text-xs md:text-sm">{r.ipAddress}</td>
+                                <td className="py-2 pr-3 font-semibold">{r.totalEvents}</td>
+                                <td className="py-2 pr-3">{r.todayEventCount}</td>
+                                <td className="py-2 pr-3">{r.todayVisitCount}</td>
+                                <td className="py-2 pr-3">{r.uniqueClientCount}</td>
+                                <td className="py-2 pr-3">{r.todayUniqueClientCount}</td>
+                                <td className="py-2 pr-3">{r.uniqueSessionCount}</td>
+                                <td className="py-2 pr-3 whitespace-nowrap">{fmtTime(r.lastSeen)}</td>
+                              </tr>
+                              {isOpen && (
+                                <tr className="bg-slate-50">
+                                  <td colSpan={9} className="px-3 pb-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3 mt-2">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                        <div className="rounded border border-slate-200 p-2">
+                                          <p className="text-xs text-slate-500">첫 접속</p>
+                                          <p className="text-sm font-semibold">{fmtTime(r.firstSeen)}</p>
+                                        </div>
+                                        <div className="rounded border border-slate-200 p-2">
+                                          <p className="text-xs text-slate-500">최근 접속</p>
+                                          <p className="text-sm font-semibold">{fmtTime(r.lastSeen)}</p>
+                                        </div>
+                                      </div>
+                                      <div className="mb-3">
+                                        <p className="text-xs font-semibold text-slate-600 mb-1">clientId 미리보기 (최대 5개)</p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {(r.clientIdsPreview || []).length > 0 ? (
+                                            r.clientIdsPreview.map((cid) => (
+                                              <span key={cid} className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-mono">
+                                                {cid}
+                                              </span>
+                                            ))
+                                          ) : (
+                                            <span className="text-xs text-slate-500">없음</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="overflow-x-auto max-h-64 overflow-y-auto rounded border border-slate-200">
+                                        <table className="min-w-full text-xs">
+                                          <thead>
+                                            <tr className="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+                                              <th className="px-2 py-1">시간</th>
+                                              <th className="px-2 py-1">타입</th>
+                                              <th className="px-2 py-1">세션</th>
+                                              <th className="px-2 py-1">clientId</th>
+                                              <th className="px-2 py-1">path</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {(r.recentEvents || []).map((ev) => (
+                                              <tr key={ev.id} className="border-b border-slate-100">
+                                                <td className="px-2 py-1 whitespace-nowrap">{fmtTime(ev.timestamp)}</td>
+                                                <td className="px-2 py-1">{ev.type || '-'}</td>
+                                                <td className="px-2 py-1">{sessionLabel(ev.sessionId)}</td>
+                                                <td className="px-2 py-1 font-mono">{ev.clientId || '-'}</td>
+                                                <td className="px-2 py-1">{ev.path || '-'}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <div className="text-slate-600">
+                      페이지 {ipSearchData.page} / {ipSearchData.totalPages} · 현재 {ipSearchData.rows.length}개 IP 표시
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIpSearchPage((p) => Math.max(1, p - 1))}
+                        disabled={ipSearchData.page <= 1}
+                        className="px-3 py-1.5 rounded border border-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        이전
+                      </button>
+                      <button
+                        onClick={() => setIpSearchPage((p) => Math.min(ipSearchData.totalPages || 1, p + 1))}
+                        disabled={ipSearchData.page >= (ipSearchData.totalPages || 1)}
+                        className="px-3 py-1.5 rounded border border-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        다음
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
 
         {tab === 'gptCache' && (

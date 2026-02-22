@@ -178,7 +178,14 @@ export default function Quiz({
 
   useEffect(() => {
     const sid = String(sessionId || '');
-    if (sid !== 'random' && sid !== '100' && sid !== 'random22' && !sid.startsWith('random22-')) return;
+    if (
+      sid !== 'random' &&
+      sid !== '100' &&
+      sid !== 'random22' &&
+      sid !== 'high-wrong' &&
+      sid !== 'high-unknown' &&
+      !sid.startsWith('random22-')
+    ) return;
 
     try {
       const day = new Date().toISOString().slice(0, 10);
@@ -1553,11 +1560,18 @@ export default function Quiz({
 
           <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg">
             <p className="text-sm font-semibold text-indigo-600 mb-2">{currentProblem.sectionTitle}</p>
-            {typeof currentProblem?.wrongRatePercent === 'number' && (
+            {(typeof currentProblem?.wrongRatePercent === 'number' || typeof currentProblem?.unknownRatePercent === 'number') && (
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
-                  오답률 {Number(currentProblem.wrongRatePercent).toFixed(1)}%
-                </span>
+                {typeof currentProblem?.wrongRatePercent === 'number' && (
+                  <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
+                    오답률 {Number(currentProblem.wrongRatePercent).toFixed(1)}%
+                  </span>
+                )}
+                {typeof currentProblem?.unknownRatePercent === 'number' && (
+                  <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+                    모르겠어요 비율 {Number(currentProblem.unknownRatePercent).toFixed(1)}%
+                  </span>
+                )}
                 {Number.isFinite(Number(currentProblem?.attemptCount)) && (
                   <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
                     시도 {Number(currentProblem.attemptCount)}회

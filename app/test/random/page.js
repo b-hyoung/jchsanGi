@@ -7,6 +7,9 @@ export const dynamic = 'force-dynamic';
 
 const SOURCES = [
   { key: 'NOW-60', sessionId: '12', basePath: ['datasets', 'problemNow_60', 'first'] },
+  { key: '2025I-1', sessionId: 'pdfpack-industrial-2025-1', basePath: ['datasets', 'pdfPacks', 'industrial-2025-1'] },
+  { key: '2025I-2', sessionId: 'pdfpack-industrial-2025-2', basePath: ['datasets', 'pdfPacks', 'industrial-2025-2'] },
+  { key: '2025I-3', sessionId: 'pdfpack-industrial-2025-3', basePath: ['datasets', 'pdfPacks', 'industrial-2025-3'] },
   { key: '2024-1', sessionId: '1', basePath: ['datasets', 'problem2024', 'first'] },
   { key: '2024-2', sessionId: '2', basePath: ['datasets', 'problem2024', 'second'] },
   { key: '2024-3', sessionId: '3', basePath: ['datasets', 'problem2024', 'third'] },

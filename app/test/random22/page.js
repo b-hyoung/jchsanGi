@@ -1,12 +1,13 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { ChevronRight, Shuffle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 const YEAR_OPTIONS = [
-  { year: 2022, desc: '2022년 1~3회에서 60문항 랜덤 + 보기 셔플' },
-  { year: 2023, desc: '2023년 1~3회에서 60문항 랜덤 + 보기 셔플' },
-  { year: 2024, desc: '2024년 1~3회에서 60문항 랜덤 + 보기 셔플' },
+  { year: 2022, desc: '2022년 1~3회에서 60문항 셔플 + 보기 셔플' },
+  { year: 2023, desc: '2023년 1~3회에서 60문항 셔플 + 보기 셔플' },
+  { year: 2024, desc: '2024년 1~3회에서 60문항 셔플 + 보기 셔플' },
+  { year: 2025, desc: '2025년 산업기사 1~3회에서 60문항 셔플 + 보기 셔플' },
 ];
 
 export default function Random22YearSelectionPage() {
@@ -16,7 +17,7 @@ export default function Random22YearSelectionPage() {
         <div className="mx-auto max-w-3xl">
           <div className="mb-10 text-center">
             <h1 className="text-3xl md:text-4xl font-extrabold text-violet-900 tracking-tight">랜덤보기22 (문제 셔플형)</h1>
-            <p className="mt-3 text-gray-600">연도를 선택하면 해당 연도(1~3회)에서 60문항을 랜덤 구성하고 보기도 섞어서 출제합니다.</p>
+            <p className="mt-3 text-gray-600">연도를 선택하면 해당 연도 회차에서 60문항을 셔플 구성하고 보기 순서도 섞어서 출제합니다.</p>
           </div>
 
           <div className="space-y-4">

@@ -21,6 +21,7 @@ const SESSION_LABELS = {
   '100': '100문제 모드',
   random: '랜덤풀기',
   'high-wrong': '오답률 높은 문제 풀기',
+  'high-unknown': '모르겠어요 많이 누른 문제 풀기',
   random22: '랜덤보기22',
 };
 
@@ -47,6 +48,29 @@ function formatKoreanDateTime(iso) {
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
   return `${yyyy}년 ${mm}월 ${dd}일 ${hh}시 ${mi}분`;
+}
+
+function firstHeaderValue(raw) {
+  return String(raw || '')
+    .split(',')
+    .map((v) => v.trim())
+    .find(Boolean) || '';
+}
+
+function extractClientIp(request) {
+  const candidates = [
+    ['x-nf-client-connection-ip', request.headers.get('x-nf-client-connection-ip')],
+    ['x-forwarded-for', request.headers.get('x-forwarded-for')],
+    ['x-real-ip', request.headers.get('x-real-ip')],
+    ['cf-connecting-ip', request.headers.get('cf-connecting-ip')],
+    ['client-ip', request.headers.get('client-ip')],
+  ];
+
+  for (const [source, raw] of candidates) {
+    const ip = firstHeaderValue(raw);
+    if (ip) return { ipAddress: ip, ipSource: source };
+  }
+  return { ipAddress: '', ipSource: '' };
 }
 
 async function sendDiscordReport(event) {
@@ -84,12 +108,26 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, message: 'type and clientId are required' }, { status: 400 });
     }
 
+    const { ipAddress, ipSource } = extractClientIp(request);
+    const basePayload =
+      body.payload && typeof body.payload === 'object' && !Array.isArray(body.payload)
+        ? body.payload
+        : {};
+    const payload = {
+      ...basePayload,
+      __meta: {
+        ...(basePayload.__meta && typeof basePayload.__meta === 'object' ? basePayload.__meta : {}),
+        ...(ipAddress ? { ipAddress } : {}),
+        ...(ipSource ? { ipSource } : {}),
+      },
+    };
+
     const event = {
       id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
       type: String(body.type),
       clientId: String(body.clientId),
       sessionId: body.sessionId != null ? String(body.sessionId) : null,
-      payload: body.payload ?? {},
+      payload,
       path: body.path ?? null,
       timestamp: new Date().toISOString(),
       userAgent: request.headers.get('user-agent') ?? null,

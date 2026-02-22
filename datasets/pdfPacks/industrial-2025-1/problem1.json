@@ -524,12 +524,12 @@
       },
       {
         "problem_number": 52,
-        "question_text": "n개의 정점으로 구성된 무방향 그래프의 최대 간선수는?",
+        "question_text": "n?? ???? ??? ??? ???? ?? ?????",
         "options": [
           "n(n+1)",
-          "  ",
-          "[PDF 원본 그림/수식 선택지 - 추후 보강 예정]",
-          "n-5  "
+          "n(n-1)/2",
+          "(n-2)/2",
+          "n-5"
         ]
       },
       {
@@ -554,12 +554,12 @@
       },
       {
         "problem_number": 55,
-        "question_text": "다음 이진 트리에 대한 Preorder 운행 결과는?",
+        "question_text": "?? ?? ??? ??(Preorder) ?? ????",
         "options": [
           "A B C D E F",
           "D B A E C F",
           "D B E C F A",
-          "A B D C E F 4 -"
+          "A B D C E F"
         ]
       },
       {

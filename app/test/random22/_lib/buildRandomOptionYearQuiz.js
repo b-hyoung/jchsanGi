@@ -1,7 +1,7 @@
-import fs from 'fs/promises';
+﻿import fs from 'fs/promises';
 import path from 'path';
 
-const SUPPORTED_YEARS = new Set(['2022', '2023', '2024']);
+const SUPPORTED_YEARS = new Set(['2022', '2023', '2024', '2025']);
 
 function shuffle(arr) {
   const a = [...arr];
@@ -81,8 +81,9 @@ export async function buildRandomOptionYearQuiz(year) {
     commentsMap[newNo] = item.comment_text || '';
   });
 
+  const modeLabel = yearKey === '2025' ? '2025 산업기사' : `${yearKey}년`;
   return {
-    session: { title: `랜덤보기22 (${yearKey}년, 문제+보기 셔플)` },
+    session: { title: `랜덤보기22 (${modeLabel} 문제+보기 셔플)` },
     problems,
     answersMap,
     commentsMap,

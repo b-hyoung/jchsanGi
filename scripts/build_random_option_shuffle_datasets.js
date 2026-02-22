@@ -18,6 +18,11 @@ const YEARS = {
     { key: '2024-2', sessionId: '4', dir: ['datasets','problem2024','second'] },
     { key: '2024-3', sessionId: '5', dir: ['datasets','problem2024','third'] },
   ],
+  2025: [
+    { key: '2025I-1', sessionId: 'pdfpack-industrial-2025-1', dir: ['datasets','pdfPacks','industrial-2025-1'] },
+    { key: '2025I-2', sessionId: 'pdfpack-industrial-2025-2', dir: ['datasets','pdfPacks','industrial-2025-2'] },
+    { key: '2025I-3', sessionId: 'pdfpack-industrial-2025-3', dir: ['datasets','pdfPacks','industrial-2025-3'] },
+  ],
 };
 
 const stripBom = (s) => String(s || '').replace(/^\uFEFF/, '');

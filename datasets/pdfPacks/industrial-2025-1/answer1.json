@@ -270,7 +270,7 @@
       {
         "problem_number": 52,
         "correct_answer_index": 1,
-        "correct_answer_text": "  "
+        "correct_answer_text": "n(n-1)/2"
       },
       {
         "problem_number": 53,
@@ -285,7 +285,7 @@
       {
         "problem_number": 55,
         "correct_answer_index": 3,
-        "correct_answer_text": "A B D C E F 4 -"
+        "correct_answer_text": "A B D C E F"
       },
       {
         "problem_number": 56,
