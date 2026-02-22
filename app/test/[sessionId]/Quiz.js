@@ -3,8 +3,17 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight, Settings, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { trackEvent } from '@/lib/analyticsClient';
+import { removeUnknownProblem, upsertUnknownProblem } from '@/lib/unknownProblemsStore';
+import { QuizResults, TestLobby, UpdateNoticeModal } from './components/QuizShellParts';
+import {
+  GptChatModal,
+  GptHelpSection,
+  GptLoadingOverlay,
+  QuizSettingsPopover,
+  ReportTipToast,
+} from './components/QuizInteractiveParts';
 
 const T = {
   loadFail: '문제를 불러오는 데 실패했습니다.',
@@ -22,6 +31,7 @@ const T = {
   statusSolved: '풀이함',
   correct: '정답입니다!',
   wrong: '오답입니다!',
+  unknownRetry: '모르겠어요만 다시 풀기',
   answer: '정답',
   numberSuffix: '번',
   explanation: '해설',
@@ -50,13 +60,7 @@ const REPORT_REASONS = ['그림이 없음', '해설이 이상함', '해설이없
 const GPT_MAX_TURNS = 3;
 const RESUME_STATE_KEY_PREFIX = 'quiz_resume_state_';
 const UNKNOWN_OPTION = '__UNKNOWN_OPTION__';
-const FAIL_QUOTES = [
-  '이터널 리턴.. 조금만 할까?',
-  '시험 며칠 안 남았는데 이 점수?\n앞에 창문 열고 뛰어내리자.',
-  '과락 ㅋㅋㅋㅋㅋㅋ\n숨참고 한강 다이브~',
-  '증바람 한판하고 뛰어내릴까?.',
-];
-
+const QUIZ_DURATION_SECONDS = 60 * 60;
 export default function Quiz({
   problems,
   session,
@@ -77,6 +81,8 @@ export default function Quiz({
   const [checkedProblems, setCheckedProblems] = useState({});
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizResults, setQuizResults] = useState(null);
+  const [quizStartedAtMs, setQuizStartedAtMs] = useState(null);
+  const [remainingSeconds, setRemainingSeconds] = useState(QUIZ_DURATION_SECONDS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [enableAnswerCheck, setEnableAnswerCheck] = useState(true);
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
@@ -171,7 +177,7 @@ export default function Quiz({
 
   useEffect(() => {
     const sid = String(sessionId || '');
-    if (sid !== 'random' && sid !== '100' && sid !== 'random22') return;
+    if (sid !== 'random' && sid !== '100' && sid !== 'random22' && !sid.startsWith('random22-')) return;
 
     try {
       const day = new Date().toISOString().slice(0, 10);
@@ -199,6 +205,8 @@ export default function Quiz({
 
     setCurrentProblemIndex(targetIndex);
     if (!isStarted) {
+      setQuizStartedAtMs(Date.now());
+      setRemainingSeconds(QUIZ_DURATION_SECONDS);
       setIsStarted(true);
       trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
     }
@@ -247,6 +255,20 @@ export default function Quiz({
     };
   }, [showReportTipNotice]);
 
+  useEffect(() => {
+    if (!isStarted || quizCompleted || !quizStartedAtMs) return;
+
+    const tick = () => {
+      const elapsed = Math.max(0, Math.floor((Date.now() - quizStartedAtMs) / 1000));
+      setRemainingSeconds(Math.max(0, QUIZ_DURATION_SECONDS - elapsed));
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [isStarted, quizCompleted, quizStartedAtMs]);
+
+  // 시험 시작: 상태 초기화 및 시작 이벤트 기록
   const handleStartQuiz = () => {
     if (!shouldResume) {
       setAnswers({});
@@ -255,20 +277,44 @@ export default function Quiz({
         window.localStorage.removeItem(resumeStorageKey);
       } catch {}
     }
+    setQuizStartedAtMs(Date.now());
+    setRemainingSeconds(QUIZ_DURATION_SECONDS);
     setIsStarted(true);
     trackEvent('start_exam', { sessionId, path: `/test/${sessionId}`, payload: { mode: 'normal' } });
   };
 
+  // 보기 선택: 현재 문제의 선택값 저장
   const handleSelectOption = (problemNumber, option) => {
     if (checkedProblems[problemNumber]) return;
     setAnswers((prev) => ({ ...prev, [problemNumber]: option }));
+
+    const problem = quizProblems.find((p) => String(p.problem_number) === String(problemNumber));
+    if (!problem) return;
+    const sourceSessionId = String(problem.originSessionId || sessionId || '');
+    const sourceProblemNumber = Number(problem.originProblemNumber || problem.problem_number || 0);
+    if (!sourceSessionId || Number.isNaN(sourceProblemNumber) || sourceProblemNumber <= 0) return;
+
+    if (option === UNKNOWN_OPTION) {
+      upsertUnknownProblem({
+        sourceSessionId,
+        sourceProblemNumber,
+        sourceKey: String(problem.originSourceKey || ''),
+        questionText: String(problem.question_text || ''),
+        sectionTitle: String(problem.sectionTitle || ''),
+      });
+      return;
+    }
+
+    removeUnknownProblem(sourceSessionId, sourceProblemNumber);
   };
 
+  // 시험 제출: 과목별/총점 결과 계산 후 결과 화면으로 전환
   const handleSubmitQuiz = () => {
     const isRetryMode = quizProblems.length !== allProblems.length;
     const mergedAnswers = { ...accumulatedAnswers, ...answers };
     let totalCorrect = 0;
     let currentSetCorrect = 0;
+    let unknownCount = 0;
     const currentSetTotal = quizProblems.length;
     const subjectCorrectCounts = { 1: 0, 2: 0, 3: 0 };
     const subjectTotalCounts = { 1: 0, 2: 0, 3: 0 };
@@ -284,6 +330,7 @@ export default function Quiz({
       const problemNum = parseInt(problem.problem_number, 10);
       const userAnswer = mergedAnswers[problem.problem_number];
       const correctAnswer = answersMap[problem.problem_number];
+      if (userAnswer === UNKNOWN_OPTION) unknownCount++;
 
       if (userAnswer === correctAnswer) {
         totalCorrect++;
@@ -305,6 +352,9 @@ export default function Quiz({
       3: subjectCorrectCounts[3] >= 8,
     };
     const isOverallPass = totalCorrect >= 36 && subjectPassFail[1] && subjectPassFail[2] && subjectPassFail[3];
+    const elapsedSeconds = quizStartedAtMs
+      ? Math.max(0, Math.floor((Date.now() - quizStartedAtMs) / 1000))
+      : 0;
 
     setAccumulatedAnswers(mergedAnswers);
     trackEvent('finish_exam', {
@@ -313,11 +363,13 @@ export default function Quiz({
       payload: {
         totalCorrect,
         wrongCount: allProblems.length - totalCorrect,
+        unknownCount,
         subjectCorrectCounts,
         isOverallPass,
         isRetryMode,
         currentSetCorrect,
         currentSetTotal,
+        elapsedSeconds,
         completionScope: quizProblems.length,
         completionTotal: allProblems.length,
       },
@@ -325,6 +377,7 @@ export default function Quiz({
     setQuizResults({
       totalCorrect,
       wrongCount: allProblems.length - totalCorrect,
+      unknownCount,
       subjectCorrectCounts,
       subjectTotalCounts,
       subjectPassFail,
@@ -332,6 +385,7 @@ export default function Quiz({
       isRetryMode,
       currentSetCorrect,
       currentSetTotal,
+      elapsedSeconds,
     });
     setQuizCompleted(true);
     try {
@@ -484,6 +538,7 @@ export default function Quiz({
     quizProblems.length,
   ]);
 
+  // 정답 확인 또는 다음 문제 이동(모드에 따라 동작 분기)
   const handleNextClick = () => {
     if (!currentProblem) return;
     if (isDirectProgressMode) {
@@ -509,6 +564,7 @@ export default function Quiz({
     }
   };
 
+  // 문제 신고: 선택 사유(기타 포함)를 서버로 전송
   const handleReportProblem = async () => {
     if (!currentProblem || !reportReason) return;
     if (reportReason === '기타' && !reportEtcText.trim()) {
@@ -541,6 +597,7 @@ export default function Quiz({
     setReportEtcText('');
   };
 
+  // GPT 이의신청 질문 전송: 캐시 우선 조회 + 응답 저장
   const handleAskGptObjection = async () => {
     if (!currentProblem) return;
     const problemKey = getGptProblemKey(currentProblem, selectedAnswer);
@@ -638,6 +695,7 @@ export default function Quiz({
     if (index >= 0 && index < quizProblems.length) setCurrentProblemIndex(index);
   };
 
+  // 오답 재풀이: 틀린 문제만 추려 새 시험 상태로 재시작
   const handleRetryWrongProblems = () => {
     const mergedAnswers = { ...accumulatedAnswers, ...answers };
     const wrongProblems = allProblems.filter((p) => mergedAnswers[p.problem_number] !== answersMap[p.problem_number]);
@@ -650,8 +708,28 @@ export default function Quiz({
     setCurrentProblemIndex(0);
     setQuizCompleted(false);
     setQuizResults(null);
+    setQuizStartedAtMs(null);
+    setRemainingSeconds(QUIZ_DURATION_SECONDS);
   };
 
+  // 모르겠어요 재풀이: 전역 기준이 아닌 현재 시험에서 UNKNOWN 선택한 문항만 재시작
+  const handleRetryUnknownProblems = () => {
+    const mergedAnswers = { ...accumulatedAnswers, ...answers };
+    const unknownProblems = allProblems.filter((p) => mergedAnswers[p.problem_number] === UNKNOWN_OPTION);
+    if (unknownProblems.length === 0) return;
+
+    setAccumulatedAnswers(mergedAnswers);
+    setQuizProblems(unknownProblems);
+    setAnswers({});
+    setCheckedProblems({});
+    setCurrentProblemIndex(0);
+    setQuizCompleted(false);
+    setQuizResults(null);
+    setQuizStartedAtMs(null);
+    setRemainingSeconds(QUIZ_DURATION_SECONDS);
+  };
+
+  // 중도 종료: 확인 후 현재까지 답안 기준으로 결과 처리
   const handleEndQuiz = () => {
     const shouldEnd = window.confirm('\uC885\uB8CC\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?');
     if (!shouldEnd) return;
@@ -690,6 +768,7 @@ export default function Quiz({
   const hasSavedGptForCurrent = savedGptMessagesForCurrent.length > 0;
   const hasAssistantReplyForCurrent = savedGptMessagesForCurrent.some((m) => m?.role === 'assistant');
 
+  // GPT 해설 보기 버튼: 캐시 대화가 있으면 바로 모달, 없으면 질문 입력창 표시
   const handleOpenGptView = () => {
     if (hasAssistantReplyForCurrent) {
       if (gptMessages.length === 0) {
@@ -702,6 +781,15 @@ export default function Quiz({
     setShowGptHelp(true);
   };
 
+  // GPT 도움 패널에서 대화 모달 열기(저장된 대화 복원 포함)
+  const handleOpenGptChatFromHelp = () => {
+    if (gptMessages.length === 0 && hasSavedGptForCurrent) {
+      setGptMessages(savedGptMessagesForCurrent);
+    }
+    setGptChatOpen(true);
+  };
+
+  // GPT 답변 평가(좋아요/싫어요): 캐시 키 기준 1회만 저장
   const handleVoteGpt = async (msgIndex, vote) => {
     const msg = gptMessages[msgIndex];
     if (!msg || msg.role !== 'assistant') return;
@@ -745,6 +833,8 @@ export default function Quiz({
     if (status === '●') return 'bg-blue-100 text-blue-700 border-blue-300';
     return 'bg-gray-100 text-gray-700 border-gray-300';
   };
+  const timerMinutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+  const timerSeconds = String(Math.floor(remainingSeconds % 60)).padStart(2, '0');
 
   const parseBookPriceVisual = (text) => {
     const raw = String(text || '')
@@ -1312,6 +1402,7 @@ export default function Quiz({
           session={session}
           onStart={handleStartQuiz}
           problemCount={quizProblems.length}
+          labels={T}
         />
         <UpdateNoticeModal
           isOpen={showUpdateNotice}
@@ -1327,20 +1418,31 @@ export default function Quiz({
   }
 
   if (quizCompleted) {
-    return <QuizResults session={session} results={quizResults} onRetryWrong={handleRetryWrongProblems} />;
+    return (
+      <QuizResults
+        session={session}
+        results={quizResults}
+        onRetryWrong={handleRetryWrongProblems}
+        onRetryUnknown={handleRetryUnknownProblems}
+        labels={T}
+      />
+    );
   }
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col">
       <header className="bg-white shadow-md p-4 flex justify-between items-center relative z-10">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <h1 className="text-xl font-bold text-indigo-900 hidden md:block">{session.title}</h1>
           <h1 className="text-xl font-bold text-indigo-900 md:hidden">{session.title.split(' ')[0]}...</h1>
         </div>
-        <div className="text-lg font-semibold text-gray-900">
+        <div className="text-lg font-semibold text-gray-900 whitespace-nowrap">
           {T.problem} {currentProblemIndex + 1} / {quizProblems.length}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-700 tabular-nums">
+            {timerMinutes}:{timerSeconds}
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -1371,50 +1473,17 @@ export default function Quiz({
             >
               <Settings className="w-6 h-6" />
             </button>
-            {isSettingsOpen && (
-              <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20">
-                <div className="mb-3 flex items-center justify-between border-b pb-2">
-                  <h3 className="font-bold text-gray-900">{T.settings}</h3>
-                  <button
-                    type="button"
-                    onClick={() => setIsSettingsOpen(false)}
-                    className="rounded px-2 py-0.5 text-sm font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-                    aria-label="설정 닫기"
-                  >
-                    X
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={enableAnswerCheck}
-                      onChange={(e) => setEnableAnswerCheck(e.target.checked)}
-                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                    />
-                    <span className="text-sm text-gray-700">{T.enableCheck}</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showExplanationWhenCorrect}
-                      onChange={(e) => setShowExplanationWhenCorrect(e.target.checked)}
-                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                    />
-                    <span className="text-sm text-gray-700">{T.showCorrect}</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showExplanationWhenIncorrect}
-                      onChange={(e) => setShowExplanationWhenIncorrect(e.target.checked)}
-                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                    />
-                    <span className="text-sm text-gray-700">{T.showWrong}</span>
-                  </label>
-                </div>
-              </div>
-            )}
+            <QuizSettingsPopover
+              isOpen={isSettingsOpen}
+              onClose={() => setIsSettingsOpen(false)}
+              labels={T}
+              enableAnswerCheck={enableAnswerCheck}
+              onChangeEnableAnswerCheck={setEnableAnswerCheck}
+              showExplanationWhenCorrect={showExplanationWhenCorrect}
+              onChangeShowExplanationWhenCorrect={setShowExplanationWhenCorrect}
+              showExplanationWhenIncorrect={showExplanationWhenIncorrect}
+              onChangeShowExplanationWhenIncorrect={setShowExplanationWhenIncorrect}
+            />
           </div>
           <button
             onClick={handleEndQuiz}
@@ -1686,65 +1755,21 @@ export default function Quiz({
                   </p>
                 )}
 
-                <div className="mt-4 border-t pt-4">
-                  <button
-                    type="button"
-                    onClick={handleOpenGptView}
-                    className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700 disabled:bg-sky-300 disabled:cursor-not-allowed"
-                  >
-                    GPT 해설보기
-                  </button>
-                  {isGptUsedForCurrent && !hasAssistantReplyForCurrent && (
-                    <p className="mt-2 text-xs font-semibold text-gray-600">
-                      이 문제의 GPT 이의신청은 1회만 가능합니다.
-                    </p>
-                  )}
-
-                  {showGptHelp && (
-                    <div className="mt-3 space-y-3 rounded-lg border border-sky-200 bg-white p-3">
-                      <textarea
-                        value={gptQuestion}
-                        onChange={(e) => setGptQuestion(e.target.value)}
-                        placeholder="추가로 궁금한 점을 적어주세요. (선택)"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-sky-500"
-                        rows={3}
-                      />
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={handleAskGptObjection}
-                          disabled={gptLoading || gptMessages.filter((m) => m.role === 'user').length >= GPT_MAX_TURNS}
-                          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed"
-                        >
-                          {gptLoading ? 'GPT 답변 생성 중...' : 'GPT에게 물어보기'}
-                        </button>
-                      </div>
-
-                      {gptError && (
-                        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                          {gptError}
-                        </p>
-                      )}
-
-                      {(gptMessages.length > 0 || hasSavedGptForCurrent) && (
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (gptMessages.length === 0 && hasSavedGptForCurrent) {
-                                setGptMessages(savedGptMessagesForCurrent);
-                              }
-                              setGptChatOpen(true);
-                            }}
-                            className="rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-800 hover:bg-sky-100"
-                          >
-                            GPT 설명 보기
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <GptHelpSection
+                  isGptUsedForCurrent={isGptUsedForCurrent}
+                  hasAssistantReplyForCurrent={hasAssistantReplyForCurrent}
+                  showGptHelp={showGptHelp}
+                  gptQuestion={gptQuestion}
+                  onChangeGptQuestion={setGptQuestion}
+                  onAskGpt={handleAskGptObjection}
+                  gptLoading={gptLoading}
+                  gptMessages={gptMessages}
+                  gptError={gptError}
+                  hasSavedGptForCurrent={hasSavedGptForCurrent}
+                  onOpenGptView={handleOpenGptView}
+                  onOpenGptChat={handleOpenGptChatFromHelp}
+                  gptMaxTurns={GPT_MAX_TURNS}
+                />
               </div>
             )}
 
@@ -1755,6 +1780,7 @@ export default function Quiz({
                   ? (isLast ? T.resultView : T.next)
                   : (isChecked ? (isLast ? T.resultView : T.next) : T.check);
                 const primaryDisabled = !selectedAnswer;
+                // 하단 메인 버튼: 모드/마지막 문제 여부에 따라 확인/다음/결과 보기 처리
                 const handlePrimaryClick = () => {
                   if (isDirectProgressMode) {
                     if (!selectedAnswer) {
@@ -1842,274 +1868,24 @@ export default function Quiz({
         <div />
       </footer>
 
-      {showReportTipNotice && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pointer-events-none">
-          <div className="mt-4 w-full max-w-md rounded-2xl bg-white shadow-2xl border border-amber-200 p-4 text-center animate-in fade-in slide-in-from-top-2 duration-300">
-            <p className="text-base md:text-lg font-bold text-gray-800 leading-relaxed">
-              문제에 버그가 있다면 화면 하단의
-              <br />
-              신고하기로 제보해주세요.
-            </p>
-            <p className="mt-2 text-sm font-semibold text-amber-700">
-              {reportTipCountdown <= 3
-                ? `${reportTipCountdown}초 후 닫힙니다.`
-                : '잠시 후 자동으로 닫힙니다.'}
-            </p>
-          </div>
-        </div>
-      )}
+      <ReportTipToast isOpen={showReportTipNotice} countdown={reportTipCountdown} />
 
-      {gptChatOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
-          onClick={() => setGptChatOpen(false)}
-        >
-          <div
-            className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-4 md:p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex items-center justify-between border-b border-gray-200 pb-2">
-              <h3 className="text-base md:text-lg font-extrabold text-sky-900">GPT 이의신청 대화</h3>
-              <button
-                type="button"
-                onClick={() => setGptChatOpen(false)}
-                className="rounded-md px-3 py-1 text-sm font-bold text-gray-600 hover:bg-gray-100"
-              >
-                닫기
-              </button>
-            </div>
+      <GptChatModal
+        isOpen={gptChatOpen}
+        onClose={() => setGptChatOpen(false)}
+        gptMessages={gptMessages}
+        gptVoteMap={gptVoteMap}
+        onVoteGpt={handleVoteGpt}
+        gptMaxTurns={GPT_MAX_TURNS}
+        gptQuestion={gptQuestion}
+        onChangeGptQuestion={setGptQuestion}
+        onAskGpt={handleAskGptObjection}
+        gptLoading={gptLoading}
+        gptError={gptError}
+      />
 
-            <div className="max-h-[48vh] overflow-y-auto space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
-              {gptMessages.length === 0 ? (
-                <p className="text-sm text-gray-500">아직 대화가 없습니다.</p>
-              ) : (
-                gptMessages.map((m, idx) => (
-                  <div
-                    key={`${m.role}-${idx}`}
-                    className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap leading-relaxed ${
-                      m.role === 'user'
-                        ? 'ml-8 bg-indigo-100 text-indigo-900'
-                        : 'mr-8 bg-white border border-gray-200 text-gray-800'
-                    }`}
-                  >
-                    <p className="mb-1 text-xs font-bold opacity-70">{m.role === 'user' ? '나' : 'GPT'}</p>
-                    <p>{m.content}</p>
-                    {m.role === 'assistant' && m.cached && (
-                      <p className="mt-1 text-[11px] font-semibold text-emerald-700">
-                        이전에 나눈 대화를 통한 해석(캐시)
-                      </p>
-                    )}
-                    {m.role === 'assistant' && (
-                      <div className="mt-2 flex items-center justify-end gap-2">
-                        {m.cacheKey && gptVoteMap[String(m.cacheKey)] && (
-                          <span className="text-[11px] font-semibold text-gray-500">평가 완료</span>
-                        )}
-                        <button
-                          type="button"
-                          disabled={!m.cacheKey || Boolean(gptVoteMap[String(m.cacheKey)])}
-                          onClick={() => handleVoteGpt(idx, 'up')}
-                          className="inline-flex h-8 min-w-[56px] items-center justify-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <ThumbsUp className="h-4 w-4" />
-                          {Number(m?.feedback?.like || 0)}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!m.cacheKey || Boolean(gptVoteMap[String(m.cacheKey)])}
-                          onClick={() => handleVoteGpt(idx, 'down')}
-                          className="inline-flex h-8 min-w-[56px] items-center justify-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <ThumbsDown className="h-4 w-4" />
-                          {Number(m?.feedback?.dislike || 0)}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+      <GptLoadingOverlay isOpen={gptLoading} />
 
-            <div className="mt-3">
-              <p className="mb-2 text-xs font-semibold text-gray-600">
-                대화 {gptMessages.filter((m) => m.role === 'user').length} / {GPT_MAX_TURNS}
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={gptQuestion}
-                  onChange={(e) => setGptQuestion(e.target.value)}
-                  placeholder="추가 질문 입력"
-                  className="flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
-                />
-                <button
-                  type="button"
-                  onClick={handleAskGptObjection}
-                  disabled={gptLoading || gptMessages.filter((m) => m.role === 'user').length >= GPT_MAX_TURNS}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed"
-                >
-                  {gptLoading ? '생성 중...' : '전송'}
-                </button>
-              </div>
-              {gptError && <p className="mt-2 text-xs font-semibold text-red-600">{gptError}</p>}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {gptLoading && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-indigo-200 bg-white/95 p-5 text-center shadow-2xl backdrop-blur-sm">
-            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
-            <p className="text-base font-bold text-indigo-900">GPT 해설 생성 중...</p>
-            <p className="mt-1 text-sm text-gray-600">잠시만 기다려주세요.</p>
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
-}
-
-function UpdateNoticeModal({ isOpen, onClose }) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 md:p-7">
-        <h2 className="text-xl md:text-2xl font-extrabold text-sky-900 mb-4">업데이트 안내</h2>
-        <div className="space-y-2 text-sm md:text-base text-gray-700">
-          <p>사용자 편의성 개선 사항이 적용되었습니다.</p>
-          <p>문제 네비게이션(1~60)에서 O / X / ? 상태를 바로 확인할 수 있습니다.</p>
-          <p>좌측 상단 설정(톱니)에서 정답 확인 사용을 켜고 끌 수 있습니다.</p>
-          <p>키보드만으로 진행할 수 있습니다: 1~4 선택, Enter/Space 정답확인/다음.</p>
-          <p>정답확인/다음 버튼은 문제 컨테이너 오른쪽 아래로 이동했습니다.</p>
-          <p>종료 시 확인 후 현재 점수를 보여주고 회차 선택으로 이동합니다.</p>
-        </div>
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-700"
-          >
-            확인
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TestLobby({ session, onStart, problemCount }) {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
-      <div className="w-full max-w-2xl text-center">
-        <Link href="/test" className="inline-flex items-center text-gray-600 hover:text-indigo-700 mb-8 group">
-          <ArrowLeft className="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
-          {T.backToSession}
-        </Link>
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200/50">
-          <p className="text-indigo-600 font-semibold">{T.lobbyTitle}</p>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-4">{session.title}</h1>
-          <p className="text-gray-700 mb-8">총 {problemCount}문항 / 90분(3과목)</p>
-          <div className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-3 md:flex-row">
-            <button
-              onClick={onStart}
-              className="w-full md:w-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
-            >
-              <PlayCircle className="w-6 h-6 mr-3" />
-              {T.start}
-            </button>
-          </div>
-          <p className="mt-4 text-sm text-gray-600">
-            시작 후 좌측 상단 <span className="font-semibold">설정(톱니)</span>에서
-            <span className="font-semibold"> 정답 확인 사용</span>을 켜고 끌 수 있습니다.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function QuizResults({ session, results, onRetryWrong }) {
-  const {
-    totalCorrect,
-    wrongCount,
-    subjectCorrectCounts,
-    subjectTotalCounts,
-    subjectPassFail,
-    isOverallPass,
-    isRetryMode,
-    currentSetCorrect,
-    currentSetTotal,
-  } = results;
-  const [showFailModal, setShowFailModal] = useState(!isRetryMode && !isOverallPass);
-  const [failQuote] = useState(() => FAIL_QUOTES[Math.floor(Math.random() * FAIL_QUOTES.length)]);
-
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
-      <div className="w-full max-w-2xl text-center">
-        <Link href="/test" className="inline-flex items-center text-gray-600 hover:text-indigo-700 mb-8 group">
-          <ArrowLeft className="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
-          {T.backToSession}
-        </Link>
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200/50">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-900 mt-2 mb-2">{session.title}</h1>
-          {isRetryMode && (
-            <p className="text-base md:text-lg font-semibold text-indigo-700 mb-2">오답 재풀이 결과</p>
-          )}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              {T.score}: {totalCorrect} / 60
-            </h2>
-            <p className={`text-3xl font-extrabold ${isOverallPass ? 'text-green-600' : 'text-red-600'}`}>
-              {isOverallPass ? T.pass : T.fail}
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-lg">
-            {[1, 2, 3].map((subjectNum) => (
-              <div
-                key={subjectNum}
-                className={`p-4 rounded-lg border-2 ${subjectPassFail[subjectNum] ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'}`}
-              >
-                <p className="font-semibold text-gray-700">{T.subject} {subjectNum}</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {subjectCorrectCounts[subjectNum]} / {subjectTotalCounts?.[subjectNum] ?? 20} {T.qCount}
-                </p>
-                <p className={`font-semibold ${subjectPassFail[subjectNum] ? 'text-green-600' : 'text-red-600'}`}>
-                  {subjectPassFail[subjectNum] ? T.avoidFail : T.failSubject}
-                </p>
-              </div>
-            ))}
-          </div>
-          {wrongCount > 0 && (
-            <button
-              onClick={onRetryWrong}
-              className="w-full max-w-xs mx-auto mb-4 px-8 py-3 bg-amber-500 text-white font-bold rounded-full hover:bg-amber-600 transition inline-flex items-center justify-center"
-            >
-              틀린문제만 다시 풀기 ({wrongCount})
-            </button>
-          )}
-          <Link
-            href="/test"
-            className="w-full max-w-xs mx-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
-          >
-            <ArrowLeft className="w-6 h-6 mr-3" />
-            {T.chooseOther}
-          </Link>
-        </div>
-      </div>
-      {!isRetryMode && !isOverallPass && showFailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 text-center">
-            <p className="text-lg font-bold text-gray-800 mb-5 whitespace-pre-line">{failQuote}</p>
-            <button
-              onClick={() => setShowFailModal(false)}
-              className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700"
-            >
-              깝치지 말고 틀린문제 다시풀러가기
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

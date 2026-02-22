@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Book, ChevronRight, Shuffle } from 'lucide-react';
 import { trackEvent } from '@/lib/analyticsClient';
+import { readUnknownProblems } from '@/lib/unknownProblemsStore';
 
 const RESUME_STATE_KEY_PREFIX = 'quiz_resume_state_';
 
@@ -42,16 +43,18 @@ const sessionsByYear = [
 
 export default function TestSelectionPage() {
   const [resumeMap, setResumeMap] = useState({});
+  const [unknownProblems, setUnknownProblems] = useState([]);
 
-  useEffect(() => {
-    const key = `visit_test_${new Date().toISOString().slice(0, 10)}`;
-    if (window.sessionStorage.getItem(key)) return;
-    window.sessionStorage.setItem(key, '1');
-    trackEvent('visit_test', { path: '/test' });
-  }, []);
-
-  useEffect(() => {
-    const allSessionIds = ['random', ...sessionsByYear.flatMap((group) => group.sessions.map((session) => String(session.id)))];
+  const refreshClientStoredState = () => {
+    const allSessionIds = [
+      'random',
+      'random22',
+      'random22-2022',
+      'random22-2023',
+      'random22-2024',
+      '100',
+      ...sessionsByYear.flatMap((group) => group.sessions.map((session) => String(session.id))),
+    ];
     const nextMap = {};
     for (const id of allSessionIds) {
       try {
@@ -64,6 +67,28 @@ export default function TestSelectionPage() {
       } catch {}
     }
     setResumeMap(nextMap);
+    setUnknownProblems(readUnknownProblems());
+  };
+
+  useEffect(() => {
+    const key = `visit_test_${new Date().toISOString().slice(0, 10)}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, '1');
+    trackEvent('visit_test', { path: '/test' });
+  }, []);
+
+  useEffect(() => {
+    refreshClientStoredState();
+    const onFocus = () => refreshClientStoredState();
+    const onStorage = () => refreshClientStoredState();
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
   }, []);
 
   return (
@@ -105,7 +130,10 @@ export default function TestSelectionPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Shuffle className="w-6 h-6" />
-                <h2 className="text-lg font-bold">랜덤22 (보기 셔플 테스트)</h2>
+                <div>
+                  <h2 className="text-lg font-bold">랜덤보기22 (문제 셔플형)</h2>
+                  <p className="text-sm text-white/90">2022 / 2023 / 2024 선택 후 진행</p>
+                </div>
               </div>
               <ChevronRight className="w-6 h-6" />
             </div>
@@ -123,6 +151,24 @@ export default function TestSelectionPage() {
               <ChevronRight className="w-6 h-6" />
             </div>
           </Link>
+
+          {unknownProblems.length > 0 && (
+            <Link
+              href="/test/unknown"
+              className="mb-6 block p-5 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Shuffle className="w-6 h-6" />
+                  <div>
+                    <h2 className="text-lg font-bold">모르겠어요 다시 풀기</h2>
+                    <p className="text-sm text-white/90">{unknownProblems.length}문제 대기 중</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-6 h-6" />
+              </div>
+            </Link>
+          )}
 
           <div className="space-y-4">
             {sessionsByYear.map((yearGroup) => (

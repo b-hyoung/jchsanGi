@@ -114,6 +114,7 @@ export async function GET(request) {
       sectionTitle: problem.sectionTitle || '',
       questionText: problem.question_text || '',
       options: Array.isArray(problem.options) ? problem.options : [],
+      examples: problem.examples ?? null,
       answerText: data.answersMap[problem.problem_number] ?? '',
       commentText: data.commentsMap[problem.problem_number] ?? '',
       gotoPath: `/test/${sessionId}?p=${problemNumber}`,

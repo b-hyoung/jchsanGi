@@ -20,7 +20,7 @@ const SESSION_LABELS = {
   '12': '개발자 문제 60',
   '100': '100문제 모드',
   random: '랜덤풀기',
-  random22: '랜덤22',
+  random22: '랜덤보기22',
 };
 
 function escapeDiscord(value) {
@@ -31,6 +31,9 @@ function escapeDiscord(value) {
 
 function sessionLabel(sessionId) {
   const key = String(sessionId ?? '').trim();
+  if (/^random22-\d{4}$/.test(key)) {
+    return `랜덤보기22 (${key.slice(-4)}년)`;
+  }
   return SESSION_LABELS[key] || key || '-';
 }
 
