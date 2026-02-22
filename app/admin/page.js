@@ -42,6 +42,7 @@ const LIST_TABS = [
   { key: 'daily', label: '일자별 리스트' },
   { key: 'session', label: '회차별 리스트' },
   { key: 'subject', label: '과목별 리스트' },
+  { key: 'gptCache', label: 'GPT 캐시 조회' },
   { key: 'reports', label: '신고 리스트' },
 ];
 
@@ -58,6 +59,8 @@ const SESSION_LABELS = {
   '10': '2022년 2회차',
   '11': '2022년 3회차',
   '12': '개발자 문제 60',
+  'random': '랜덤 모드',
+  'random22': '랜덤22 셔플 테스트',
   '100': '100문제 모드',
 };
 
@@ -91,6 +94,24 @@ function fmtTime(ts) {
   return `${mm}월 ${dd}일 ${hh}시 ${mi}분`;
 }
 
+const emptyGptCacheAdmin = {
+  summary: {
+    totalRows: 0,
+    totalHits: 0,
+    filteredRows: 0,
+    filteredHits: 0,
+    subjects: [],
+  },
+  topProblems: [],
+  rows: [],
+  page: 1,
+  pageSize: 20,
+  totalPages: 1,
+  sortBy: 'created_at',
+  sortDir: 'desc',
+  filters: { sessionId: '', problemNumber: '' },
+};
+
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -111,6 +132,19 @@ export default function AdminPage() {
   const [reportSortBy, setReportSortBy] = useState('count');
   const [reportSortDir, setReportSortDir] = useState('desc');
   const [detailSortState, setDetailSortState] = useState({});
+  const [gptCacheData, setGptCacheData] = useState(emptyGptCacheAdmin);
+  const [gptCacheLoading, setGptCacheLoading] = useState(false);
+  const [gptCacheError, setGptCacheError] = useState('');
+  const [gptCacheSortBy, setGptCacheSortBy] = useState('created_at');
+  const [gptCacheSortDir, setGptCacheSortDir] = useState('desc');
+  const [gptCachePage, setGptCachePage] = useState(1);
+  const [gptCachePageSize, setGptCachePageSize] = useState(20);
+  const [gptCacheSessionFilter, setGptCacheSessionFilter] = useState('');
+  const [gptCacheProblemFilter, setGptCacheProblemFilter] = useState('');
+  const [gptCacheFeedbackFilter, setGptCacheFeedbackFilter] = useState('all');
+  const [gptTopSortBy, setGptTopSortBy] = useState('hits');
+  const [gptTopSortDir, setGptTopSortDir] = useState('desc');
+  const [selectedGptCacheRow, setSelectedGptCacheRow] = useState(null);
 
   const toggleReportSort = (column) => {
     if (reportSortBy === column) {
@@ -124,6 +158,35 @@ export default function AdminPage() {
   const sortMark = (column) => {
     if (reportSortBy !== column) return '↕';
     return reportSortDir === 'asc' ? '▲' : '▼';
+  };
+
+  const toggleGptCacheSort = (column) => {
+    if (gptCacheSortBy === column) {
+      setGptCacheSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setGptCacheSortBy(column);
+      setGptCacheSortDir(column === 'session' || column === 'problem' || column === 'subject' ? 'asc' : 'desc');
+    }
+    setGptCachePage(1);
+  };
+
+  const gptCacheSortMark = (column) => {
+    if (gptCacheSortBy !== column) return '↕';
+    return gptCacheSortDir === 'asc' ? '▲' : '▼';
+  };
+
+  const toggleGptTopSort = (column) => {
+    if (gptTopSortBy === column) {
+      setGptTopSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setGptTopSortBy(column);
+    setGptTopSortDir(column === 'session' || column === 'problem' || column === 'subject' ? 'asc' : 'desc');
+  };
+
+  const gptTopSortMark = (column) => {
+    if (gptTopSortBy !== column) return '↕';
+    return gptTopSortDir === 'asc' ? '▲' : '▼';
   };
 
   const toggleDetailSort = (groupKey, column) => {
@@ -183,6 +246,32 @@ export default function AdminPage() {
     }
   };
 
+  const loadGptCache = async () => {
+    setGptCacheLoading(true);
+    setGptCacheError('');
+    try {
+      const qs = new URLSearchParams({
+        page: String(gptCachePage),
+        pageSize: String(gptCachePageSize),
+        sortBy: gptCacheSortBy,
+        sortDir: gptCacheSortDir,
+      });
+      if (gptCacheSessionFilter) qs.set('sessionId', gptCacheSessionFilter);
+      if (gptCacheProblemFilter) qs.set('problemNumber', gptCacheProblemFilter);
+      if (gptCacheFeedbackFilter && gptCacheFeedbackFilter !== 'all') qs.set('feedbackFilter', gptCacheFeedbackFilter);
+
+      const res = await fetch(`/api/admin/gpt-cache?${qs.toString()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      if (!data?.ok) throw new Error(data?.message || 'failed');
+      setGptCacheData({ ...emptyGptCacheAdmin, ...data });
+    } catch {
+      setGptCacheError('GPT 캐시 조회 데이터를 불러오지 못했습니다.');
+    } finally {
+      setGptCacheLoading(false);
+    }
+  };
+
   useEffect(() => {
     const ok = window.sessionStorage.getItem(ADMIN_AUTH_KEY) === '1';
     if (ok) {
@@ -193,7 +282,62 @@ export default function AdminPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!unlocked) return;
+    if (tab !== 'gptCache') return;
+    loadGptCache();
+  }, [
+    unlocked,
+    tab,
+    gptCachePage,
+    gptCachePageSize,
+    gptCacheSortBy,
+    gptCacheSortDir,
+    gptCacheSessionFilter,
+    gptCacheProblemFilter,
+    gptCacheFeedbackFilter,
+  ]);
+
   const kpis = useMemo(() => metrics.kpis ?? emptyMetrics.kpis, [metrics]);
+  const sortedGptTopProblems = useMemo(() => {
+    const rows = [...(gptCacheData?.topProblems || [])];
+    const dir = gptTopSortDir === 'asc' ? 1 : -1;
+    rows.sort((a, b) => {
+      if (gptTopSortBy === 'subject') {
+        const d = ((Number(a?.subject) || 0) - (Number(b?.subject) || 0)) * dir;
+        if (d !== 0) return d;
+      }
+      if (gptTopSortBy === 'session') {
+        const d = String(sessionLabel(a?.sourceSessionId)).localeCompare(String(sessionLabel(b?.sourceSessionId)), 'ko') * dir;
+        if (d !== 0) return d;
+      }
+      if (gptTopSortBy === 'problem') {
+        const d = ((Number(a?.sourceProblemNumber) || 0) - (Number(b?.sourceProblemNumber) || 0)) * dir;
+        if (d !== 0) return d;
+      }
+      if (gptTopSortBy === 'likes') {
+        const d = ((Number(a?.totalLike) || 0) - (Number(b?.totalLike) || 0)) * dir;
+        if (d !== 0) return d;
+      }
+      if (gptTopSortBy === 'dislikes') {
+        const d = ((Number(a?.totalDislike) || 0) - (Number(b?.totalDislike) || 0)) * dir;
+        if (d !== 0) return d;
+      }
+      if (gptTopSortBy === 'cacheRows') {
+        const d = ((Number(a?.cacheRows) || 0) - (Number(b?.cacheRows) || 0)) * dir;
+        if (d !== 0) return d;
+      }
+      if (gptTopSortBy === 'latest') {
+        const d = String(a?.latestCreatedAt || '').localeCompare(String(b?.latestCreatedAt || '')) * dir;
+        if (d !== 0) return d;
+      }
+      const d = ((Number(a?.totalHits) || 0) - (Number(b?.totalHits) || 0)) * dir;
+      if (d !== 0) return d;
+      return String(b?.latestCreatedAt || '').localeCompare(String(a?.latestCreatedAt || ''));
+    });
+    return rows;
+  }, [gptCacheData?.topProblems, gptTopSortBy, gptTopSortDir]);
+
   const groupedReports = useMemo(() => {
     const rows = Array.isArray(metrics.recentReports) ? metrics.recentReports : [];
     const map = new Map();
@@ -284,6 +428,14 @@ export default function AdminPage() {
     setSelectedReport(null);
     setProblemDetail(null);
     setDetailError('');
+  };
+
+  const openGptCacheDetail = (row) => {
+    setSelectedGptCacheRow(row || null);
+  };
+
+  const closeGptCacheDetail = () => {
+    setSelectedGptCacheRow(null);
   };
 
   const toggleReportGroup = (key) => {
@@ -522,6 +674,280 @@ export default function AdminPage() {
             headers={['과목', '평균 정답률']}
             rows={metrics.subjectAverages.map((r) => [r.subject, `${r.정답률}%`])}
           />
+        )}
+
+        {tab === 'gptCache' && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h2 className="font-bold text-slate-900">GPT 이의신청 캐시 조회</h2>
+                <button
+                  onClick={loadGptCache}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm font-semibold"
+                >
+                  캐시 새로고침
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
+                <Info label="전체 캐시 행" value={gptCacheData?.summary?.totalRows ?? 0} />
+                <Info label="전체 캐시 조회수" value={gptCacheData?.summary?.totalHits ?? 0} />
+                <Info label="필터 결과 행" value={gptCacheData?.summary?.filteredRows ?? 0} />
+                <Info label="필터 결과 조회수" value={gptCacheData?.summary?.filteredHits ?? 0} />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {(gptCacheData?.summary?.subjects || []).map((s) => (
+                  <div key={s.subject} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="text-sm font-bold text-slate-900">{s.subject}</div>
+                    <div className="mt-1 text-xs text-slate-600">캐시 행 {s.rows} / 조회수 {s.hits}</div>
+                  </div>
+                ))}
+              </div>
+
+              {gptCacheError && (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
+                  {gptCacheError}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+              <h3 className="font-bold text-slate-900 mb-3">가장 많이 조회된 문제 (캐시 기준)</h3>
+              {gptCacheLoading ? (
+                <div className="text-slate-500">로딩 중...</div>
+              ) : (gptCacheData?.topProblems || []).length === 0 ? (
+                <div className="text-slate-500">캐시 데이터가 없습니다.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-left text-slate-600">
+                        <th className="py-2 pr-3">
+                          <button onClick={() => toggleGptTopSort('subject')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                            <span>과목</span><span>{gptTopSortMark('subject')}</span>
+                          </button>
+                        </th>
+                        <th className="py-2 pr-3">
+                          <button onClick={() => toggleGptTopSort('session')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                            <span>원본 회차</span><span>{gptTopSortMark('session')}</span>
+                          </button>
+                        </th>
+                        <th className="py-2 pr-3">
+                          <button onClick={() => toggleGptTopSort('problem')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                            <span>원본 문항</span><span>{gptTopSortMark('problem')}</span>
+                          </button>
+                        </th>
+                        <th className="py-2 pr-3">
+                          <button onClick={() => toggleGptTopSort('hits')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                            <span>캐시 조회수</span><span>{gptTopSortMark('hits')}</span>
+                          </button>
+                        </th>
+                        <th className="py-2 pr-3">
+                          <button onClick={() => toggleGptTopSort('cacheRows')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                            <span>캐시 행 수</span><span>{gptTopSortMark('cacheRows')}</span>
+                          </button>
+                        </th>
+                        <th className="py-2 pr-3">
+                          <button onClick={() => toggleGptTopSort('likes')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                            <span>좋아요</span><span>{gptTopSortMark('likes')}</span>
+                          </button>
+                        </th>
+                        <th className="py-2 pr-3">
+                          <button onClick={() => toggleGptTopSort('dislikes')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                            <span>싫어요</span><span>{gptTopSortMark('dislikes')}</span>
+                          </button>
+                        </th>
+                        <th className="py-2 pr-3">
+                          <button onClick={() => toggleGptTopSort('latest')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                            <span>최근 생성</span><span>{gptTopSortMark('latest')}</span>
+                          </button>
+                        </th>
+                        <th className="py-2">문제 요약</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedGptTopProblems.slice(0, 30).map((r) => (
+                        <tr key={r.key} className="border-b border-slate-100">
+                          <td className="py-2 pr-3">{r.subject ? `${r.subject}과목` : '-'}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap">{sessionLabel(r.sourceSessionId)}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap">{r.sourceProblemNumber}</td>
+                          <td className="py-2 pr-3 font-semibold text-slate-900">{r.totalHits}</td>
+                          <td className="py-2 pr-3">{r.cacheRows}</td>
+                          <td className="py-2 pr-3 text-emerald-700">{r.totalLike ?? 0}</td>
+                          <td className="py-2 pr-3 text-rose-700">{r.totalDislike ?? 0}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap">{fmtTime(r.latestCreatedAt)}</td>
+                          <td className="py-2">{r.sampleQuestionText || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h3 className="font-bold text-slate-900">캐시 상세 목록 (페이지네이션)</h3>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <label className="flex items-center gap-1">
+                    <span className="text-slate-600">회차</span>
+                    <select
+                      value={gptCacheSessionFilter}
+                      onChange={(e) => {
+                        setGptCacheSessionFilter(e.target.value);
+                        setGptCachePage(1);
+                      }}
+                      className="rounded border border-slate-300 px-2 py-1"
+                    >
+                      <option value="">전체</option>
+                      {Object.entries(SESSION_LABELS).map(([id, label]) => (
+                        <option key={id} value={id}>{label}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex items-center gap-1">
+                    <span className="text-slate-600">문항</span>
+                    <input
+                      value={gptCacheProblemFilter}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/[^0-9]/g, '');
+                        setGptCacheProblemFilter(v);
+                        setGptCachePage(1);
+                      }}
+                      placeholder="예: 12"
+                      className="w-20 rounded border border-slate-300 px-2 py-1"
+                    />
+                  </label>
+
+                  <label className="flex items-center gap-1">
+                    <span className="text-slate-600">피드백</span>
+                    <select
+                      value={gptCacheFeedbackFilter}
+                      onChange={(e) => {
+                        setGptCacheFeedbackFilter(e.target.value);
+                        setGptCachePage(1);
+                      }}
+                      className="rounded border border-slate-300 px-2 py-1"
+                    >
+                      <option value="all">전체</option>
+                      <option value="hasFeedback">평가 있음</option>
+                      <option value="liked">좋아요 우세</option>
+                      <option value="disliked">싫어요 우세</option>
+                      <option value="likeOnly">좋아요 있음</option>
+                      <option value="dislikeOnly">싫어요 있음</option>
+                    </select>
+                  </label>
+
+                  <label className="flex items-center gap-1">
+                    <span className="text-slate-600">페이지 크기</span>
+                    <select
+                      value={gptCachePageSize}
+                      onChange={(e) => {
+                        setGptCachePageSize(Number(e.target.value));
+                        setGptCachePage(1);
+                      }}
+                      className="rounded border border-slate-300 px-2 py-1"
+                    >
+                      {[10, 20, 50, 100].map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              {gptCacheLoading ? (
+                <div className="text-slate-500">로딩 중...</div>
+              ) : (gptCacheData?.rows || []).length === 0 ? (
+                <div className="text-slate-500">캐시 데이터가 없습니다.</div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-left text-slate-600">
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleGptCacheSort('subject')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>과목</span><span>{gptCacheSortMark('subject')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleGptCacheSort('session')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>원본 회차</span><span>{gptCacheSortMark('session')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleGptCacheSort('problem')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>원본 문항</span><span>{gptCacheSortMark('problem')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleGptCacheSort('hits')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>조회수</span><span>{gptCacheSortMark('hits')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2 pr-3">좋아요</th>
+                          <th className="py-2 pr-3">싫어요</th>
+                          <th className="py-2 pr-3">
+                            <button onClick={() => toggleGptCacheSort('created_at')} className="flex w-full items-center justify-between font-semibold hover:text-slate-900">
+                              <span>생성시각</span><span>{gptCacheSortMark('created_at')}</span>
+                            </button>
+                          </th>
+                          <th className="py-2">질문 요약</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(gptCacheData.rows || []).map((r) => (
+                          <tr
+                            key={r.cacheKey}
+                            className="border-b border-slate-100 cursor-pointer hover:bg-slate-50"
+                            onClick={() => openGptCacheDetail(r)}
+                          >
+                            <td className="py-2 pr-3 whitespace-nowrap">{r.subject ? `${r.subject}과목` : '-'}</td>
+                            <td className="py-2 pr-3 whitespace-nowrap">{sessionLabel(r.sourceSessionId)}</td>
+                            <td className="py-2 pr-3 whitespace-nowrap">{r.sourceProblemNumber}</td>
+                            <td className="py-2 pr-3 font-semibold text-slate-900">{r.hitCount}</td>
+                            <td className="py-2 pr-3 text-emerald-700">{r.likeCount}</td>
+                            <td className="py-2 pr-3 text-rose-700">{r.dislikeCount}</td>
+                            <td className="py-2 pr-3 whitespace-nowrap">{fmtTime(r.createdAt)}</td>
+                            <td className="py-2">
+                              <div className="max-w-[520px] truncate" title={r.questionText || r.userQuestion || ''}>
+                                {r.questionText || r.userQuestion || '-'}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <div className="text-slate-600">
+                      페이지 {gptCacheData.page} / {gptCacheData.totalPages} · 현재 {gptCacheData.rows.length}건 표시
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setGptCachePage((p) => Math.max(1, p - 1))}
+                        disabled={gptCacheData.page <= 1}
+                        className="px-3 py-1.5 rounded border border-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        이전
+                      </button>
+                      <button
+                        onClick={() => setGptCachePage((p) => Math.min(gptCacheData.totalPages || 1, p + 1))}
+                        disabled={gptCacheData.page >= (gptCacheData.totalPages || 1)}
+                        className="px-3 py-1.5 rounded border border-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        다음
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
 
         {tab === 'reports' && (
@@ -828,6 +1254,72 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {selectedGptCacheRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={closeGptCacheDetail}>
+          <div
+            className="w-full max-w-4xl rounded-xl bg-white border border-slate-200 p-5 shadow-xl max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h3 className="text-lg font-extrabold text-slate-900">GPT 캐시 상세</h3>
+              <button onClick={closeGptCacheDetail} className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50">닫기</button>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mb-4">
+              <Info label="과목" value={selectedGptCacheRow.subject ? `${selectedGptCacheRow.subject}과목` : '-'} />
+              <Info label="원본 회차" value={sessionLabel(selectedGptCacheRow.sourceSessionId)} />
+              <Info label="원본 문항" value={selectedGptCacheRow.sourceProblemNumber} />
+              <Info label="생성시각" value={fmtTime(selectedGptCacheRow.createdAt)} />
+              <Info label="조회수" value={selectedGptCacheRow.hitCount} />
+              <Info label="좋아요" value={selectedGptCacheRow.likeCount} />
+              <Info label="싫어요" value={selectedGptCacheRow.dislikeCount} />
+              <Info label="캐시 키" value={selectedGptCacheRow.cacheKey || '-'} />
+            </div>
+
+            <div className="space-y-3">
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="text-sm font-semibold text-slate-700 mb-1">문제 텍스트</p>
+                <p className="text-sm text-slate-800 whitespace-pre-wrap">{selectedGptCacheRow.questionText || '-'}</p>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="text-sm font-semibold text-slate-700 mb-1">사용자 질문</p>
+                <p className="text-sm text-slate-800 whitespace-pre-wrap">{selectedGptCacheRow.userQuestion || '-'}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="rounded-lg border border-slate-200 p-3">
+                  <p className="text-sm font-semibold text-slate-700 mb-1">사용자 선택 정답</p>
+                  <p className="text-sm text-slate-800 whitespace-pre-wrap">{selectedGptCacheRow.selectedAnswer || '-'}</p>
+                </div>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                  <p className="text-sm font-semibold text-green-800 mb-1">문제 정답</p>
+                  <p className="text-sm text-green-900 whitespace-pre-wrap">{selectedGptCacheRow.correctAnswer || '-'}</p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                <p className="text-sm font-semibold text-indigo-800 mb-1">GPT 답변(캐시)</p>
+                <p className="text-sm text-indigo-950 whitespace-pre-wrap">{selectedGptCacheRow.answer || '답변 없음'}</p>
+              </div>
+
+              <div className="flex justify-end">
+                <a
+                  href={`/test/${encodeURIComponent(String(selectedGptCacheRow.sourceSessionId || ''))}?p=${encodeURIComponent(
+                    String(selectedGptCacheRow.sourceProblemNumber || '')
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-lg bg-sky-600 text-white font-semibold hover:bg-sky-700"
+                >
+                  문제 페이지로 이동
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
