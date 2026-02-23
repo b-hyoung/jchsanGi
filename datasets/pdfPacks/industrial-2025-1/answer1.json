@@ -25,7 +25,7 @@
       {
         "problem_number": 5,
         "correct_answer_index": 0,
-        "correct_answer_text": "의존(Dependency) 관계 : 하나의 사물이 다른 사물에 포함되 어 있는 관계를 표현한다."
+        "correct_answer_text": "의존(Dependency) 관계 : 하나의 사물이 다른 사물에 포함되어 있는 관계를 표현한다."
       },
       {
         "problem_number": 6,
@@ -99,8 +99,8 @@
       },
       {
         "problem_number": 20,
-        "correct_answer_index": 0,
-        "correct_answer_text": "Difference"
+        "correct_answer_index": 1,
+        "correct_answer_text": "Join"
       }
     ]
   },
@@ -205,7 +205,7 @@
       {
         "problem_number": 40,
         "correct_answer_index": 3,
-        "correct_answer_text": "C++ 제3과목 : 데이터베이스 활용"
+        "correct_answer_text": "C++"
       }
     ]
   },
@@ -215,7 +215,7 @@
       {
         "problem_number": 41,
         "correct_answer_index": 3,
-        "correct_answer_text": "회복 기능(Recovery Facility) 3 -"
+        "correct_answer_text": "회복 기능(Recovery Facility)"
       },
       {
         "problem_number": 42,
