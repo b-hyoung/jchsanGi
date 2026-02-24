@@ -95,7 +95,7 @@ export default function Home() {
           </div>
           <div className="mt-8 flex flex-col items-center">
             <Link
-              href="/test"
+              href="/exam"
               className="px-8 py-4 bg-sky-600 text-white font-bold text-lg rounded-full hover:bg-sky-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sky-300 inline-flex items-center shadow-lg shadow-sky-200"
             >
               모의시험 시작하기 <ArrowRight className="ml-2 w-5 h-5" />

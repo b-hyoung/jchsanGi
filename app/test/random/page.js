@@ -1,5 +1,6 @@
-﻿import fs from 'fs/promises';
+import fs from 'fs/promises';
 import path from 'path';
+import { randomUUID } from 'crypto';
 import { notFound } from 'next/navigation';
 import Quiz from '../[sessionId]/Quiz';
 
@@ -167,7 +168,7 @@ export default async function RandomTestPage({ searchParams: searchParamsPromise
   const shouldResume = String(searchParams?.resume) === '1';
   const initialProblemNumber = Number(searchParams?.p);
   const validInitialProblemNumber = Number.isNaN(initialProblemNumber) ? null : initialProblemNumber;
-  const seed = String(searchParams?.seed || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const seed = String(searchParams?.seed || randomUUID());
 
   let data;
   try {

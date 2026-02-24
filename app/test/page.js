@@ -112,6 +112,8 @@ const sessionsByYear = [
   },
 ];
 
+const writtenSessionsByYear = sessionsByYear.filter((group) => group.year !== '실기');
+
 export default function TestSelectionPage() {
   const [resumeMap, setResumeMap] = useState({});
   const [unknownProblems, setUnknownProblems] = useState([]);
@@ -155,13 +157,16 @@ export default function TestSelectionPage() {
   }, []);
 
   useEffect(() => {
-    refreshClientStoredState();
+    const timerId = window.setTimeout(() => {
+      refreshClientStoredState();
+    }, 0);
     const onFocus = () => refreshClientStoredState();
     const onStorage = () => refreshClientStoredState();
     window.addEventListener('focus', onFocus);
     window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', onFocus);
     return () => {
+      window.clearTimeout(timerId);
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', onFocus);
@@ -171,7 +176,7 @@ export default function TestSelectionPage() {
   useEffect(() => {
     try {
       if (!window.localStorage.getItem(PATCH_REWARD_STORAGE_KEY)) {
-        setShowPatchRewardModal(true);
+        window.setTimeout(() => setShowPatchRewardModal(true), 0);
       }
     } catch {}
   }, []);
@@ -262,6 +267,14 @@ export default function TestSelectionPage() {
       <main className="container mx-auto px-4 py-16 md:py-24">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
+            <div className="mb-4">
+              <Link
+                href="/exam"
+                className="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+              >
+                필기/실기 선택으로 돌아가기
+              </Link>
+            </div>
             <h1 className="text-4xl md:text-5xl font-extrabold text-sky-900 tracking-tight">모의시험 회차 선택</h1>
             <p className="mt-4 text-lg text-gray-600">원하는 회차를 선택하여 실전처럼 연습을 시작하세요.</p>
           </div>
@@ -385,7 +398,7 @@ export default function TestSelectionPage() {
           )}
 
           <div className="space-y-4">
-            {sessionsByYear.map((yearGroup) => (
+            {writtenSessionsByYear.map((yearGroup) => (
               <details
                 key={yearGroup.year}
                 className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 open:border-sky-300"
@@ -406,12 +419,19 @@ export default function TestSelectionPage() {
                 <div className="px-4 pb-4 md:px-6 md:pb-6 space-y-3">
                   {yearGroup.sessions.map((session) => {
                     const resume = resumeMap[String(session.id)];
-                    const targetHref = String(session.id).startsWith('pdfpack-')
-                      ? `/test/pdf-pack/${String(session.id).slice('pdfpack-'.length)}/quiz`
-                      : `/test/${session.id}`;
-                    const resumeHref = String(session.id).startsWith('pdfpack-')
-                      ? `/test/pdf-pack/${String(session.id).slice('pdfpack-'.length)}/quiz?p=${resume?.problemNumber}&resume=1`
-                      : `/test/${session.id}?p=${resume?.problemNumber}&resume=1`;
+                    const sessionIdText = String(session.id);
+                    const isPdfPack = sessionIdText.startsWith('pdfpack-');
+                    const isPractical = sessionIdText.startsWith('practical-industrial-');
+                    const targetHref = isPdfPack
+                      ? `/test/pdf-pack/${sessionIdText.slice('pdfpack-'.length)}/quiz`
+                      : isPractical
+                        ? `/practical/${sessionIdText}`
+                        : `/test/${sessionIdText}`;
+                    const resumeHref = isPdfPack
+                      ? `/test/pdf-pack/${sessionIdText.slice('pdfpack-'.length)}/quiz?p=${resume?.problemNumber}&resume=1`
+                      : isPractical
+                        ? `/practical/${sessionIdText}?resume=1`
+                        : `/test/${sessionIdText}?p=${resume?.problemNumber}&resume=1`;
                     return (
                       <div key={session.id} className="space-y-2">
                         <Link
