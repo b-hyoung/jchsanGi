@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
@@ -107,6 +107,32 @@ export default function Quiz({
   const gptStateStorageKey = `gpt_objection_state_${sessionId}`;
   const gptVoteStorageKey = `gpt_feedback_votes_${sessionId}`;
   const resumeStorageKey = `${RESUME_STATE_KEY_PREFIX}${sessionId}`;
+  const resumeDiscardFlagKey = `${resumeStorageKey}__discard`;
+
+  const clearResumeSnapshot = useCallback(() => {
+    try {
+      window.localStorage.removeItem(resumeStorageKey);
+    } catch {}
+  }, [resumeStorageKey]);
+
+  const markResumeDiscardOnRestore = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(resumeDiscardFlagKey, '1');
+    } catch {}
+  }, [resumeDiscardFlagKey]);
+
+  const resetProgressStateForFreshStart = useCallback(() => {
+    setQuizProblems(problems);
+    setIsStarted(false);
+    setCurrentProblemIndex(0);
+    setAnswers({});
+    setAccumulatedAnswers({});
+    setCheckedProblems({});
+    setQuizCompleted(false);
+    setQuizResults(null);
+    setQuizStartedAtMs(null);
+    setRemainingSeconds(QUIZ_DURATION_SECONDS);
+  }, [problems]);
 
   useEffect(() => {
     try {
@@ -166,6 +192,43 @@ export default function Quiz({
       }
     } catch {}
   }, [resumeStorageKey, resumeToken, shouldResume]);
+
+  // 뒤로가기(popstate)로 이탈할 때는 이어풀기 스냅샷을 지우고,
+  // 브라우저 bfcache로 복원되면 이전 O/X 상태를 초기화한다.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handlePopState = () => {
+      clearResumeSnapshot();
+      markResumeDiscardOnRestore();
+    };
+
+    const handlePageShow = (event) => {
+      if (shouldResume) return;
+      if (!event?.persisted) return;
+      try {
+        const shouldDiscard = window.sessionStorage.getItem(resumeDiscardFlagKey) === '1';
+        if (!shouldDiscard) return;
+        window.sessionStorage.removeItem(resumeDiscardFlagKey);
+      } catch {
+        return;
+      }
+      resetProgressStateForFreshStart();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [
+    clearResumeSnapshot,
+    markResumeDiscardOnRestore,
+    resetProgressStateForFreshStart,
+    resumeDiscardFlagKey,
+    shouldResume,
+  ]);
 
   useEffect(() => {
     try {
@@ -783,6 +846,8 @@ export default function Quiz({
       `\uD604\uC7AC \uC810\uC218: ${totalCorrect} / ${totalCount}\n` +
       `\uD480\uC774 \uC644\uB8CC: ${solvedCount} / ${totalCount}`
     );
+    clearResumeSnapshot();
+    markResumeDiscardOnRestore();
     router.push('/test');
   };
 

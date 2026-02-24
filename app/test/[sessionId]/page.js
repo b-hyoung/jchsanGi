@@ -61,42 +61,6 @@ const sessionConfig = {
   '10': { title: '정보처리산업기사 2022년 2회', basePath: ['datasets', 'problem2022', 'second'] },
   '11': { title: '정보처리산업기사 2022년 3회', basePath: ['datasets', 'problem2022', 'third'] },
   '12': { title: '개발자가 방금만든 따끈 문제 60', basePath: ['datasets', 'problemNow_60', 'first'] },
-  'practical-industrial-2022-1': {
-    title: '정보처리산업기사 실기 2022년 1회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2022-first'],
-  },
-  'practical-industrial-2022-2': {
-    title: '정보처리산업기사 실기 2022년 2회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2022-second'],
-  },
-  'practical-industrial-2022-3': {
-    title: '정보처리산업기사 실기 2022년 3회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2022-third'],
-  },
-  'practical-industrial-2023-1': {
-    title: '정보처리산업기사 실기 2023년 1회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2023-first'],
-  },
-  'practical-industrial-2023-2': {
-    title: '정보처리산업기사 실기 2023년 2회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2023-second'],
-  },
-  'practical-industrial-2023-3': {
-    title: '정보처리산업기사 실기 2023년 3회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2023-third'],
-  },
-  'practical-industrial-2024-1': {
-    title: '정보처리산업기사 실기 2024년 1회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2024-first'],
-  },
-  'practical-industrial-2024-2': {
-    title: '정보처리산업기사 실기 2024년 2회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2024-second'],
-  },
-  'practical-industrial-2024-3': {
-    title: '정보처리산업기사 실기 2024년 3회 (제작중)',
-    basePath: ['datasets', 'practicalIndustrial', '2024-third'],
-  },
 };
 
 export default async function TestPage({ params: paramsPromise, searchParams: searchParamsPromise }) {
