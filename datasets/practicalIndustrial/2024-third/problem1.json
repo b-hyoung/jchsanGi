@@ -1,0 +1,79 @@
+[
+  {
+    "title": "정보처리산업기사 실기",
+    "problems": [
+      {
+        "problem_number": 1,
+        "question_text": "라우터의 역할에 해당하는 것을 모두 골라 기호로 쓰시오",
+        "examples": "ㄱ. 목적지 주소 확인\nㄴ. 라우팅 소스 정보 확인\nㄷ. 경로 설정\nㄹ. 경로 탐색\nㅁ. 라우팅 정보 유지 및 검증\nㅂ. 패킷 전송",
+        "options": [
+          "ㄱ, ㄷ, ㄹ, ㅁ, ㅂ"
+        ]
+      },
+      {
+        "problem_number": 2,
+        "question_text": "인터넷 프로토콜 설명에 해당하는 답을 영문 약어로 쓰기",
+        "examples": "(가): 파일 전송 프로토콜을 지원하고, 양방향 연결(Full Duplex Connection)형 서비스를 제공하는 프로토콜이다. 신뢰성 있는 경로를 확립하고 메시지 전송을 감독하며, 패킷의 분실, 손상, 지연이나 순서가 틀린 것 등이 발생할 때 투명성이 보장되는 통신을 제공한다. 대용량의 데이터 또는 중요한 데이터 전송에 사용하고 3-Way-Handshaking을 통해서 신뢰성 있는 통신이 가능하다.\n\n(나): 간이 파일 전송 프로토콜(TFTP)을 지원하고, 데이터 전송 전에 연결을 설정하지 않는 비연결형 서비스를 제공하는 프로토콜이다. 상대적으로 단순한 헤더 구조를 가지므로, 오버헤드가 적고, 흐름 제어나 순서 제어가 없어 전송 속도가 빠르다. 실시간 전송에 유리하며 신뢰성보다는 속도가 중요시되는 네트워크에서 사용된다.",
+        "options": [
+          "(가) TCP / (나) UDP"
+        ]
+      },
+      {
+        "problem_number": 3,
+        "question_text": "OSI 7계층 중 어느 계층인지 쓰시오",
+        "examples": "두 개의 인접한 개방 시스템들 간에 신뢰성 있고 효율적인 정보 전송을 할 수 있도록 시스템 간 연결 설정과 유지 및 종료를 담당하는 계층으로, 프레임의 시작과 끝을 구분하기 위한 프레임의 동기화 기능과 오류의 검출과 회복을 위한 오류 제어 기능을 제공한다. HDLC, LAPB, LLC, MAC, LAPD, PPP 등의 표준이 있으며, 관련 장비에는 랜카드, 브리지, 스위치 등이 있다.",
+        "options": [
+          "데이터 링크 계층"
+        ]
+      },
+      {
+        "problem_number": 4,
+        "question_text": "C언어 출력결과",
+        "examples": "#include <stdio.h>\nunion Number {\nint intV;\nint floatV;\n};\n\nstruct data {\nunion Number n1;\nunion Number n2;\nchar isInt;\n};\n\nvoid func(struct data *a) {\nif (a->isInt) {\na->n1.intV += a->n2.intV;\n}\nelse {\na->n1.floatV += a->n2.floatV;\n}\n}\n\nint main() {\nstruct data a = {{.intV = 5}, {.floatV = 3.5}, 1};\nfunc(&a);\nprintf(\"%d\", a.n1.intV);\nreturn 0;\n}",
+        "options": [
+          "8"
+        ]
+      },
+      {
+        "problem_number": 5,
+        "question_text": "학생/학과 테이블 JOIN SQL문 빈칸 예약어 쓰기",
+        "examples": "SELECT 학번, 이름, 학생.학과코드, 학과명\nFROM 학생 JOIN 학과\n(가)(학과코드);",
+        "options": [
+          "(가) USING"
+        ]
+      },
+      {
+        "problem_number": 6,
+        "question_text": "SQL 집계함수 중 지정 조건과 일치하는 튜플 개수 반환 함수 쓰기",
+        "examples": "SQL 문에서 집계 함수는 GROUP BY절에 지정된 그룹별로 속성의 값을 집계할 때 사용되는데, 이 중 지정된 조건과 일치하는 튜플의 개수를 반환하는 집계 함수는 무엇인지 쓰시오.",
+        "options": [
+          "COUNT"
+        ]
+      },
+      {
+        "problem_number": 7,
+        "question_text": "Java 실행결과",
+        "examples": "public class Main\n{\npublic static void main(String[] args) {\nint i = 17;\ni += 1;\ni -= 2;\ni *= 3;\ni /= 4;\ni %= 5;\nSystem.out.print(i);\n}\n}",
+        "options": [
+          "2"
+        ]
+      },
+      {
+        "problem_number": 8,
+        "question_text": "설명에 해당하는 알맞은 용어 쓰기",
+        "examples": "컴퓨터와 컴퓨터 또는 컴퓨터와 인터넷 사이에서 파일을 주고받을 수 있도록 하는 원격 파일 전송 프로토콜이다.\n파일의 전송(Upload)과 수신(Download), 삭제, 이름 변경 등의 작업을 할 수 있다.\n그림 파일, 동영상 파일, 실행 파일, 압축된 형태의 파일을 전송할 때에는 Binary 모드를, 텍스트 파일을 전송할 때에는 ASCII 모드를 사용한다.\n기본적인 포트 번호는 21번이다.",
+        "options": [
+          "FTP"
+        ]
+      },
+      {
+        "problem_number": 9,
+        "question_text": "C언어 출력결과",
+        "examples": "#include <stdio.h>\nvoid swap(int *ptr1, int *ptr2) {\nint temp = *ptr1;\n*ptr1 = *ptr2;\n*ptr2 = temp;\n}\n\nvoid func(int *arr, int n) {\nint *ptr1 = &arr[0];\nint *ptr2 = &arr[n-1];\nwhile(ptr1 < ptr2) {\nswap(ptr1, ptr2);\nptr1++;\nptr2--;\n}\n}\n\nint main() {\nint arr[] = {1, 2, 3, 4, 5};\nfunc(arr, 5);\nprintf(\"%d\", arr[2]);\nreturn 0;\n}",
+        "options": [
+          "3"
+        ]
+      }
+    ]
+  }
+]

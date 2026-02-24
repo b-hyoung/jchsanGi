@@ -60,6 +60,56 @@ const sessionsByYear = [
       { id: 11, title: '3회', description: '2022년 3회 기출문제입니다.' },
     ],
   },
+  {
+    year: '실기',
+    sessions: [
+      {
+        id: 'practical-industrial-2022-1',
+        title: '2022년 1회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+      {
+        id: 'practical-industrial-2022-2',
+        title: '2022년 2회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+      {
+        id: 'practical-industrial-2022-3',
+        title: '2022년 3회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+      {
+        id: 'practical-industrial-2023-1',
+        title: '2023년 1회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+      {
+        id: 'practical-industrial-2023-2',
+        title: '2023년 2회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+      {
+        id: 'practical-industrial-2023-3',
+        title: '2023년 3회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+      {
+        id: 'practical-industrial-2024-1',
+        title: '2024년 1회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+      {
+        id: 'practical-industrial-2024-2',
+        title: '2024년 2회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+      {
+        id: 'practical-industrial-2024-3',
+        title: '2024년 3회',
+        description: '정보처리산업기사 실기 문제 제작용 세트입니다. (해설 미작성)',
+      },
+    ],
+  },
 ];
 
 export default function TestSelectionPage() {
