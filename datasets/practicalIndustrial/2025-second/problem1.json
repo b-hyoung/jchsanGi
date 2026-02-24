@@ -1,0 +1,149 @@
+[
+  {
+    "title": "정보처리산업기사 실기",
+    "problems": [
+      {
+        "problem_number": 1,
+        "question_text": "HTTP 프로토콜이 사용하는 기본 포트 번호는 몇 번인가?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 2,
+        "question_text": "시분할 시스템을 위해 설계된 선점형 스케줄링의 하나로서, 프로세스들 사이에 우선순위 없이 순서대로 일정 시간(Time Quantum)씩 CPU를 할당하는 방식의 CPU 스케줄링 알고리즘은?",
+        "examples": "할당된 시간 내 처리를 못하면 준비 큐 맨 뒤로 이동하며, 할당 시간이 클 경우 FCFS와 비슷해진다.",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 3,
+        "question_text": "이더넷과 토큰링의 특징을 합친 형태로, 공장 자동화에 많이 응용된다. 토큰링 방식이며 논리적·순차적으로 데이터를 전달하고, CSMA/CD와 달리 충돌을 예방하는 LAN 방식은?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 4,
+        "question_text": "호스트 언어 방식에서 응용 프로그램 내에 삽입되어 데이터베이스에 접근할 때 사용하는 SQL은?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 5,
+        "question_text": "쉘(Shell)의 특징으로 옳은 것을 모두 고르시오.",
+        "examples": "ㄱ. 명령어 해석기\nㄴ. 주기억장치에 상주하지 않고, 보조기억장치에 파일 형태로 존재하며 교체 가능\nㄷ. 응용프로그램과 하드웨어의 인터페이스 역할",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 6,
+        "question_text": "관계형 데이터베이스에서 릴레이션의 속성 개수를 (①), 튜플의 수를 (②)라 한다. 아래 릴레이션이 속성 3개, 튜플 4개일 때 두 값을 구하시오.",
+        "examples": "",
+        "input_type": "multi_blank",
+        "answer_format_hint": "예: ① 값 ② 값"
+      },
+      {
+        "problem_number": 7,
+        "question_text": "소프트웨어 개발 단계에 따른 테스트 순서에서, 단위 테스트(Unit Test) 다음에 수행하는 테스트는 무엇인가?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 8,
+        "question_text": "다음 설명에 해당하는 프로토콜을 쓰시오.",
+        "examples": "① 회사나 조직의 정보를 관리하는 디렉터리 서비스 시스템으로, 정보 축적이 가능한 프로토콜\n② 포트번호 161번을 사용하며, 네트워크 기기의 정보를 네트워크 관리 시스템에 전달하는 데 사용되는 프로토콜",
+        "input_type": "multi_blank",
+        "answer_format_hint": "예: ① 값 ② 값"
+      },
+      {
+        "problem_number": 9,
+        "question_text": "DDL 명령어 빈칸 채우기",
+        "examples": "테이블 생성: (①) TABLE\n테이블 수정: (②) TABLE\n테이블 삭제: (③) TABLE",
+        "input_type": "multi_blank",
+        "answer_format_hint": "예: ① 값 ② 값"
+      },
+      {
+        "problem_number": 10,
+        "question_text": "테스트 범위가 -20~20일 때 -21, -20, 20, 21을 검사하고, -100~100일 때 -101, -100, 100, 101을 검사하는 방식이다. 범위의 최댓값·최솟값 주변 값을 검사하는 이 블랙박스 테스트 기법은?",
+        "examples": "ㄱ. 경계치 커버리지 검사\nㄴ. 동치 분할 그래프\nㄷ. 원인 결과 커버리지 분석",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 11,
+        "question_text": "소프트웨어 유지보수 유형 중, 사용자의 새로운 요구나 환경 변화에 맞게 기능을 추가하거나 개선하는 유지보수 유형은?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 12,
+        "question_text": "데이터베이스에서 릴레이션의 기본키가 NULL 값을 가져서는 안 된다는 제약 조건은?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 13,
+        "question_text": "네트워크에서 목적지 호스트까지의 경로(홉)를 추적하는 명령어는? (윈도우 기준)",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 14,
+        "question_text": "소프트웨어 개발에서 형상 항목의 변경을 체계적으로 관리하고 통제하는 활동은?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 15,
+        "question_text": "아래 C 포인터 구조체 코드에서 p1의 x=5, y=4, ptr을 통해 x+1, y+1을 가진 임시 구조체를 생성하고 ptr->x += ptr->y를 실행한다. 최종 p1.x 출력값은?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 16,
+        "question_text": "FTP ?? ? ???? ?? ?? ?? ? ?? ?? ???.",
+        "examples": "",
+        "input_type": "single",
+        "answer_format_hint": "?: 20, 21 (?? ??)",
+        "accepted_answers": [
+          "20, 21",
+          "21, 20",
+          "20?, 21?",
+          "21?, 20?",
+          "20 21",
+          "21 20",
+          "20? 21?",
+          "21? 20?",
+          "20/21",
+          "21/20",
+          "20,21",
+          "21,20",
+          "20?(???), 21?(??)",
+          "21?(??), 20?(???)",
+          "20? (???), 21? (??)",
+          "21? (??), 20? (???)"
+        ]
+      },
+      {
+        "problem_number": 17,
+        "question_text": "IPv4에서 호스트 주소 부분이 16비트인 IP 클래스는?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 18,
+        "question_text": "아래 Java 퀵정렬 코드에서 int[] data = {2, 4, 10, 15, 8, 1, 7, 9, 16, 12}를 정렬 후 홀수 인덱스(i%2==1)에 해당하는 값들을 출력하면?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 19,
+        "question_text": "아래 C 구조체 포인터 코드에서 x=5, y=4일 때 ptr로 새 구조체(x+1, y+1)를 생성 후 ptr->x += ptr->y 수행. 최종 p1.x 값은?",
+        "examples": "",
+        "input_type": "single"
+      },
+      {
+        "problem_number": 20,
+        "question_text": "아래 Java 코드의 출력값은?",
+        "examples": "public class Main {\n  public static void main(String[] args) {\n    B a = new B(3);\n    B b = new B(3);\n    B[] bs = {a, b};\n    B temp = bs[0];\n    bs[1] = bs[0];\n    bs[0] = temp;\n    bs[0].a += bs[1].a;\n    System.out.print(bs[0].a);\n  }\n}\nclass B { int a; B(int a) { this.a = a; } }",
+        "input_type": "single"
+      }
+    ]
+  }
+]
