@@ -60,12 +60,16 @@
       {
         "problem_number": 12,
         "correct_answer_index": 0,
-        "correct_answer_text": "false\\ntrue\\n4\\n0\\n1"
+        "correct_answer_text": "false\ntrue\n4\n0\n1"
       },
       {
         "problem_number": 13,
         "correct_answer_index": 0,
-        "correct_answer_text": "1. 네트워크 주소 : 191.168.24.0 / 2. 브로드캐스트 주소 : 191.168.27.255"
+        "correct_answer_text": "1. 네트워크 주소 : 191.168.24.0 / 2. 브로드캐스트 주소 : 191.168.27.255",
+        "accepted_answers": [
+          "네트워크 주소 : 191.168.24.0 / 브로드캐스트 주소 : 191.168.27.255",
+          "네트워크 주소: 191.168.24.0 / 브로드캐스트 주소: 191.168.27.255"
+        ]
       },
       {
         "problem_number": 14,
@@ -85,12 +89,21 @@
       {
         "problem_number": 17,
         "correct_answer_index": 0,
-        "correct_answer_text": "1. ㄷ / 2. ㅁ"
+        "correct_answer_text": "1. ㄷ / 2. ㅁ",
+        "accepted_answers": [
+          "1: ㄷ / 2: ㅁ"
+        ]
       },
       {
         "problem_number": 18,
         "correct_answer_index": 0,
-        "correct_answer_text": "1234526"
+        "correct_answer_text": "1 -> 2 -> 3 -> 4 -> 5 -> 2 -> 6",
+        "accepted_answers": [
+          "1234526",
+          "1-2-3-4-5-2-6",
+          "1,2,3,4,5,2,6",
+          "1 → 2 → 3 → 4 → 5 → 2 → 6"
+        ]
       },
       {
         "problem_number": 19,

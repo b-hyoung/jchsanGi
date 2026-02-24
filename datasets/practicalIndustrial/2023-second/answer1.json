@@ -10,7 +10,11 @@
       {
         "problem_number": 2,
         "correct_answer_index": 0,
-        "correct_answer_text": "DDL : CREATE, ALTER, DROP / DML: SELECT, DELETE, INSERT, UPDATE / DCL : REVOKE, GRANT"
+        "correct_answer_text": "DDL: CREATE, ALTER, DROP / DML: SELECT, DELETE, INSERT, UPDATE / DCL: REVOKE, GRANT",
+        "accepted_answers": [
+          "DDL : CREATE, ALTER, DROP / DML : SELECT, DELETE, INSERT, UPDATE / DCL : REVOKE, GRANT",
+          "DDL: CREATE, ALTER, DROP / DML: SELECT, DELETE, INSERT, UPDATE / DCL: GRANT, REVOKE"
+        ]
       },
       {
         "problem_number": 3,
@@ -45,7 +49,11 @@
       {
         "problem_number": 9,
         "correct_answer_index": 0,
-        "correct_answer_text": "P=(S+W)/S 또는 (W+S)/S"
+        "correct_answer_text": "P=(S+W)/S 또는 (W+S)/S",
+        "accepted_answers": [
+          "p=(s+w)",
+          "(w+s)/s"
+        ]
       },
       {
         "problem_number": 10,
@@ -55,7 +63,10 @@
       {
         "problem_number": 11,
         "correct_answer_index": 0,
-        "correct_answer_text": "ㄴ, ㄷ, ㄹ"
+        "correct_answer_text": "ㄴ, ㄷ, ㄹ",
+        "accepted_answers": [
+          "ㄹ, ㄷ, ㄴ"
+        ]
       },
       {
         "problem_number": 12,
@@ -65,7 +76,12 @@
       {
         "problem_number": 13,
         "correct_answer_index": 0,
-        "correct_answer_text": "블랙 박스 테스트 : ㄴ, ㄹ / 화이트박스 테스트 : ㄱ, ㄷ"
+        "correct_answer_text": "블랙박스 테스트 : ㄴ, ㄹ / 화이트박스 테스트 : ㄱ, ㄷ",
+        "accepted_answers": [
+          "블랙 박스 테스트 : ㄴ, ㄹ / 화이트박스 테스트 : ㄱ, ㄷ",
+          "블랙박스 테스트: ㄹ, ㄴ / 화이트박스 테스트: ㄷ, ㄱ",
+          "블랙박스 테스트 : ㄴㄹ / 화이트박스 테스트 : ㄱㄷ"
+        ]
       },
       {
         "problem_number": 14,
@@ -80,7 +96,12 @@
       {
         "problem_number": 16,
         "correct_answer_index": 0,
-        "correct_answer_text": "17, 12, 23, 18"
+        "correct_answer_text": "17  12\n23  18",
+        "accepted_answers": [
+          "17 12\n23 18",
+          "17    12\n23    18",
+          "17, 12, 23, 18"
+        ]
       },
       {
         "problem_number": 17,
