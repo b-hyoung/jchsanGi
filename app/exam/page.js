@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, ChevronRight, FilePenLine, FileText } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Database, FilePenLine, FileText } from 'lucide-react';
 
 const cards = [
   {
@@ -26,6 +26,18 @@ const cards = [
     badge: '실기 시험',
     badgeClass: 'bg-emerald-100 text-emerald-800',
   },
+  {
+    href: '/sqld',
+    title: 'SQLD',
+    subtitle: '객관식 CBT',
+    description: '2024~2025 SQLD 회차별 객관식 문제를 모의시험처럼 연습합니다.',
+    icon: Database,
+    classes:
+      'border-amber-200 bg-gradient-to-br from-white via-amber-50 to-orange-50 hover:border-amber-400 hover:shadow-amber-100',
+    iconWrap: 'bg-amber-100 text-amber-700',
+    badge: 'SQLD 시험',
+    badgeClass: 'bg-amber-100 text-amber-800',
+  },
 ];
 
 export default function ExamTypeSelectionPage() {
@@ -50,7 +62,7 @@ export default function ExamTypeSelectionPage() {
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {cards.map((card) => {
             const Icon = card.icon;
             return (

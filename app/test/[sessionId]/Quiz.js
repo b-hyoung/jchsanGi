@@ -73,6 +73,11 @@ export default function Quiz({
 }) {
   const router = useRouter();
   const isReviewOnlySession = Boolean(session?.reviewOnly);
+  const backToSessionHref = String(session?.backHref || '/test');
+  const quizDurationSeconds =
+    Number.isFinite(Number(session?.durationSeconds)) && Number(session?.durationSeconds) > 0
+      ? Number(session.durationSeconds)
+      : QUIZ_DURATION_SECONDS;
   const [allProblems] = useState(problems);
   const [quizProblems, setQuizProblems] = useState(problems);
   const [isStarted, setIsStarted] = useState(false);
@@ -83,7 +88,7 @@ export default function Quiz({
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizResults, setQuizResults] = useState(null);
   const [quizStartedAtMs, setQuizStartedAtMs] = useState(null);
-  const [remainingSeconds, setRemainingSeconds] = useState(QUIZ_DURATION_SECONDS);
+  const [remainingSeconds, setRemainingSeconds] = useState(quizDurationSeconds);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [enableAnswerCheck, setEnableAnswerCheck] = useState(true);
   const [showExplanationWhenCorrect, setShowExplanationWhenCorrect] = useState(true);
@@ -131,8 +136,8 @@ export default function Quiz({
     setQuizCompleted(false);
     setQuizResults(null);
     setQuizStartedAtMs(null);
-    setRemainingSeconds(QUIZ_DURATION_SECONDS);
-  }, [problems]);
+    setRemainingSeconds(quizDurationSeconds);
+  }, [problems, quizDurationSeconds]);
 
   useEffect(() => {
     try {
@@ -277,12 +282,12 @@ export default function Quiz({
     setCurrentProblemIndex(targetIndex);
     if (!isStarted) {
       setQuizStartedAtMs(Date.now());
-      setRemainingSeconds(QUIZ_DURATION_SECONDS);
+      setRemainingSeconds(quizDurationSeconds);
       setIsStarted(true);
       trackEvent('start_exam', { sessionId, path: `/test/${sessionId}` });
     }
     setInitialJumpApplied(true);
-  }, [initialJumpApplied, initialProblemNumber, isStarted, quizProblems, sessionId]);
+  }, [initialJumpApplied, initialProblemNumber, isStarted, quizProblems, quizDurationSeconds, sessionId]);
 
   useEffect(() => {
     if (!isStarted) return;
@@ -331,13 +336,13 @@ export default function Quiz({
 
     const tick = () => {
       const elapsed = Math.max(0, Math.floor((Date.now() - quizStartedAtMs) / 1000));
-      setRemainingSeconds(Math.max(0, QUIZ_DURATION_SECONDS - elapsed));
+      setRemainingSeconds(Math.max(0, quizDurationSeconds - elapsed));
     };
 
     tick();
     const intervalId = window.setInterval(tick, 1000);
     return () => window.clearInterval(intervalId);
-  }, [isStarted, quizCompleted, quizStartedAtMs]);
+  }, [isStarted, quizCompleted, quizDurationSeconds, quizStartedAtMs]);
 
   // 시험 시작: 상태 초기화 및 시작 이벤트 기록
   const handleStartQuiz = () => {
@@ -349,7 +354,7 @@ export default function Quiz({
       } catch {}
     }
     setQuizStartedAtMs(Date.now());
-    setRemainingSeconds(QUIZ_DURATION_SECONDS);
+    setRemainingSeconds(quizDurationSeconds);
     setIsStarted(true);
     trackEvent('start_exam', { sessionId, path: `/test/${sessionId}`, payload: { mode: 'normal' } });
   };
@@ -387,15 +392,33 @@ export default function Quiz({
     let currentSetCorrect = 0;
     let unknownCount = 0;
     const currentSetTotal = quizProblems.length;
-    const subjectCorrectCounts = isReviewOnlySession ? {} : { 1: 0, 2: 0, 3: 0 };
-    const subjectTotalCounts = isReviewOnlySession ? {} : { 1: 0, 2: 0, 3: 0 };
+    const subjectDefs = isReviewOnlySession
+      ? []
+      : Array.isArray(session?.examProfile?.subjects) && session.examProfile.subjects.length > 0
+        ? session.examProfile.subjects.map((s, idx) => ({
+            id: Number(s?.id ?? idx + 1),
+            label: String(s?.label || `과목 ${idx + 1}`),
+            start: Number(s?.start ?? 0),
+            end: Number(s?.end ?? 0),
+            passMin: Number(s?.passMin ?? 0),
+          }))
+        : [
+            { id: 1, label: '과목 1', start: 1, end: 20, passMin: 8 },
+            { id: 2, label: '과목 2', start: 21, end: 40, passMin: 8 },
+            { id: 3, label: '과목 3', start: 41, end: 60, passMin: 8 },
+          ];
+    const subjectCorrectCounts = Object.fromEntries(subjectDefs.map((d) => [d.id, 0]));
+    const subjectTotalCounts = Object.fromEntries(subjectDefs.map((d) => [d.id, 0]));
+    const findSubjectId = (problemNum) => {
+      const hit = subjectDefs.find((d) => problemNum >= d.start && problemNum <= d.end);
+      return hit ? hit.id : null;
+    };
 
     if (!isReviewOnlySession) {
       quizProblems.forEach((problem) => {
         const problemNum = parseInt(problem.problem_number, 10);
-        if (problemNum >= 1 && problemNum <= 20) subjectTotalCounts[1]++;
-        else if (problemNum >= 21 && problemNum <= 40) subjectTotalCounts[2]++;
-        else if (problemNum >= 41 && problemNum <= 60) subjectTotalCounts[3]++;
+        const subjectId = findSubjectId(problemNum);
+        if (subjectId != null) subjectTotalCounts[subjectId] = (subjectTotalCounts[subjectId] || 0) + 1;
       });
     }
 
@@ -408,9 +431,8 @@ export default function Quiz({
       if (userAnswer === correctAnswer) {
         totalCorrect++;
         if (!isReviewOnlySession) {
-          if (problemNum >= 1 && problemNum <= 20) subjectCorrectCounts[1]++;
-          else if (problemNum >= 21 && problemNum <= 40) subjectCorrectCounts[2]++;
-          else if (problemNum >= 41 && problemNum <= 60) subjectCorrectCounts[3]++;
+          const subjectId = findSubjectId(problemNum);
+          if (subjectId != null) subjectCorrectCounts[subjectId] = (subjectCorrectCounts[subjectId] || 0) + 1;
         }
       }
     });
@@ -423,14 +445,21 @@ export default function Quiz({
 
     const subjectPassFail = isReviewOnlySession
       ? {}
-      : {
-          1: subjectCorrectCounts[1] >= 8,
-          2: subjectCorrectCounts[2] >= 8,
-          3: subjectCorrectCounts[3] >= 8,
-        };
+      : Object.fromEntries(subjectDefs.map((d) => [d.id, (subjectCorrectCounts[d.id] || 0) >= d.passMin]));
+    const subjectSummaries = isReviewOnlySession
+      ? []
+      : subjectDefs.map((d) => ({
+          id: d.id,
+          label: d.label,
+          correctCount: subjectCorrectCounts[d.id] || 0,
+          totalCount: subjectTotalCounts[d.id] || 0,
+          passed: Boolean(subjectPassFail[d.id]),
+        }));
+    const totalPassMin = Number(session?.examProfile?.totalPassMin);
     const isOverallPass = isReviewOnlySession
       ? totalCorrect === allProblems.length
-      : totalCorrect >= 36 && subjectPassFail[1] && subjectPassFail[2] && subjectPassFail[3];
+      : totalCorrect >= (Number.isFinite(totalPassMin) ? totalPassMin : 36) &&
+        subjectDefs.every((d) => Boolean(subjectPassFail[d.id]));
     const elapsedSeconds = quizStartedAtMs
       ? Math.max(0, Math.floor((Date.now() - quizStartedAtMs) / 1000))
       : 0;
@@ -459,6 +488,7 @@ export default function Quiz({
         wrongCount: allProblems.length - totalCorrect,
         unknownCount,
         subjectCorrectCounts,
+        subjectSummaries,
         isOverallPass,
         isRetryMode,
         currentSetCorrect,
@@ -478,6 +508,7 @@ export default function Quiz({
       subjectCorrectCounts,
       subjectTotalCounts,
       subjectPassFail,
+      subjectSummaries,
       isOverallPass,
       isRetryMode,
       currentSetCorrect,
@@ -807,7 +838,7 @@ export default function Quiz({
     setQuizCompleted(false);
     setQuizResults(null);
     setQuizStartedAtMs(null);
-    setRemainingSeconds(QUIZ_DURATION_SECONDS);
+    setRemainingSeconds(quizDurationSeconds);
   };
 
   // 모르겠어요 재풀이: 전역 기준이 아닌 현재 시험에서 UNKNOWN 선택한 문항만 재시작
@@ -824,7 +855,7 @@ export default function Quiz({
     setQuizCompleted(false);
     setQuizResults(null);
     setQuizStartedAtMs(null);
-    setRemainingSeconds(QUIZ_DURATION_SECONDS);
+    setRemainingSeconds(quizDurationSeconds);
   };
 
   // 중도 종료: 확인 후 현재까지 답안 기준으로 결과 처리
@@ -848,7 +879,7 @@ export default function Quiz({
     );
     clearResumeSnapshot();
     markResumeDiscardOnRestore();
-    router.push('/test');
+    router.push(backToSessionHref);
   };
 
   const getProblemStatus = (problem) => {

@@ -40,11 +40,12 @@ export function UpdateNoticeModal({ isOpen, onClose }) {
 }
 
 export function TestLobby({ session, onStart, problemCount, labels }) {
+  const backHref = String(session?.backHref || '/test');
   const lobbySubtitle = String(session?.lobbySubtitle || `총 ${problemCount}문항 / 90분(3과목)`);
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl text-center">
-        <Link href="/test" className="inline-flex items-center text-gray-600 hover:text-indigo-700 mb-8 group">
+        <Link href={backHref} className="inline-flex items-center text-gray-600 hover:text-indigo-700 mb-8 group">
           <ArrowLeft className="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
           {labels.backToSession}
         </Link>
@@ -83,9 +84,21 @@ export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, la
     isOverallPass,
     isRetryMode,
     elapsedSeconds = 0,
+    subjectSummaries = [],
   } = results;
   const [showFailModal, setShowFailModal] = useState(!isReviewOnly && !isRetryMode && !isOverallPass);
   const [failQuote] = useState(() => FAIL_QUOTES[Math.floor(Math.random() * FAIL_QUOTES.length)]);
+  const backHref = String(session?.backHref || '/test');
+  const displaySubjectSummaries =
+    Array.isArray(subjectSummaries) && subjectSummaries.length > 0
+      ? subjectSummaries
+      : [1, 2, 3].map((subjectNum) => ({
+          id: subjectNum,
+          label: `${labels.subject} ${subjectNum}`,
+          correctCount: subjectCorrectCounts?.[subjectNum] ?? 0,
+          totalCount: subjectTotalCounts?.[subjectNum] ?? 20,
+          passed: Boolean(subjectPassFail?.[subjectNum]),
+        }));
   const safeElapsed = Math.max(0, Number(elapsedSeconds) || 0);
   const elapsedH = String(Math.floor(safeElapsed / 3600)).padStart(2, '0');
   const elapsedM = String(Math.floor((safeElapsed % 3600) / 60)).padStart(2, '0');
@@ -94,7 +107,7 @@ export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, la
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-white via-indigo-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl text-center">
-        <Link href="/test" className="inline-flex items-center text-gray-600 hover:text-indigo-700 mb-8 group">
+        <Link href={backHref} className="inline-flex items-center text-gray-600 hover:text-indigo-700 mb-8 group">
           <ArrowLeft className="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
           {labels.backToSession}
         </Link>
@@ -119,18 +132,18 @@ export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, la
             )}
           </div>
           {!isReviewOnly ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-lg">
-              {[1, 2, 3].map((subjectNum) => (
+            <div className="mb-8 grid grid-cols-1 gap-4 text-lg md:grid-cols-2 lg:grid-cols-3">
+              {displaySubjectSummaries.map((item) => (
                 <div
-                  key={subjectNum}
-                  className={`p-4 rounded-lg border-2 ${subjectPassFail[subjectNum] ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'}`}
+                  key={item.id}
+                  className={`p-4 rounded-lg border-2 ${item.passed ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'}`}
                 >
-                  <p className="font-semibold text-gray-700">{labels.subject} {subjectNum}</p>
+                  <p className="font-semibold text-gray-700">{item.label}</p>
                   <p className="text-xl font-bold text-gray-900">
-                    {subjectCorrectCounts[subjectNum]} / {subjectTotalCounts?.[subjectNum] ?? 20} {labels.qCount}
+                    {item.correctCount} / {item.totalCount} {labels.qCount}
                   </p>
-                  <p className={`font-semibold ${subjectPassFail[subjectNum] ? 'text-green-600' : 'text-red-600'}`}>
-                    {subjectPassFail[subjectNum] ? labels.avoidFail : labels.failSubject}
+                  <p className={`font-semibold ${item.passed ? 'text-green-600' : 'text-red-600'}`}>
+                    {item.passed ? labels.avoidFail : labels.failSubject}
                   </p>
                 </div>
               ))}
@@ -165,7 +178,7 @@ export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, la
             </button>
           )}
           <Link
-            href="/test"
+            href={backHref}
             className="w-full max-w-xs mx-auto px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-flex items-center justify-center"
           >
             <ArrowLeft className="w-6 h-6 mr-3" />

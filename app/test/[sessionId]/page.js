@@ -61,6 +61,102 @@ const sessionConfig = {
   '10': { title: '정보처리산업기사 2022년 2회', basePath: ['datasets', 'problem2022', 'second'] },
   '11': { title: '정보처리산업기사 2022년 3회', basePath: ['datasets', 'problem2022', 'third'] },
   '12': { title: '개발자가 방금만든 따끈 문제 60', basePath: ['datasets', 'problemNow_60', 'first'] },
+  'sqld-2024-1': {
+    title: 'SQLD 2024년 1회',
+    basePath: ['datasets', 'sqld', '2024-first'],
+    sessionProps: {
+      backHref: '/sqld',
+      lobbySubtitle: '총 50문항 / 2과목(SQLD 객관식)',
+      durationSeconds: 90 * 60,
+      examProfile: {
+        totalPassMin: 30,
+        subjects: [
+          { id: 1, label: '1과목', start: 1, end: 10, passMin: 4 },
+          { id: 2, label: '2과목', start: 11, end: 50, passMin: 16 },
+        ],
+      },
+    },
+  },
+  'sqld-2024-2': {
+    title: 'SQLD 2024년 2회',
+    basePath: ['datasets', 'sqld', '2024-second'],
+    sessionProps: {
+      backHref: '/sqld',
+      lobbySubtitle: '총 50문항 / 2과목(SQLD 객관식)',
+      durationSeconds: 90 * 60,
+      examProfile: {
+        totalPassMin: 30,
+        subjects: [
+          { id: 1, label: '1과목', start: 1, end: 10, passMin: 4 },
+          { id: 2, label: '2과목', start: 11, end: 50, passMin: 16 },
+        ],
+      },
+    },
+  },
+  'sqld-2024-3': {
+    title: 'SQLD 2024년 3회',
+    basePath: ['datasets', 'sqld', '2024-third'],
+    sessionProps: {
+      backHref: '/sqld',
+      lobbySubtitle: '총 50문항 / 2과목(SQLD 객관식)',
+      durationSeconds: 90 * 60,
+      examProfile: {
+        totalPassMin: 30,
+        subjects: [
+          { id: 1, label: '1과목', start: 1, end: 10, passMin: 4 },
+          { id: 2, label: '2과목', start: 11, end: 50, passMin: 16 },
+        ],
+      },
+    },
+  },
+  'sqld-2025-1': {
+    title: 'SQLD 2025년 1회',
+    basePath: ['datasets', 'sqld', '2025-first'],
+    sessionProps: {
+      backHref: '/sqld',
+      lobbySubtitle: '총 50문항 / 2과목(SQLD 객관식)',
+      durationSeconds: 90 * 60,
+      examProfile: {
+        totalPassMin: 30,
+        subjects: [
+          { id: 1, label: '1과목', start: 1, end: 10, passMin: 4 },
+          { id: 2, label: '2과목', start: 11, end: 50, passMin: 16 },
+        ],
+      },
+    },
+  },
+  'sqld-2025-2': {
+    title: 'SQLD 2025년 2회',
+    basePath: ['datasets', 'sqld', '2025-second'],
+    sessionProps: {
+      backHref: '/sqld',
+      lobbySubtitle: '총 50문항 / 2과목(SQLD 객관식)',
+      durationSeconds: 90 * 60,
+      examProfile: {
+        totalPassMin: 30,
+        subjects: [
+          { id: 1, label: '1과목', start: 1, end: 10, passMin: 4 },
+          { id: 2, label: '2과목', start: 11, end: 50, passMin: 16 },
+        ],
+      },
+    },
+  },
+  'sqld-2025-3': {
+    title: 'SQLD 2025년 3회',
+    basePath: ['datasets', 'sqld', '2025-third'],
+    sessionProps: {
+      backHref: '/sqld',
+      lobbySubtitle: '총 50문항 / 2과목(SQLD 객관식)',
+      durationSeconds: 90 * 60,
+      examProfile: {
+        totalPassMin: 30,
+        subjects: [
+          { id: 1, label: '1과목', start: 1, end: 10, passMin: 4 },
+          { id: 2, label: '2과목', start: 11, end: 50, passMin: 16 },
+        ],
+      },
+    },
+  },
 };
 
 export default async function TestPage({ params: paramsPromise, searchParams: searchParamsPromise }) {
@@ -82,7 +178,7 @@ export default async function TestPage({ params: paramsPromise, searchParams: se
       problems={data.problems}
       answersMap={data.answersMap}
       commentsMap={data.commentsMap}
-      session={{ title: cfg.title }}
+      session={{ title: cfg.title, ...(cfg.sessionProps || {}) }}
       sessionId={sessionId}
       initialProblemNumber={validInitialProblemNumber}
       shouldResume={shouldResume}
