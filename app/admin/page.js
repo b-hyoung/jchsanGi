@@ -47,6 +47,13 @@ const LIST_TABS = [
   { key: 'reports', label: '신고 리스트' },
 ];
 
+const ADMIN_EXAM_TYPE_OPTIONS = [
+  { value: 'all', label: '전체' },
+  { value: 'written', label: '필기' },
+  { value: 'practical', label: '실기' },
+  { value: 'sqld', label: 'SQLD' },
+];
+
 const SESSION_LABELS = {
   '1': '2024년 1회차',
   '2': '2024년 2회차',
@@ -82,6 +89,14 @@ const SOURCE_KEY_TO_SESSION_ID = {
 
 function sessionLabel(sessionId) {
   const key = String(sessionId || '').trim();
+  const sqld = key.match(/^sqld-(\d{4})-(\d)$/);
+  if (sqld) return `SQLD ${sqld[1]}년 ${sqld[2]}회`;
+  if (key === 'sqld-index') return 'SQLD 회차 선택';
+
+  const practical = key.match(/^practical-industrial-(\d{4})-(\d)$/);
+  if (practical) return `정보처리산업기사 실기 ${practical[1]}년 ${practical[2]}회`;
+  if (key === 'practical-index') return '실기 회차 선택';
+
   const random22Year = key.match(/^random22-(\d{4})$/);
   if (random22Year) return `랜덤보기22 (${random22Year[1]}년)`;
 
@@ -130,7 +145,18 @@ const emptyGptCacheAdmin = {
 };
 
 const emptyIpSearchAdmin = {
-  summary: { query: '', totalEvents: 0, totalEventsWithIp: 0, matchedRows: 0, entity: 'ip', scope: 'all' },
+  summary: {
+    query: '',
+    totalEvents: 0,
+    totalEventsWithIp: 0,
+    matchedRows: 0,
+    entity: 'ip',
+    scope: 'all',
+    estimatedExternalUniqueClients: 0,
+    estimatedExternalUniqueIps: 0,
+    excludeLocal: true,
+    excludeIps: [],
+  },
   rows: [],
   page: 1,
   pageSize: 20,
@@ -184,6 +210,9 @@ export default function AdminPage() {
   const [ipSearchPage, setIpSearchPage] = useState(1);
   const [ipSearchPageSize, setIpSearchPageSize] = useState(20);
   const [expandedIpRows, setExpandedIpRows] = useState({});
+  const [ipExcludeLocal, setIpExcludeLocal] = useState(true);
+  const [ipExcludeWhitelistText, setIpExcludeWhitelistText] = useState('');
+  const [adminExamTypeFilter, setAdminExamTypeFilter] = useState('all');
 
   const toggleReportSort = (column) => {
     if (reportSortBy === column) {
@@ -289,7 +318,9 @@ export default function AdminPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/metrics', { cache: 'no-store' });
+      const qs = new URLSearchParams();
+      if (adminExamTypeFilter !== 'all') qs.set('examType', adminExamTypeFilter);
+      const res = await fetch(`/api/admin/metrics${qs.toString() ? `?${qs.toString()}` : ''}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('failed');
       const data = await res.json();
       setMetrics({ ...emptyMetrics, ...data });
@@ -313,6 +344,7 @@ export default function AdminPage() {
       if (gptCacheSessionFilter) qs.set('sessionId', gptCacheSessionFilter);
       if (gptCacheProblemFilter) qs.set('problemNumber', gptCacheProblemFilter);
       if (gptCacheFeedbackFilter && gptCacheFeedbackFilter !== 'all') qs.set('feedbackFilter', gptCacheFeedbackFilter);
+      if (adminExamTypeFilter !== 'all') qs.set('examType', adminExamTypeFilter);
 
       const res = await fetch(`/api/admin/gpt-cache?${qs.toString()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('failed');
@@ -339,6 +371,9 @@ export default function AdminPage() {
         scope: ipSearchScope,
       });
       if (ipSearchQuery.trim()) qs.set('q', ipSearchQuery.trim());
+      qs.set('excludeLocal', ipExcludeLocal ? '1' : '0');
+      if (ipExcludeWhitelistText.trim()) qs.set('excludeIps', ipExcludeWhitelistText.trim());
+      if (adminExamTypeFilter !== 'all') qs.set('examType', adminExamTypeFilter);
 
       const res = await fetch(`/api/admin/ip-search?${qs.toString()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('failed');
@@ -376,19 +411,38 @@ export default function AdminPage() {
     gptCacheSessionFilter,
     gptCacheProblemFilter,
     gptCacheFeedbackFilter,
+    adminExamTypeFilter,
   ]);
 
   useEffect(() => {
     if (!unlocked) return;
     if (tab !== 'ipSearch') return;
     loadIpSearch();
-  }, [unlocked, tab, ipSearchPage, ipSearchPageSize, ipSearchSortBy, ipSearchSortDir, ipSearchEntity, ipSearchScope]);
+  }, [
+    unlocked,
+    tab,
+    ipSearchPage,
+    ipSearchPageSize,
+    ipSearchSortBy,
+    ipSearchSortDir,
+    ipSearchEntity,
+    ipSearchScope,
+    ipExcludeLocal,
+    adminExamTypeFilter,
+  ]);
+
+  useEffect(() => {
+    if (!unlocked) return;
+    if (tab === 'gptCache' || tab === 'ipSearch') return;
+    load();
+  }, [unlocked, tab, adminExamTypeFilter]);
 
   const kpis = useMemo(() => metrics.kpis ?? emptyMetrics.kpis, [metrics]);
   const ipEntityLabel = ipSearchEntity === 'client' ? 'clientId (사람 추정)' : 'IP';
   const ipCounterpartLabel = ipSearchEntity === 'client' ? '고유 IP' : '고유 clientId';
   const ipTodayCounterpartLabel = ipSearchEntity === 'client' ? '오늘 고유 IP' : '오늘 고유 clientId';
   const ipRowsLabel = ipSearchEntity === 'client' ? '명' : '개 IP';
+  const ipFilterExcludedIps = Array.isArray(ipSearchData?.summary?.excludeIps) ? ipSearchData.summary.excludeIps : [];
   const sortedGptTopProblems = useMemo(() => {
     const rows = [...(gptCacheData?.topProblems || [])];
     const dir = gptTopSortDir === 'asc' ? 1 : -1;
@@ -685,7 +739,24 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">어드민 대시보드</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+              <span className="text-slate-600">구분 필터</span>
+              <select
+                value={adminExamTypeFilter}
+                onChange={(e) => {
+                  setAdminExamTypeFilter(e.target.value);
+                  setGptCachePage(1);
+                  setIpSearchPage(1);
+                  setExpandedIpRows({});
+                }}
+                className="rounded border border-slate-300 px-2 py-1"
+              >
+                {ADMIN_EXAM_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </label>
             <button
               onClick={() => setShowCharts((v) => !v)}
               className="px-4 py-2 rounded-lg bg-slate-700 text-white font-semibold hover:bg-slate-800"
@@ -704,20 +775,25 @@ export default function AdminPage() {
         {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{error}</div>}
 
         <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-          <div className="flex flex-wrap gap-2">
-            {LIST_TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
-                  tab === t.key
-                    ? 'bg-sky-600 text-white border-sky-600'
-                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              {LIST_TABS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
+                    tab === t.key
+                      ? 'bg-sky-600 text-white border-sky-600'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-slate-500">
+              현재 필터: {ADMIN_EXAM_TYPE_OPTIONS.find((o) => o.value === adminExamTypeFilter)?.label || '전체'}
+            </div>
           </div>
         </div>
 
@@ -838,6 +914,27 @@ export default function AdminPage() {
                     className="w-56 rounded border border-slate-300 px-2 py-1.5 text-sm"
                   />
                 </label>
+                <label className="flex items-center gap-2 rounded border border-slate-300 bg-white px-2 py-1.5">
+                  <input
+                    type="checkbox"
+                    checked={ipExcludeLocal}
+                    onChange={(e) => {
+                      setIpExcludeLocal(e.target.checked);
+                      setIpSearchPage(1);
+                      setExpandedIpRows({});
+                    }}
+                  />
+                  <span className="text-sm text-slate-700">로컬 IP 자동 제외 (::1, 127.0.0.1)</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">제외 IP(화이트리스트)</span>
+                  <input
+                    value={ipExcludeWhitelistText}
+                    onChange={(e) => setIpExcludeWhitelistText(e.target.value)}
+                    placeholder="예: 14.55.124.241, 14.55.142.91"
+                    className="w-72 rounded border border-slate-300 px-2 py-1.5 text-sm"
+                  />
+                </label>
                 <button
                   onClick={() => {
                     setIpSearchPage(1);
@@ -850,6 +947,8 @@ export default function AdminPage() {
                 <button
                   onClick={() => {
                     setIpSearchQuery('');
+                    setIpExcludeLocal(true);
+                    setIpExcludeWhitelistText('');
                     setIpSearchPage(1);
                     setExpandedIpRows({});
                     setTimeout(loadIpSearch, 0);
@@ -875,11 +974,16 @@ export default function AdminPage() {
                 </label>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-5">
                 <Info label="전체 이벤트" value={ipSearchData?.summary?.totalEvents ?? 0} />
                 <Info label="IP 포함 이벤트" value={ipSearchData?.summary?.totalEventsWithIp ?? 0} />
                 <Info label={`검색된 ${ipSearchEntity === 'client' ? '사람(clientId)' : 'IP'} 수`} value={ipSearchData?.summary?.matchedRows ?? ipSearchData?.summary?.matchedIps ?? 0} />
+                <Info label="외부 추정 사용자 수" value={ipSearchData?.summary?.estimatedExternalUniqueClients ?? 0} />
                 <Info label="검색어" value={ipSearchData?.summary?.query || '전체'} />
+              </div>
+              <div className="mt-2 text-xs text-slate-600">
+                적용 필터: 로컬 IP 자동 제외 {ipSearchData?.summary?.excludeLocal ? 'ON' : 'OFF'}
+                {ipFilterExcludedIps.length > 0 ? ` · 화이트리스트 제외 ${ipFilterExcludedIps.length}개` : ''}
               </div>
 
               {ipSearchError && (

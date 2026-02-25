@@ -15,12 +15,59 @@ function normalizeIp(ip) {
   return String(ip || '').trim();
 }
 
+function normalizeIpList(raw) {
+  return String(raw || '')
+    .split(/[\s,]+/)
+    .map((v) => normalizeIp(v))
+    .filter(Boolean);
+}
+
+function normalizeExamType(v) {
+  const x = String(v || 'all').toLowerCase();
+  if (x === 'written') return 'written';
+  if (x === 'practical') return 'practical';
+  if (x === 'sqld') return 'sqld';
+  return 'all';
+}
+
+function isLocalhostIp(ip) {
+  const v = normalizeIp(ip).toLowerCase();
+  return v === '::1' || v === '127.0.0.1' || v === '::ffff:127.0.0.1' || v === 'localhost';
+}
+
 function getEventIp(event) {
   return normalizeIp(event?.payload?.__meta?.ipAddress || event?.payload?.ipAddress || '');
 }
 
 function getEventClientId(event) {
   return String(event?.clientId || '').trim();
+}
+
+function classifySessionId(sessionId) {
+  const sid = String(sessionId || '').trim();
+  if (!sid) return '';
+  if (sid.startsWith('sqld-') || sid === 'sqld-index') return 'sqld';
+  if (sid.startsWith('practical-')) return 'practical';
+  return 'written';
+}
+
+function classifyEventCategory(event) {
+  const direct = classifySessionId(event?.sessionId);
+  if (direct) return direct;
+
+  const path = String(event?.path || '').trim();
+  if (path.startsWith('/sqld')) return 'sqld';
+  if (path.startsWith('/practical')) return 'practical';
+  if (path.startsWith('/test')) return 'written';
+
+  const originSessionId = String(event?.payload?.originSessionId || '').trim();
+  if (originSessionId) return classifySessionId(originSessionId);
+
+  const outcomes = Array.isArray(event?.payload?.problemOutcomes) ? event.payload.problemOutcomes : [];
+  const sourceSessionId = String(outcomes[0]?.sessionId || '').trim();
+  if (sourceSessionId) return classifySessionId(sourceSessionId);
+
+  return '';
 }
 
 function dateKey(iso) {
@@ -55,6 +102,10 @@ export async function GET(request) {
     const sortDir = String(searchParams.get('sortDir') || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
     const entity = String(searchParams.get('entity') || 'ip') === 'client' ? 'client' : 'ip';
     const scope = String(searchParams.get('scope') || 'all');
+    const examType = normalizeExamType(searchParams.get('examType'));
+    const excludeLocal = String(searchParams.get('excludeLocal') ?? '1') !== '0';
+    const excludeIpsList = normalizeIpList(searchParams.get('excludeIps'));
+    const excludeIpSet = new Set(excludeIpsList.map((v) => v.toLowerCase()));
 
     const events = await readEvents();
     const all = Array.isArray(events) ? events : [];
@@ -64,7 +115,10 @@ export async function GET(request) {
     const today = getTodayKey();
 
     for (const e of all) {
+      if (examType !== 'all' && classifyEventCategory(e) !== examType) continue;
       const ip = getEventIp(e);
+      if (excludeLocal && isLocalhostIp(ip)) continue;
+      if (ip && excludeIpSet.has(String(ip).toLowerCase())) continue;
       const clientId = getEventClientId(e);
       const identifier = entity === 'ip' ? ip : clientId;
       if (entity === 'ip' && !ip) continue;
@@ -148,7 +202,11 @@ export async function GET(request) {
     }
 
     const dir = sortDir === 'asc' ? 1 : -1;
+    const filteredClientIdUnion = new Set();
+    const filteredIpUnion = new Set();
     let rows = Array.from(groups.values()).map((r) => {
+      r._clientIds.forEach((v) => v && filteredClientIdUnion.add(String(v)));
+      r._ipAddresses.forEach((v) => v && filteredIpUnion.add(String(v)));
       r.uniqueClientCount = r._clientIds.size;
       r.uniqueSessionCount = r._sessionIds.size;
       r.todayUniqueClientCount = r._todayClientIds.size;
@@ -176,6 +234,11 @@ export async function GET(request) {
     } else if (scope === '30d') {
       rows = rows.filter((r) => r.recent30dEventCount > 0);
     }
+
+    const estimatedExternalUniqueClients =
+      entity === 'client'
+        ? rows.length
+        : filteredClientIdUnion.size;
 
     rows.sort((a, b) => {
       if (sortBy === 'identifier') {
@@ -223,8 +286,13 @@ export async function GET(request) {
         totalEventsWithIp: totalWithIp,
         matchedRows: totalIps,
         matchedIps: entity === 'ip' ? totalIps : undefined,
+        estimatedExternalUniqueClients,
+        estimatedExternalUniqueIps: entity === 'ip' ? rows.length : filteredIpUnion.size,
         entity,
         scope,
+        excludeLocal,
+        excludeIps: excludeIpsList,
+        examType,
       },
       rows: pagedRows,
       page: safePage,

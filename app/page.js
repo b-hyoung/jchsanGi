@@ -176,6 +176,7 @@ export default function Home() {
       </div>
 
       <footer className="text-center py-8 text-gray-500">
+        <p className="mb-1 text-sm">신고 / 문의 : youqlrqod@gmail.com</p>
         <p>&copy; {new Date().getFullYear()} CBT Practice System. All rights reserved.</p>
       </footer>
     </div>

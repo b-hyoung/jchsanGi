@@ -7,11 +7,51 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_GPT_CACHE_TABLE = process.env.SUPABASE_GPT_CACHE_TABLE || 'gpt_objection_cache';
 
+function normalizeExamType(v) {
+  const x = String(v || 'all').toLowerCase();
+  if (x === 'written') return 'written';
+  if (x === 'practical') return 'practical';
+  if (x === 'sqld') return 'sqld';
+  return 'all';
+}
+
+function classifySessionId(sessionId) {
+  const sid = String(sessionId || '').trim();
+  if (!sid) return '';
+  if (sid.startsWith('sqld-') || sid === 'sqld-index') return 'sqld';
+  if (sid.startsWith('practical-')) return 'practical';
+  return 'written';
+}
+
+function classifyEventCategory(event) {
+  const direct = classifySessionId(event?.sessionId);
+  if (direct) return direct;
+
+  const path = String(event?.path || '').trim();
+  if (path.startsWith('/sqld')) return 'sqld';
+  if (path.startsWith('/practical')) return 'practical';
+  if (path.startsWith('/test')) return 'written';
+
+  const originSessionId = String(event?.payload?.originSessionId || '').trim();
+  if (originSessionId) return classifySessionId(originSessionId);
+
+  const outcomes = Array.isArray(event?.payload?.problemOutcomes) ? event.payload.problemOutcomes : [];
+  const sourceSessionId = String(outcomes[0]?.sessionId || '').trim();
+  if (sourceSessionId) return classifySessionId(sourceSessionId);
+
+  return '';
+}
+
+function filterEventsByExamType(events, examType) {
+  if (examType === 'all') return Array.isArray(events) ? events : [];
+  return (Array.isArray(events) ? events : []).filter((e) => classifyEventCategory(e) === examType);
+}
+
 function hasSupabaseConfig() {
   return Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 }
 
-async function readGptFeedbackMetrics() {
+async function readGptFeedbackMetrics(examType = 'all') {
   if (!hasSupabaseConfig()) {
     return {
       summary: { total: 0, liked: 0, disliked: 0, netLikeRatio: 0 },
@@ -48,7 +88,11 @@ async function readGptFeedbackMetrics() {
         createdAt: String(r?.created_at || ''),
       };
     })
-    .filter((r) => r.like > 0 || r.dislike > 0);
+    .filter((r) => r.like > 0 || r.dislike > 0)
+    .filter((r) => {
+      if (examType === 'all') return true;
+      return classifySessionId(r.sourceSessionId) === examType;
+    });
 
   const liked = items.reduce((sum, r) => sum + r.like, 0);
   const disliked = items.reduce((sum, r) => sum + r.dislike, 0);
@@ -61,14 +105,16 @@ async function readGptFeedbackMetrics() {
   };
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const examType = normalizeExamType(searchParams.get('examType'));
     const events = await readEvents();
-    const metrics = aggregateMetrics(events);
+    const metrics = aggregateMetrics(filterEventsByExamType(events, examType));
 
     let gptFeedback = { summary: { total: 0, liked: 0, disliked: 0, netLikeRatio: 0 }, items: [] };
     try {
-      gptFeedback = await readGptFeedbackMetrics();
+      gptFeedback = await readGptFeedbackMetrics(examType);
     } catch {
       // keep admin dashboard available even if feedback query fails
     }
@@ -77,6 +123,7 @@ export async function GET() {
       {
         ...metrics,
         gptFeedback,
+        filters: { examType },
       },
       {
         headers: {

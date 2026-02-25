@@ -8,6 +8,22 @@ const SUPABASE_GPT_CACHE_TABLE = process.env.SUPABASE_GPT_CACHE_TABLE || 'gpt_ob
 const PAGE_SIZE_DEFAULT = 20;
 const PAGE_SIZE_MAX = 100;
 
+function normalizeExamType(v) {
+  const x = String(v || 'all').toLowerCase();
+  if (x === 'written') return 'written';
+  if (x === 'practical') return 'practical';
+  if (x === 'sqld') return 'sqld';
+  return 'all';
+}
+
+function classifySessionId(sessionId) {
+  const sid = String(sessionId || '').trim();
+  if (!sid) return '';
+  if (sid.startsWith('sqld-') || sid === 'sqld-index') return 'sqld';
+  if (sid.startsWith('practical-')) return 'practical';
+  return 'written';
+}
+
 function hasSupabaseConfig() {
   return Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 }
@@ -106,7 +122,7 @@ export async function GET(request) {
         totalPages: 1,
         sortBy: 'created_at',
         sortDir: 'desc',
-        filters: { sessionId: '', problemNumber: '', feedbackFilter: 'all' },
+        filters: { sessionId: '', problemNumber: '', feedbackFilter: 'all', examType: 'all' },
       });
     }
 
@@ -118,6 +134,7 @@ export async function GET(request) {
     const sessionIdFilter = String(searchParams.get('sessionId') || '').trim();
     const problemNumberFilter = String(searchParams.get('problemNumber') || '').trim();
     const feedbackFilter = String(searchParams.get('feedbackFilter') || 'all').trim() || 'all';
+    const examType = normalizeExamType(searchParams.get('examType'));
 
     const rowsRaw = await readAllGptCacheRows();
 
@@ -141,6 +158,7 @@ export async function GET(request) {
     const totalHits = normalized.reduce((sum, r) => sum + r.hitCount, 0);
 
     const filtered = normalized.filter((r) => {
+      if (examType !== 'all' && classifySessionId(r.sourceSessionId) !== examType) return false;
       if (sessionIdFilter && String(r.sourceSessionId) !== sessionIdFilter) return false;
       if (problemNumberFilter && String(r.sourceProblemNumber) !== problemNumberFilter) return false;
       if (feedbackFilter === 'hasFeedback' && r.likeCount + r.dislikeCount <= 0) return false;
@@ -254,6 +272,7 @@ export async function GET(request) {
         sessionId: sessionIdFilter,
         problemNumber: problemNumberFilter,
         feedbackFilter,
+        examType,
       },
     });
   } catch (e) {
