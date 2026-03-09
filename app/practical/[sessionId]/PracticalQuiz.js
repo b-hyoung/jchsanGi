@@ -2890,6 +2890,7 @@ export default function PracticalQuiz({
               </div>
             )}
 
+            {(currentProblem.examples || currentProblem.image_url) && (
             {(currentProblem.examples || currentProblem.example_image_url) && (
               <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 overflow-hidden">
                 <div className="px-4 py-2 bg-sky-100 border-b border-sky-200">

@@ -613,6 +613,7 @@ export default function Quiz({
   const actualProblemNumber = Number(currentProblem?.originProblemNumber ?? currentProblemNumber ?? 0);
   const getOptionList = (problem) => {
     const base = Array.isArray(problem?.options) ? problem.options : [];
+    if (base.length === 0) return [];
     return [...base, UNKNOWN_OPTION];
   };
   const getGptProblemKey = (problem, answerValue = '') => {
@@ -627,10 +628,13 @@ export default function Quiz({
   const correctAnswer = currentProblemNumber && answersMap ? answersMap[currentProblemNumber] : null;
   const currentGptProblemKey = getGptProblemKey(currentProblem, selectedAnswer);
   const isCorrect = selectedAnswer === correctAnswer;
+  const isSubjectiveProblem = Array.isArray(currentProblem?.options) && currentProblem.options.length === 0;
   const isExamLikePreset =
     !enableAnswerCheck && !showExplanationWhenCorrect && !showExplanationWhenIncorrect;
   const isDirectProgressMode = !enableAnswerCheck;
-  const correctAnswerIndex = currentProblem ? currentProblem.options.indexOf(correctAnswer) : -1;
+  const correctAnswerIndex = currentProblem && Array.isArray(currentProblem.options)
+    ? currentProblem.options.indexOf(correctAnswer)
+    : -1;
   const showResult = isChecked;
   const shouldShowExplanation =
     showResult &&
@@ -1890,6 +1894,22 @@ export default function Quiz({
               </div>
             )}
 
+            {currentProblem.image_url && (
+              <div className="mb-6 space-y-4">
+                {currentProblem.image_url.split(',').map((u) => {
+                  const src = String(u || '').trim();
+                  if (!src) return null;
+                  return (
+                    <img
+                      key={src}
+                      src={src}
+                      alt="보조 이미지"
+                      className="max-w-full rounded-md shadow-sm border border-gray-200"
+                    />
+                  );
+                })}
+              </div>
+            )}
             {currentProblem.examples && (
               <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 overflow-hidden">
                 <div className="px-4 py-2 bg-sky-100 border-b border-sky-200">
@@ -1943,49 +1963,62 @@ export default function Quiz({
             )}
 
             <div className="space-y-4">
-              {getOptionList(currentProblem).map((option, index) => {
-                let buttonClass = 'bg-white hover:bg-indigo-50 border-indigo-200 text-gray-800';
-                const optionIsCode = isCodeLikeText(option);
-                const isUnknownOption = option === UNKNOWN_OPTION;
-                if (selectedAnswer === option) {
-                  buttonClass = 'bg-indigo-100 text-indigo-700 border-indigo-500 ring-2 ring-indigo-500 font-bold';
-                  if (showResult) {
-                    buttonClass = isCorrect
-                      ? 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500'
-                      : 'bg-red-100 text-red-800 border-red-500 ring-2 ring-red-500';
-                  }
-                } else if (showResult && !isCorrect && option === correctAnswer) {
-                  buttonClass = 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500';
-                }
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleSelectOption(currentProblem.problem_number, option)}
+              {isSubjectiveProblem ? (
+                <div className="rounded-lg border-2 border-indigo-200 bg-white p-4">
+                  <p className="text-sm font-semibold text-indigo-700 mb-2">주관식 답안 입력</p>
+                  <textarea
+                    value={String(selectedAnswer || '')}
+                    onChange={(e) => handleSelectOption(currentProblem.problem_number, e.target.value)}
                     disabled={isChecked}
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${buttonClass} ${isChecked ? 'cursor-not-allowed opacity-90' : ''}`}
-                  >
-                    {isUnknownOption ? (
-                      `${index + 1}. 모르겠어요 (찍는건 시험장에서 ㅎ)`
-                    ) : isFramesetChoiceQuestion ? (
-                      <div className="flex items-center gap-3">
-                        <div className="font-semibold">{index + 1}.</div>
-                        <FramesetOptionFigure idx={index} />
-                      </div>
-                    ) : optionIsCode ? (
-                      <div className="space-y-2">
-                        <div className="font-semibold">{index + 1}.</div>
-                        <div className="overflow-x-auto rounded-md border border-indigo-200 bg-white/80">
-                          <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
-                            {formatCodeForDisplay(option)}
-                          </pre>
+                    placeholder="정답을 입력하세요."
+                    className="w-full min-h-[96px] rounded-md border border-indigo-200 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-600"
+                  />
+                </div>
+              ) : (
+                getOptionList(currentProblem).map((option, index) => {
+                  let buttonClass = 'bg-white hover:bg-indigo-50 border-indigo-200 text-gray-800';
+                  const optionIsCode = isCodeLikeText(option);
+                  const isUnknownOption = option === UNKNOWN_OPTION;
+                  if (selectedAnswer === option) {
+                    buttonClass = 'bg-indigo-100 text-indigo-700 border-indigo-500 ring-2 ring-indigo-500 font-bold';
+                    if (showResult) {
+                      buttonClass = isCorrect
+                        ? 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500'
+                        : 'bg-red-100 text-red-800 border-red-500 ring-2 ring-red-500';
+                    }
+                  } else if (showResult && !isCorrect && option === correctAnswer) {
+                    buttonClass = 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500';
+                  }
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleSelectOption(currentProblem.problem_number, option)}
+                      disabled={isChecked}
+                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${buttonClass} ${isChecked ? 'cursor-not-allowed opacity-90' : ''}`}
+                    >
+                      {isUnknownOption ? (
+                        `${index + 1}. 모르겠어요 (찍는건 시험장에서 ㅎ)`
+                      ) : isFramesetChoiceQuestion ? (
+                        <div className="flex items-center gap-3">
+                          <div className="font-semibold">{index + 1}.</div>
+                          <FramesetOptionFigure idx={index} />
                         </div>
-                      </div>
-                    ) : (
-                      `${index + 1}. ${option}`
-                    )}
-                  </button>
-                );
-              })}
+                      ) : optionIsCode ? (
+                        <div className="space-y-2">
+                          <div className="font-semibold">{index + 1}.</div>
+                          <div className="overflow-x-auto rounded-md border border-indigo-200 bg-white/80">
+                            <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                              {formatCodeForDisplay(option)}
+                            </pre>
+                          </div>
+                        </div>
+                      ) : (
+                        `${index + 1}. ${option}`
+                      )}
+                    </button>
+                  );
+                })
+              )}
             </div>
 
             {shouldShowExplanation && (
@@ -1994,7 +2027,7 @@ export default function Quiz({
                   {isCorrect ? T.correct : T.wrong}
                 </h3>
                 <p className="text-lg font-semibold text-indigo-900 mb-3">
-                  {T.answer}: {correctAnswerIndex + 1}{T.numberSuffix}
+                  {T.answer}: {isSubjectiveProblem ? (String(correctAnswer || '').trim() || '-') : `${correctAnswerIndex + 1}${T.numberSuffix}`}
                 </p>
                 {explanationText && (
                   <p className={`text-gray-700 whitespace-pre-wrap border-t pt-3 leading-relaxed ${isCorrect ? 'border-blue-100' : 'border-red-100'}`}>
