@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowRight, X } from 'lucide-react';
-import { getSession, signIn } from 'next-auth/react';
+import { getProviders, getSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 export default function StartLoginModalButton() {
@@ -19,6 +19,13 @@ export default function StartLoginModalButton() {
         router.push('/exam');
         return;
       }
+      const providers = await getProviders();
+      const hasGoogleProvider = Boolean(providers?.google);
+      if (!hasGoogleProvider) {
+        // Shared test env: auth provider can be disabled when .env is not configured.
+        router.push('/exam');
+        return;
+      }
       setIsOpen(true);
     } finally {
       setIsPending(false);
@@ -31,7 +38,15 @@ export default function StartLoginModalButton() {
   const handleGoogleLogin = async () => {
     try {
       setIsPending(true);
-      await signIn('google', { callbackUrl: '/exam?from=login' });
+      const providers = await getProviders();
+      const hasGoogleProvider = Boolean(providers?.google);
+      if (!hasGoogleProvider) {
+        router.push('/exam');
+        return;
+      }
+      await signIn('google', { callbackUrl: '/exam' });
+    } catch {
+      router.push('/exam');
     } finally {
       setIsPending(false);
     }
