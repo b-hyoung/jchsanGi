@@ -2,13 +2,28 @@
 
 import { useState } from 'react';
 import { ArrowRight, X } from 'lucide-react';
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function StartLoginModalButton() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
-  const openModal = () => setIsOpen(true);
+  const openModal = async () => {
+    if (isPending) return;
+    setIsPending(true);
+    try {
+      const session = await getSession();
+      if (session?.user) {
+        router.push('/exam');
+        return;
+      }
+      setIsOpen(true);
+    } finally {
+      setIsPending(false);
+    }
+  };
   const closeModal = () => {
     if (!isPending) setIsOpen(false);
   };
@@ -16,7 +31,7 @@ export default function StartLoginModalButton() {
   const handleGoogleLogin = async () => {
     try {
       setIsPending(true);
-      await signIn('google', { callbackUrl: '/exam' });
+      await signIn('google', { callbackUrl: '/exam?from=login' });
     } finally {
       setIsPending(false);
     }
@@ -27,7 +42,8 @@ export default function StartLoginModalButton() {
       <button
         type="button"
         onClick={openModal}
-        className="px-8 py-4 bg-sky-600 text-white font-bold text-lg rounded-full hover:bg-sky-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sky-300 inline-flex items-center shadow-lg shadow-sky-200"
+        disabled={isPending}
+        className="inline-flex w-full max-w-xs items-center justify-center rounded-full bg-sky-600 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-sky-200 transition-transform hover:scale-105 hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-300 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:max-w-none sm:px-8 sm:py-4 sm:text-lg whitespace-nowrap"
       >
         모의시험 시작하기 <ArrowRight className="ml-2 w-5 h-5" />
       </button>
@@ -56,7 +72,7 @@ export default function StartLoginModalButton() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="text-base font-black text-sky-700">G</span>
               {isPending ? '이동 중...' : 'Google로 계속하기'}
