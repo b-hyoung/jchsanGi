@@ -353,8 +353,62 @@
         "problem_number": 31,
         "question_text": "다음 빈칸( ㉠ ) 에 들어갈 용어를 한글로 쓰시오. (단답형 주관식)",
         "image_url": "/images/ai-prompt/grade2-first/31~35.1.png, /images/ai-prompt/grade2-first/31.png", 
-        "examples": ""
-        
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 32,
+        "question_text": "임시 주관식 문제 32번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 33,
+        "question_text": "임시 주관식 문제 33번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 34,
+        "question_text": "임시 주관식 문제 34번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 35,
+        "question_text": "임시 주관식 문제 35번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 36,
+        "question_text": "임시 주관식 문제 36번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 37,
+        "question_text": "임시 주관식 문제 37번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 38,
+        "question_text": "임시 주관식 문제 38번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 39,
+        "question_text": "임시 주관식 문제 39번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
+      },
+      {
+        "problem_number": 40,
+        "question_text": "임시 주관식 문제 40번입니다. 실제 문제/이미지 확정 전 테스트용 문항입니다.",
+        "examples": "",
+        "options": []
       }
     ]
   }
