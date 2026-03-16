@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Bot, ChevronRight, Database, FilePenLine, FileText } from 'lucide-react';
 import ExamBackGuard from '@/app/_components/ExamBackGuard';
@@ -71,7 +72,9 @@ function MoveLink() {
 export default function ExamTypeSelectionPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100 px-4 py-6 md:py-10">
-      <ExamBackGuard />
+      <Suspense fallback={null}>
+        <ExamBackGuard />
+      </Suspense>
       <div className="mx-auto max-w-5xl">
         <UserQuickActions className="mb-3" />
         <Link
