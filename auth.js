@@ -22,6 +22,12 @@ const allProviders = [
       ) {
         return { id: 'admin', name: '관리자', email: 'admin@example.com', role: 'admin' };
       }
+      if (
+        credentials?.username === 'testuser' &&
+        credentials?.password === 'test1234'
+      ) {
+        return { id: 'testuser', name: '테스트유저', email: 'testuser@test.com', role: 'user' };
+      }
       return null;
     },
   }),

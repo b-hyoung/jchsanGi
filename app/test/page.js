@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Book, ChevronRight, Shuffle } from 'lucide-react';
 import { trackEvent } from '@/lib/analyticsClient';
-import { readUnknownProblems } from '@/lib/unknownProblemsStore';
 import UserQuickActions from '@/app/_components/UserQuickActions';
+import MyStudyButtons from '@/app/_components/MyStudyButtons';
 
 const RESUME_STATE_KEY_PREFIX = 'quiz_resume_state_';
 
@@ -100,17 +100,56 @@ const sessionsByYear = [
   },
 ];
 
-const writtenSessionsByYear = sessionsByYear.filter((group) => group.year !== '실기');
+const writtenSessionsByYear = sessionsByYear.filter((group) => group.year !== '실기' && group.year !== 'Now');
+
+function ModeButton({ href, gradient, shadow, icon, title, desc }) {
+  return (
+    <Link
+      href={href}
+      className={`group flex items-center justify-between rounded-2xl bg-gradient-to-r ${gradient} p-4 shadow-md ${shadow} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20">
+          {icon}
+        </div>
+        <div>
+          <p className="text-sm font-extrabold text-white leading-tight">{title}</p>
+          <p className="text-xs text-white/80 leading-snug mt-0.5">{desc}</p>
+        </div>
+      </div>
+      <ChevronRight className="h-5 w-5 shrink-0 text-white/60 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-white" />
+    </Link>
+  );
+}
+
+const resumeChipColors = {
+  rose: 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100',
+  violet: 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100',
+  indigo: 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100',
+  amber: 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100',
+};
+
+function ResumeChip({ href, color = 'indigo', children }) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold transition ${resumeChipColors[color]}`}
+    >
+      ↩ {children}
+    </Link>
+  );
+}
 
 export default function TestSelectionPage() {
   const [resumeMap, setResumeMap] = useState({});
-  const [unknownProblems, setUnknownProblems] = useState([]);
 
   const refreshClientStoredState = () => {
     const allSessionIds = [
       'random',
       'high-wrong',
       'high-unknown',
+      'my-wrong',
+      'my-unknown',
       'random22',
       'random22-2022',
       'random22-2023',
@@ -131,7 +170,6 @@ export default function TestSelectionPage() {
       } catch {}
     }
     setResumeMap(nextMap);
-    setUnknownProblems(readUnknownProblems());
   };
 
   useEffect(() => {
@@ -159,161 +197,128 @@ export default function TestSelectionPage() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-white via-sky-50 to-sky-100 text-gray-800">
-      <main className="container mx-auto px-4 py-16 md:py-24">
-        <div className="max-w-3xl mx-auto">
-          <UserQuickActions className="mb-4" />
-          <div className="text-center mb-12">
-            <div className="mb-4">
-              <Link
-                href="/exam"
-                className="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
-              >
-                필기/실기 선택으로 돌아가기
-              </Link>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-sky-900 tracking-tight">모의시험 회차 선택</h1>
-            <p className="mt-4 text-lg text-gray-600">원하는 회차를 선택하여 실전처럼 연습을 시작하세요.</p>
-          </div>
+    <div className="min-h-screen w-full bg-gradient-to-b from-sky-50 via-white to-slate-50 text-gray-800">
+      <main className="mx-auto max-w-2xl px-4 py-10 md:py-16">
 
-          <div className="mb-4 space-y-2">
-            <Link
+        {/* 상단 네비 */}
+        <UserQuickActions className="mb-5" />
+        <div className="mb-6">
+          <Link
+            href="/exam"
+            className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+          >
+            <ChevronRight className="w-3.5 h-3.5 rotate-180" />
+            필기/실기 선택으로 돌아가기
+          </Link>
+          <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-sky-900 md:text-4xl">모의시험 회차 선택</h1>
+          <p className="mt-1.5 text-sm text-slate-500">원하는 회차를 선택하여 실전처럼 연습하세요.</p>
+        </div>
+
+        {/* ── 섹션 1: 내 학습 (로그인 시 노출) ── */}
+        <MyStudyButtons resumeMap={resumeMap} />
+
+        {/* ── 섹션 2: 특수 모드 ── */}
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-3.5">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">특수 모드</p>
+          </div>
+          <div className="p-4 space-y-2">
+            <ModeButton
               href="/test/high-wrong"
-              className="block p-5 bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shuffle className="w-6 h-6" />
-                  <div>
-                    <h2 className="text-lg font-bold">오답률 높은 문제 풀기</h2>
-                    <p className="text-sm text-white/90">문항별 오답률 집계 기반 재풀이 모드</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-6 h-6" />
-              </div>
-            </Link>
+              gradient="from-rose-500 to-orange-400"
+              shadow="shadow-rose-200/50"
+              icon={<Shuffle className="w-5 h-5 text-white" />}
+              title="오답률 높은 문제 풀기"
+              desc="전체 통계 기반 오답률 상위 문제 모음"
+            />
             {resumeMap['high-wrong']?.problemNumber && (
-              <Link
-                href={`/test/high-wrong?p=${resumeMap['high-wrong'].problemNumber}&resume=1`}
-                className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-1 text-sm font-bold text-rose-800 hover:bg-rose-100"
-              >
+              <ResumeChip href={`/test/high-wrong?p=${resumeMap['high-wrong'].problemNumber}&resume=1`} color="rose">
                 오답률 모드 이어풀기 {resumeMap['high-wrong'].problemNumber}번
-              </Link>
+              </ResumeChip>
             )}
 
-            <Link
+            <ModeButton
               href="/test/high-unknown"
-              className="block p-5 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shuffle className="w-6 h-6" />
-                  <div>
-                    <h2 className="text-lg font-bold">모르겠어요 많이 누른 문제 풀기</h2>
-                    <p className="text-sm text-white/90">문항별 모르겠어요 비율 집계 기반 재풀이 모드</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-6 h-6" />
-              </div>
-            </Link>
+              gradient="from-violet-500 to-fuchsia-400"
+              shadow="shadow-violet-200/50"
+              icon={<Shuffle className="w-5 h-5 text-white" />}
+              title="모르겠어요 많이 누른 문제 풀기"
+              desc="전체 통계 기반 모르겠어요 비율 상위 모음"
+            />
             {resumeMap['high-unknown']?.problemNumber && (
-              <Link
-                href={`/test/high-unknown?p=${resumeMap['high-unknown'].problemNumber}&resume=1`}
-                className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1 text-sm font-bold text-violet-800 hover:bg-violet-100"
-              >
+              <ResumeChip href={`/test/high-unknown?p=${resumeMap['high-unknown'].problemNumber}&resume=1`} color="violet">
                 모르겠어요 모드 이어풀기 {resumeMap['high-unknown'].problemNumber}번
-              </Link>
+              </ResumeChip>
             )}
 
-            <Link
-              href="/test/random"
-              className="block p-5 bg-gradient-to-r from-indigo-500 to-sky-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shuffle className="w-6 h-6" />
-                  <h2 className="text-lg font-bold">랜덤풀기</h2>
-                </div>
-                <ChevronRight className="w-6 h-6" />
-              </div>
-            </Link>
-            {resumeMap.random?.problemNumber && resumeMap.random?.resumeToken && (
-              <Link
-                href={`/test/random?p=${resumeMap.random.problemNumber}&resume=1&seed=${encodeURIComponent(resumeMap.random.resumeToken)}`}
-                className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-sm font-bold text-indigo-800 hover:bg-indigo-100"
-              >
-                랜덤 이어풀기 {resumeMap.random.problemNumber}번
-              </Link>
-            )}
           </div>
+        </div>
 
-          <Link
-            href="/test/random22"
-            className="mb-4 block p-5 bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Shuffle className="w-6 h-6" />
-                <div>
-                  <h2 className="text-lg font-bold">랜덤보기22 (문제 셔플형)</h2>
-                  <p className="text-sm text-white/90">2022 / 2023 / 2024 / 2025 선택 후 진행</p>
-                </div>
-              </div>
-              <ChevronRight className="w-6 h-6" />
-            </div>
-          </Link>
+        {/* ── 섹션 3: 랜덤 / 100문제 ── */}
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-3.5">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">랜덤 / 종합</p>
+          </div>
+          <div className="p-4 space-y-2">
+            <ModeButton
+              href="/test/random"
+              gradient="from-indigo-500 to-sky-400"
+              shadow="shadow-indigo-200/50"
+              icon={<Shuffle className="w-5 h-5 text-white" />}
+              title="랜덤풀기"
+              desc="전 회차에서 무작위로 출제"
+            />
+            {resumeMap.random?.problemNumber && resumeMap.random?.resumeToken && (
+              <ResumeChip href={`/test/random?p=${resumeMap.random.problemNumber}&resume=1&seed=${encodeURIComponent(resumeMap.random.resumeToken)}`} color="indigo">
+                랜덤 이어풀기 {resumeMap.random.problemNumber}번
+              </ResumeChip>
+            )}
 
-          <Link
-            href="/test/100"
-            className="mb-6 block p-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Shuffle className="w-6 h-6" />
-                <h2 className="text-lg font-bold">100문제 풀어보기</h2>
-              </div>
-              <ChevronRight className="w-6 h-6" />
-            </div>
-          </Link>
+            <ModeButton
+              href="/test/random22"
+              gradient="from-fuchsia-500 to-violet-400"
+              shadow="shadow-fuchsia-200/50"
+              icon={<Shuffle className="w-5 h-5 text-white" />}
+              title="랜덤보기22 (문제 셔플형)"
+              desc="2022 / 2023 / 2024 / 2025 연도 선택 후 진행"
+            />
 
-          {unknownProblems.length > 0 && (
-            <Link
-              href="/test/unknown"
-              className="mb-6 block p-5 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-2xl shadow-lg hover:opacity-95 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shuffle className="w-6 h-6" />
-                  <div>
-                    <h2 className="text-lg font-bold">모르겠어요 다시 풀기</h2>
-                    <p className="text-sm text-white/90">{unknownProblems.length}문제 대기 중</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-6 h-6" />
-              </div>
-            </Link>
-          )}
+            <ModeButton
+              href="/test/100"
+              gradient="from-emerald-500 to-teal-400"
+              shadow="shadow-emerald-200/50"
+              icon={<Shuffle className="w-5 h-5 text-white" />}
+              title="100문제 풀어보기"
+              desc="엄선된 100문제 종합 세트"
+            />
+          </div>
+        </div>
 
-          <div className="space-y-4">
+        {/* ── 섹션 4: 연도별 회차 ── */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-100 px-5 py-3.5">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">연도별 기출</p>
+          </div>
+          <div className="divide-y divide-slate-100">
             {writtenSessionsByYear.map((yearGroup) => (
               <details
                 key={yearGroup.year}
-                className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 open:border-sky-300"
-                open={yearGroup.year === 'Now' || yearGroup.year === 2025 || yearGroup.year === 2024}
+                className="group"
+                open={yearGroup.year === 2025 || yearGroup.year === 2024}
               >
-                <summary className="list-none cursor-pointer p-6 md:p-7 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-12 h-12 bg-sky-100 rounded-xl">
-                      <Book className="w-6 h-6 text-sky-600" />
+                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 select-none hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100">
+                      <Book className="h-4 w-4 text-sky-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-sky-900">
+                    <span className="text-base font-bold text-sky-900">
                       {typeof yearGroup.year === 'number' ? `${yearGroup.year}년` : `${yearGroup.year} 세트`}
-                    </h2>
+                    </span>
                   </div>
-                  <ChevronRight className="w-7 h-7 text-gray-400" />
+                  <ChevronRight className="h-4 w-4 text-slate-300 transition-transform duration-200 group-open:rotate-90" />
                 </summary>
 
-                <div className="px-4 pb-4 md:px-6 md:pb-6 space-y-3">
+                <div className="border-t border-slate-100 bg-slate-50/50 px-4 pb-4 pt-3 space-y-2">
                   {yearGroup.sessions.map((session) => {
                     const resume = resumeMap[String(session.id)];
                     const sessionIdText = String(session.id);
@@ -330,26 +335,21 @@ export default function TestSelectionPage() {
                         ? `/practical/${sessionIdText}?resume=1`
                         : `/test/${sessionIdText}?p=${resume?.problemNumber}&resume=1`;
                     return (
-                      <div key={session.id} className="space-y-2">
+                      <div key={session.id} className="space-y-1.5">
                         <Link
                           href={targetHref}
-                          className="block p-5 bg-white rounded-xl border border-gray-200 hover:border-sky-300 hover:bg-sky-50 transition-all"
+                          className="group/item flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 transition-all hover:border-sky-300 hover:bg-sky-50"
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="text-lg font-bold text-sky-900">{session.title}</h3>
-                              <p className="text-gray-600 mt-1">{session.description}</p>
-                            </div>
-                            <ChevronRight className="w-6 h-6 text-gray-400" />
+                          <div>
+                            <p className="text-sm font-bold text-sky-900">{session.title}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{session.description}</p>
                           </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform group-hover/item:translate-x-0.5 group-hover/item:text-sky-400" />
                         </Link>
                         {resume && (
-                          <Link
-                            href={resumeHref}
-                            className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-sm font-bold text-indigo-800 hover:bg-indigo-100"
-                          >
+                          <ResumeChip href={resumeHref} color="indigo">
                             이어풀기 {resume.problemNumber}번
-                          </Link>
+                          </ResumeChip>
                         )}
                       </div>
                     );
@@ -359,8 +359,8 @@ export default function TestSelectionPage() {
             ))}
           </div>
         </div>
-      </main>
 
+      </main>
     </div>
   );
 }
