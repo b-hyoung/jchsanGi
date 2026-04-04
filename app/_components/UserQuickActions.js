@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LogOut, UserRound } from 'lucide-react';
+import { LoaderCircle, LogOut, UserRound } from 'lucide-react';
 import { getSession, signOut } from 'next-auth/react';
 
 export default function UserQuickActions({ className = '' }) {
@@ -45,10 +45,11 @@ export default function UserQuickActions({ className = '' }) {
 
   if (!isReady) {
     return (
-      <div className={`flex min-h-9 items-center justify-end gap-2 ${className}`} aria-hidden="true">
-        <div className="h-8 w-24 rounded-full border border-slate-200 bg-white/80 shadow-sm dark:border-slate-700 dark:bg-slate-800/80" />
-        <div className="h-8 w-24 rounded-full border border-sky-200 bg-white/80 shadow-sm dark:border-sky-800 dark:bg-slate-800/80" />
-        <div className="h-8 w-24 rounded-full border border-rose-200 bg-white/80 shadow-sm dark:border-rose-800 dark:bg-slate-800/80" />
+      <div className={`flex min-h-9 items-center justify-end ${className}`} aria-live="polite">
+        <div className="inline-flex min-h-9 items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800/90 dark:text-slate-300">
+          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+          불러오는 중
+        </div>
       </div>
     );
   }

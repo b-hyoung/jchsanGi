@@ -25,6 +25,10 @@ function PersonalRow({ href, icon: Icon, title, desc }) {
   );
 }
 
+function ResumeSlot({ children }) {
+  return <div className="min-h-8">{children}</div>;
+}
+
 export default function MyStudyButtons({
   resumeMap = {},
   sectionTitle = '내가 틀린 문제 모아보기',
@@ -53,26 +57,30 @@ export default function MyStudyButtons({
       <div className="space-y-2">
         <div className="space-y-1.5">
           <PersonalRow href={wrongHref} icon={BookMarked} title={wrongTitle} desc={wrongDescription} />
-          {resumeMap[wrongResumeKey]?.problemNumber && (
-            <Link
-              href={`${wrongHref}?p=${resumeMap[wrongResumeKey].problemNumber}&resume=1`}
-              className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60"
-            >
-              {wrongTitle} 이어풀기 {resumeMap[wrongResumeKey].problemNumber}번
-            </Link>
-          )}
+          <ResumeSlot>
+            {resumeMap[wrongResumeKey]?.problemNumber && (
+              <Link
+                href={`${wrongHref}?p=${resumeMap[wrongResumeKey].problemNumber}&resume=1`}
+                className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60"
+              >
+                {wrongTitle} 이어풀기 {resumeMap[wrongResumeKey].problemNumber}번
+              </Link>
+            )}
+          </ResumeSlot>
         </div>
 
         <div className="space-y-1.5">
           <PersonalRow href={unknownHref} icon={HelpCircle} title={unknownTitle} desc={unknownDescription} />
-          {resumeMap[unknownResumeKey]?.problemNumber && (
-            <Link
-              href={`${unknownHref}?p=${resumeMap[unknownResumeKey].problemNumber}&resume=1`}
-              className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/60"
-            >
-              {unknownTitle} 이어풀기 {resumeMap[unknownResumeKey].problemNumber}번
-            </Link>
-          )}
+          <ResumeSlot>
+            {resumeMap[unknownResumeKey]?.problemNumber && (
+              <Link
+                href={`${unknownHref}?p=${resumeMap[unknownResumeKey].problemNumber}&resume=1`}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/60"
+              >
+                {unknownTitle} 이어풀기 {resumeMap[unknownResumeKey].problemNumber}번
+              </Link>
+            )}
+          </ResumeSlot>
         </div>
       </div>
     </section>

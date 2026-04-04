@@ -20,6 +20,10 @@ function SectionShell({ eyebrow, children }) {
   );
 }
 
+function ResumeSlot({ children }) {
+  return <div className="min-h-8">{children}</div>;
+}
+
 export default function SqldSelectionPage() {
   const [resumeMap, setResumeMap] = useState({});
 
@@ -121,14 +125,16 @@ export default function SqldSelectionPage() {
                       </div>
                       <ChevronRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5 dark:text-slate-500" />
                     </Link>
-                    {resumeMap[session.id]?.problemNumber && (
-                      <Link
-                        href={`/test/${session.id}?p=${resumeMap[session.id].problemNumber}&resume=1`}
-                        className="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-bold text-sky-700 transition hover:bg-sky-100 dark:border-sky-900/70 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-950/60"
-                      >
-                        이어풀기 {resumeMap[session.id].problemNumber}번
-                      </Link>
-                    )}
+                    <ResumeSlot>
+                      {resumeMap[session.id]?.problemNumber && (
+                        <Link
+                          href={`/test/${session.id}?p=${resumeMap[session.id].problemNumber}&resume=1`}
+                          className="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-bold text-sky-700 transition hover:bg-sky-100 dark:border-sky-900/70 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-950/60"
+                        >
+                          이어풀기 {resumeMap[session.id].problemNumber}번
+                        </Link>
+                      )}
+                    </ResumeSlot>
                   </div>
                 ))}
               </div>

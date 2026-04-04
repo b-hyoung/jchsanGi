@@ -126,6 +126,10 @@ function ResumeChip({ href, color = 'indigo', children }) {
   );
 }
 
+function ResumeSlot({ children }) {
+  return <div className="min-h-8">{children}</div>;
+}
+
 function SectionShell({ eyebrow, children }) {
   return (
     <section className="rounded-[1.5rem] border border-[oklab(89.9%_-2.5%_-13.3%_/_0.8)] bg-white/92 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/88">
@@ -258,11 +262,13 @@ export default function TestSelectionPage() {
                       desc={mode.desc}
                       colorClass={mode.colorClass}
                     />
-                    {canResume && (
-                      <ResumeChip href={mode.buildResumeHref(resume)} color={mode.resumeColor}>
-                        {mode.title} 이어풀기 {resume.problemNumber}번
-                      </ResumeChip>
-                    )}
+                    <ResumeSlot>
+                      {canResume && (
+                        <ResumeChip href={mode.buildResumeHref(resume)} color={mode.resumeColor}>
+                          {mode.title} 이어풀기 {resume.problemNumber}번
+                        </ResumeChip>
+                      )}
+                    </ResumeSlot>
                   </div>
                 );
               })}
@@ -318,11 +324,13 @@ export default function TestSelectionPage() {
                             </div>
                             <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover/item:translate-x-0.5 dark:text-slate-500" />
                           </Link>
-                          {resume && (
-                            <ResumeChip href={resumeHref} color="indigo">
-                              이어풀기 {resume.problemNumber}번
-                            </ResumeChip>
-                          )}
+                          <ResumeSlot>
+                            {resume && (
+                              <ResumeChip href={resumeHref} color="indigo">
+                                이어풀기 {resume.problemNumber}번
+                              </ResumeChip>
+                            )}
+                          </ResumeSlot>
                         </div>
                       );
                     })}
