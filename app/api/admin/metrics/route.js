@@ -11,7 +11,10 @@ const SUPABASE_GPT_CACHE_TABLE = process.env.SUPABASE_GPT_CACHE_TABLE || 'gpt_ob
 
 function filterEventsByExamType(events, examType) {
   if (examType === 'all') return Array.isArray(events) ? events : [];
-  return (Array.isArray(events) ? events : []).filter((e) => classifyEventCategory(e) === examType);
+  return (Array.isArray(events) ? events : []).filter((e) => {
+    if (String(e?.type || '') === 'theme_change') return true;
+    return classifyEventCategory(e) === examType;
+  });
 }
 
 function hasSupabaseConfig() {

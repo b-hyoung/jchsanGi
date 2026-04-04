@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { trackEvent } from '@/lib/analyticsClient';
 import ThemeControls from '@/app/_components/ThemeControls';
 import { removeUnknownProblem, upsertUnknownProblem } from '@/lib/unknownProblemsStore';
@@ -195,6 +195,7 @@ export default function Quiz({
   const [gptConversationsByProblem, setGptConversationsByProblem] = useState({});
   const [gptVoteMap, setGptVoteMap] = useState({});
   const [initialJumpApplied, setInitialJumpApplied] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const gptStateStorageKey = `gpt_objection_state_${sessionId}`;
   const gptVoteStorageKey = `gpt_feedback_votes_${sessionId}`;
   const resumeStorageKey = `${RESUME_STATE_KEY_PREFIX}${sessionId}`;
@@ -1741,20 +1742,28 @@ export default function Quiz({
   }
 
   return (
-    <div className="exam-scale min-h-screen w-full bg-gray-50 flex flex-col">
-      <header className="bg-white shadow-md p-4 flex justify-between items-center relative z-10">
-        <div className="flex items-center gap-4 min-w-0">
-          <h1 className="text-xl font-bold text-sky-900 hidden md:block">{session.title}</h1>
-          <h1 className="text-xl font-bold text-sky-900 md:hidden">{session.title.split(' ')[0]}...</h1>
-        </div>
-        <div className="text-lg font-semibold text-gray-900 whitespace-nowrap">
-          {T.problem} {currentProblemIndex + 1} / {quizProblems.length}
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeControls />
-          <div className="hidden sm:flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-bold text-sky-700 tabular-nums">
-            {timerMinutes}:{timerSeconds}
+    <div className="exam-scale min-h-screen w-full bg-gray-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100 flex flex-col">
+      <header className="sticky top-0 bg-white shadow-md px-3 py-3 md:p-4 relative z-20 transition-colors dark:bg-slate-900 dark:shadow-none dark:border-b dark:border-slate-800">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="hidden text-xl font-bold text-sky-900 dark:text-sky-200 md:block">{session.title}</h1>
+              <h1 className="truncate text-base font-bold text-sky-900 dark:text-sky-200 md:hidden">{session.title}</h1>
+            </div>
+            <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 whitespace-nowrap md:hidden">
+              {currentProblemIndex + 1} / {quizProblems.length}
+            </div>
           </div>
+
+          <div className="hidden text-lg font-semibold text-gray-900 dark:text-slate-100 whitespace-nowrap md:block">
+            {T.problem} {currentProblemIndex + 1} / {quizProblems.length}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+            <ThemeControls />
+            <div className="flex items-center rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700 tabular-nums dark:border-sky-900/70 dark:bg-slate-800 dark:text-sky-200 sm:px-3 sm:text-sm">
+              {timerMinutes}:{timerSeconds}
+            </div>
           <button
             type="button"
             onClick={() => {
@@ -1780,7 +1789,7 @@ export default function Quiz({
           <div className="relative">
             <button
               onClick={() => setIsSettingsOpen((prev) => !prev)}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors dark:text-slate-300 dark:hover:bg-slate-800"
               aria-label="Settings"
             >
               <Settings className="w-6 h-6" />
@@ -1799,34 +1808,96 @@ export default function Quiz({
           </div>
           <button
             onClick={handleEndQuiz}
-            className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 text-sm md:text-base"
+            className="px-3 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 text-xs sm:text-sm md:text-base"
           >
             {T.end}
           </button>
         </div>
+        </div>
       </header>
 
-      <main className="flex-grow container mx-auto p-4 md:p-8">
+      <main className="flex-grow container mx-auto px-3 py-3 md:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 md:gap-6">
-          <aside className="bg-white rounded-xl shadow-lg p-4 h-fit lg:sticky lg:top-24">
-            <h3 className="text-sm font-bold text-gray-700 mb-3">{T.navTitle}</h3>
-            <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-4 gap-2">
-              {quizProblems.map((problem, index) => {
-                const status = getProblemStatus(problem);
-                const isCurrent = index === currentProblemIndex;
-                return (
-                  <button
-                    key={problem.problem_number}
-                    onClick={() => goToProblem(index)}
-                    className={`h-10 rounded-md border text-xs font-semibold transition ${getStatusClass(status)} ${isCurrent ? 'ring-2 ring-sky-500' : ''}`}
-                    title={`${T.problem} ${problem.problem_number} (${status})`}
-                  >
-                    {problem.problem_number} {status}
-                  </button>
-                );
-              })}
+          <aside className="bg-white rounded-xl shadow-lg p-3 md:p-4 h-fit lg:sticky lg:top-24 dark:bg-slate-900 dark:shadow-none dark:border dark:border-slate-800">
+            <div className="lg:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen((prev) => !prev)}
+                aria-expanded={mobileNavOpen}
+                className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+              >
+                <div>
+                  <p className="text-sm font-bold text-gray-700 dark:text-slate-200">{T.navTitle}</p>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {currentProblemIndex + 1} / {quizProblems.length}
+                  </p>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-slate-500 transition-transform duration-300 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] dark:text-slate-300 ${mobileNavOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              <div
+                className={`grid overflow-hidden transition-[grid-template-rows,opacity,margin-top] duration-300 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] motion-reduce:transition-none ${
+                  mobileNavOpen ? 'mt-3 grid-rows-[1fr] opacity-100' : 'mt-0 grid-rows-[0fr] opacity-0'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="-mx-1 overflow-x-auto pb-1">
+                    <div className="grid grid-flow-col auto-cols-[3rem] gap-2 px-1">
+                      {quizProblems.map((problem, index) => {
+                        const status = getProblemStatus(problem);
+                        const isCurrent = index === currentProblemIndex;
+                        return (
+                          <button
+                            key={`mobile-${problem.problem_number}`}
+                            onClick={() => {
+                              goToProblem(index);
+                              setMobileNavOpen(false);
+                            }}
+                            className={`h-11 min-w-[3rem] rounded-md border text-xs font-semibold transition ${getStatusClass(status)} ${isCurrent ? 'ring-2 ring-sky-500' : ''}`}
+                            title={`${T.problem} ${problem.problem_number} (${status})`}
+                          >
+                            {problem.problem_number} {status}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-slate-400">
+                    <p><span className="font-bold text-green-700">O</span> {T.statusCorrect}</p>
+                    <p><span className="font-bold text-red-700">X</span> {T.statusWrong}</p>
+                    {isDirectProgressMode && <p><span className="font-bold text-blue-700">●</span> {T.statusSolved}</p>}
+                    <p><span className="font-bold text-gray-700">?</span> {T.statusUnsolved}</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="mt-4 text-xs text-gray-600 space-y-1">
+
+            <div className="hidden lg:block">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className="text-sm font-bold text-gray-700 dark:text-slate-200">{T.navTitle}</h3>
+              </div>
+              <div>
+                <div className="grid grid-cols-4 gap-2">
+                  {quizProblems.map((problem, index) => {
+                    const status = getProblemStatus(problem);
+                    const isCurrent = index === currentProblemIndex;
+                    return (
+                      <button
+                        key={problem.problem_number}
+                        onClick={() => goToProblem(index)}
+                        className={`h-11 min-w-[3rem] rounded-md border text-xs font-semibold transition ${getStatusClass(status)} ${isCurrent ? 'ring-2 ring-sky-500' : ''}`}
+                        title={`${T.problem} ${problem.problem_number} (${status})`}
+                      >
+                        {problem.problem_number} {status}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 hidden lg:block lg:space-y-1 text-xs text-gray-600 dark:text-slate-400">
               <p><span className="font-bold text-green-700">O</span> {T.statusCorrect}</p>
               <p><span className="font-bold text-red-700">X</span> {T.statusWrong}</p>
               {isDirectProgressMode && <p><span className="font-bold text-blue-700">●</span> {T.statusSolved}</p>}
@@ -1834,39 +1905,39 @@ export default function Quiz({
             </div>
           </aside>
 
-          <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg">
-            <p className="text-sm font-semibold text-sky-600 mb-2">{currentProblem.sectionTitle}</p>
+          <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg dark:bg-slate-900 dark:shadow-none dark:border dark:border-slate-800">
+            <p className="text-sm font-semibold text-sky-600 dark:text-sky-300 mb-2">{currentProblem.sectionTitle}</p>
             {(typeof currentProblem?.wrongRatePercent === 'number' || typeof currentProblem?.unknownRatePercent === 'number') && (
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 {typeof currentProblem?.wrongRatePercent === 'number' && (
-                  <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
+                  <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
                     오답률 {Number(currentProblem.wrongRatePercent).toFixed(1)}%
                   </span>
                 )}
                 {typeof currentProblem?.unknownRatePercent === 'number' && (
-                  <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+                  <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
                     모르겠어요 비율 {Number(currentProblem.unknownRatePercent).toFixed(1)}%
                   </span>
                 )}
                 {Number.isFinite(Number(currentProblem?.attemptCount)) && (
-                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                     시도 {Number(currentProblem.attemptCount)}회
                   </span>
                 )}
                 {Number.isFinite(Number(currentProblem?.wrongCountStat)) && Number.isFinite(Number(currentProblem?.unknownCountStat)) && (
-                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
                     틀림 {Number(currentProblem.wrongCountStat)} / 모르겠어요 {Number(currentProblem.unknownCountStat)}
                   </span>
                 )}
               </div>
             )}
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6 leading-relaxed whitespace-pre-wrap">
+            <h2 className="text-lg md:text-2xl font-semibold text-gray-900 dark:text-slate-100 mb-5 md:mb-6 leading-relaxed whitespace-pre-wrap">
               {currentProblem.problem_number}. {formatQuestionTitle(questionTitle)}
             </h2>
 
             {questionCodeBlock && (
-              <div className="mb-6 overflow-x-auto rounded-md border border-gray-300 bg-white">
-                <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+              <div className="mb-6 overflow-x-auto rounded-md border border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-950">
+                <pre className="m-0 p-3 text-sm leading-6 text-gray-900 dark:text-slate-100 whitespace-pre-wrap">
                   {formatCodeForDisplay(questionCodeBlock)}
                 </pre>
               </div>
@@ -1883,28 +1954,28 @@ export default function Quiz({
 
             {bookPriceVisual && (
               <div className="mb-6">
-                <div className="mb-3 overflow-x-auto rounded-md border border-gray-300 bg-gray-50">
-                  <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                <div className="mb-3 overflow-x-auto rounded-md border border-gray-300 bg-gray-50 dark:border-slate-700 dark:bg-slate-950">
+                  <pre className="m-0 p-3 text-sm leading-6 text-gray-900 dark:text-slate-100 whitespace-pre-wrap">
                     {bookPriceVisual.sql}
                   </pre>
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   {[bookPriceVisual.left, bookPriceVisual.right].map((tbl) => (
-                    <div key={tbl.title} className="overflow-x-auto rounded-md border border-gray-300 bg-white">
-                      <div className="px-3 py-2 text-sm font-bold text-gray-800 border-b border-gray-200">{`<${tbl.title}>`}</div>
-                      <table className="min-w-full text-sm text-gray-900">
-                        <thead className="bg-gray-100">
+                    <div key={tbl.title} className="overflow-x-auto rounded-md border border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-950">
+                      <div className="px-3 py-2 text-sm font-bold text-gray-800 border-b border-gray-200 dark:text-slate-100 dark:border-slate-700">{`<${tbl.title}>`}</div>
+                      <table className="min-w-full text-sm text-gray-900 dark:text-slate-100">
+                        <thead className="bg-gray-100 dark:bg-slate-900">
                           <tr>
                             {tbl.headers.map((h) => (
-                              <th key={h} className="border border-gray-300 px-3 py-2 text-center font-semibold">{h}</th>
+                              <th key={h} className="border border-gray-300 dark:border-slate-700 px-3 py-2 text-center font-semibold">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {tbl.rows.map((r, idx) => (
-                            <tr key={`${tbl.title}-${idx}`} className="odd:bg-white even:bg-gray-50">
+                            <tr key={`${tbl.title}-${idx}`} className="odd:bg-white even:bg-gray-50 dark:odd:bg-slate-950 dark:even:bg-slate-900/70">
                               {r.map((c, cidx) => (
-                                <td key={`${idx}-${cidx}`} className="border border-gray-300 px-3 py-2 text-center">{c}</td>
+                                <td key={`${idx}-${cidx}`} className="border border-gray-300 dark:border-slate-700 px-3 py-2 text-center">{c}</td>
                               ))}
                             </tr>
                           ))}
@@ -1917,12 +1988,12 @@ export default function Quiz({
             )}
 
             {relationDegreeVisual && (
-              <div className="mb-6 overflow-x-auto rounded-md border border-gray-300 bg-white">
-                <table className="min-w-full text-sm text-gray-900">
-                  <thead className="bg-gray-100">
+              <div className="mb-6 overflow-x-auto rounded-md border border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-950">
+                <table className="min-w-full text-sm text-gray-900 dark:text-slate-100">
+                  <thead className="bg-gray-100 dark:bg-slate-900">
                     <tr>
                       {relationDegreeVisual.headers.map((h) => (
-                        <th key={h} className="border border-gray-300 px-3 py-2 text-center font-semibold">
+                        <th key={h} className="border border-gray-300 dark:border-slate-700 px-3 py-2 text-center font-semibold">
                           {h}
                         </th>
                       ))}
@@ -1930,9 +2001,9 @@ export default function Quiz({
                   </thead>
                   <tbody>
                     {relationDegreeVisual.rows.map((row, ridx) => (
-                      <tr key={`rel-${ridx}`} className="odd:bg-white even:bg-gray-50">
+                      <tr key={`rel-${ridx}`} className="odd:bg-white even:bg-gray-50 dark:odd:bg-slate-950 dark:even:bg-slate-900/70">
                         {row.map((cell, cidx) => (
-                          <td key={`rel-${ridx}-${cidx}`} className="border border-gray-300 px-3 py-2 text-center">
+                          <td key={`rel-${ridx}-${cidx}`} className="border border-gray-300 dark:border-slate-700 px-3 py-2 text-center">
                             {cell}
                           </td>
                         ))}
@@ -1945,18 +2016,18 @@ export default function Quiz({
 
             {tradeMaxVisual && (
               <div className="mb-6">
-                <div className="mb-3 overflow-x-auto rounded-md border border-gray-300 bg-gray-50">
-                  <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                <div className="mb-3 overflow-x-auto rounded-md border border-gray-300 bg-gray-50 dark:border-slate-700 dark:bg-slate-950">
+                  <pre className="m-0 p-3 text-sm leading-6 text-gray-900 dark:text-slate-100 whitespace-pre-wrap">
                     {tradeMaxVisual.sql}
                   </pre>
                 </div>
-                <div className="overflow-x-auto rounded-md border border-gray-300 bg-white">
-                  <div className="px-3 py-2 text-sm font-bold text-gray-800 border-b border-gray-200">{'<거래내역>'}</div>
-                  <table className="min-w-full text-sm text-gray-900">
-                    <thead className="bg-gray-100">
+                <div className="overflow-x-auto rounded-md border border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-950">
+                  <div className="px-3 py-2 text-sm font-bold text-gray-800 border-b border-gray-200 dark:text-slate-100 dark:border-slate-700">{'<거래내역>'}</div>
+                  <table className="min-w-full text-sm text-gray-900 dark:text-slate-100">
+                    <thead className="bg-gray-100 dark:bg-slate-900">
                       <tr>
                         {tradeMaxVisual.headers.map((h) => (
-                          <th key={h} className="border border-gray-300 px-3 py-2 text-center font-semibold">
+                          <th key={h} className="border border-gray-300 dark:border-slate-700 px-3 py-2 text-center font-semibold">
                             {h}
                           </th>
                         ))}
@@ -1964,9 +2035,9 @@ export default function Quiz({
                     </thead>
                     <tbody>
                       {tradeMaxVisual.rows.map((row, ridx) => (
-                        <tr key={`tm-${ridx}`} className="odd:bg-white even:bg-gray-50">
+                        <tr key={`tm-${ridx}`} className="odd:bg-white even:bg-gray-50 dark:odd:bg-slate-950 dark:even:bg-slate-900/70">
                           {row.map((cell, cidx) => (
-                            <td key={`tm-${ridx}-${cidx}`} className="border border-gray-300 px-3 py-2 text-center">
+                            <td key={`tm-${ridx}-${cidx}`} className="border border-gray-300 dark:border-slate-700 px-3 py-2 text-center">
                               {cell}
                             </td>
                           ))}
@@ -1988,16 +2059,16 @@ export default function Quiz({
                       key={src}
                       src={src}
                       alt="보조 이미지"
-                      className="max-w-full rounded-md shadow-sm border border-gray-200"
+                      className="max-w-full rounded-md shadow-sm border border-gray-200 dark:border-slate-700"
                     />
                   );
                 })}
               </div>
             )}
             {currentProblem.examples && (
-              <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 overflow-hidden">
-                <div className="px-4 py-2 bg-sky-100 border-b border-sky-200">
-                  <span className="text-sm font-bold text-sky-800">보기</span>
+              <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 overflow-hidden dark:border-sky-900/60 dark:bg-slate-900">
+                <div className="px-4 py-2 bg-sky-100 border-b border-sky-200 dark:bg-slate-800 dark:border-sky-900/60">
+                  <span className="text-sm font-bold text-sky-800 dark:text-sky-200">보기</span>
                 </div>
                 <div className="p-4">
                   {(() => {
@@ -2011,14 +2082,14 @@ export default function Quiz({
                       }
                       if (isCodeLike) {
                         return (
-                          <div className="overflow-x-auto rounded-md border border-sky-200 bg-white">
-                            <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                          <div className="overflow-x-auto rounded-md border border-sky-200 bg-white dark:border-slate-700 dark:bg-slate-950">
+                            <pre className="m-0 p-3 text-sm leading-6 text-gray-900 dark:text-slate-100 whitespace-pre-wrap">
                               {formatCodeForDisplay(currentProblem.examples)}
                             </pre>
                           </div>
                         );
                       }
-                      return <p className="text-gray-800 whitespace-pre-wrap leading-relaxed font-mono text-sm">{currentProblem.examples}</p>;
+                      return <p className="text-gray-800 dark:text-slate-100 whitespace-pre-wrap leading-relaxed font-mono text-sm">{currentProblem.examples}</p>;
                     }
                     const tables = currentProblem.examples.split('\n\n').filter(Boolean);
                     return (
@@ -2030,9 +2101,9 @@ export default function Quiz({
                                 const cells = row.split('|').map((c) => c.trim());
                                 const Tag = ri === 0 ? 'th' : 'td';
                                 return (
-                                  <tr key={ri} className={ri === 0 ? 'bg-sky-100' : ri % 2 === 0 ? 'bg-sky-50' : 'bg-white'}>
+                                  <tr key={ri} className={ri === 0 ? 'bg-sky-100 dark:bg-slate-800' : ri % 2 === 0 ? 'bg-sky-50 dark:bg-slate-900/70' : 'bg-white dark:bg-slate-950'}>
                                     {cells.map((cell, ci) => (
-                                      <Tag key={ci} className="border border-sky-200 px-3 py-2 text-center text-gray-800 font-medium">
+                                      <Tag key={ci} className="border border-sky-200 dark:border-slate-700 px-3 py-2 text-center text-gray-800 dark:text-slate-100 font-medium">
                                         {cell}
                                       </Tag>
                                     ))}
@@ -2051,37 +2122,37 @@ export default function Quiz({
 
             <div className="space-y-4">
               {isSubjectiveProblem ? (
-                <div className="rounded-lg border-2 border-sky-200 bg-white p-4">
-                  <p className="text-sm font-semibold text-sky-700 mb-2">주관식 답안 입력</p>
+                <div className="rounded-lg border-2 border-sky-200 bg-white p-4 dark:border-sky-900/60 dark:bg-slate-950">
+                  <p className="text-sm font-semibold text-sky-700 dark:text-sky-200 mb-2">주관식 답안 입력</p>
                   <textarea
                     value={String(selectedAnswer || '')}
                     onChange={(e) => handleSelectOption(currentProblem.problem_number, e.target.value)}
                     disabled={isChecked}
                     placeholder="정답을 입력하세요."
-                    className="w-full min-h-[96px] rounded-md border border-sky-200 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-sky-500 disabled:bg-gray-100 disabled:text-gray-600"
+                    className="w-full min-h-[96px] rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-sky-500 disabled:bg-gray-100 disabled:text-gray-600 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
                   />
                 </div>
               ) : (
                 getOptionList(currentProblem).map((option, index) => {
-                  let buttonClass = 'bg-white hover:bg-sky-50 border-sky-200 text-gray-800';
+                  let buttonClass = 'bg-white hover:bg-sky-50 border-sky-200 text-gray-800 dark:bg-slate-950 dark:hover:bg-slate-900 dark:border-slate-700 dark:text-slate-100';
                   const optionIsCode = isCodeLikeText(option);
                   const isUnknownOption = option === UNKNOWN_OPTION;
                   if (selectedAnswer === option) {
-                    buttonClass = 'bg-sky-100 text-sky-700 border-sky-500 ring-2 ring-sky-500 font-bold';
+                      buttonClass = 'bg-sky-100 text-sky-700 border-sky-500 ring-2 ring-sky-500 font-bold dark:bg-sky-950/50 dark:text-sky-200 dark:border-sky-700';
                     if (showResult) {
                       buttonClass = isCorrect
-                        ? 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500'
-                        : 'bg-red-100 text-red-800 border-red-500 ring-2 ring-red-500';
+                        ? 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-700'
+                        : 'bg-red-100 text-red-800 border-red-500 ring-2 ring-red-500 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-700';
                     }
                   } else if (showResult && !isCorrect && option === correctAnswer) {
-                    buttonClass = 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500';
+                    buttonClass = 'bg-green-100 text-green-800 border-green-500 ring-2 ring-green-500 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-700';
                   }
                   return (
                     <button
                       key={index}
                       onClick={() => handleSelectOption(currentProblem.problem_number, option)}
                       disabled={isChecked}
-                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${buttonClass} ${isChecked ? 'cursor-not-allowed opacity-90' : ''}`}
+                      className={`w-full text-left p-3 md:p-4 rounded-lg border-2 transition-all ${buttonClass} ${isChecked ? 'cursor-not-allowed opacity-90' : ''}`}
                     >
                       {isUnknownOption ? (
                         `${index + 1}. 모르겠어요 (찍는건 시험장에서 ㅎ)`
@@ -2093,8 +2164,8 @@ export default function Quiz({
                       ) : optionIsCode ? (
                         <div className="space-y-2">
                           <div className="font-semibold">{index + 1}.</div>
-                          <div className="overflow-x-auto rounded-md border border-sky-200 bg-white/80">
-                            <pre className="m-0 p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap">
+                          <div className="overflow-x-auto rounded-md border border-sky-200 bg-white/80 dark:border-slate-700 dark:bg-slate-900">
+                            <pre className="m-0 p-3 text-sm leading-6 text-gray-900 dark:text-slate-100 whitespace-pre-wrap">
                               {formatCodeForDisplay(option)}
                             </pre>
                           </div>
@@ -2109,15 +2180,15 @@ export default function Quiz({
             </div>
 
             {shouldShowExplanation && (
-              <div className={`mt-6 p-6 rounded-lg animate-in fade-in border ${isCorrect ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
-                <h3 className={`text-lg font-bold mb-1 ${isCorrect ? 'text-blue-800' : 'text-red-800'}`}>
+              <div className={`mt-6 p-6 rounded-lg animate-in fade-in border ${isCorrect ? 'bg-blue-50 border-blue-200 dark:bg-sky-950/30 dark:border-sky-900/60' : 'bg-red-50 border-red-200 dark:bg-rose-950/30 dark:border-rose-900/60'}`}>
+                <h3 className={`text-lg font-bold mb-1 ${isCorrect ? 'text-blue-800 dark:text-sky-200' : 'text-red-800 dark:text-rose-200'}`}>
                   {isCorrect ? T.correct : T.wrong}
                 </h3>
-                <p className="text-lg font-semibold text-sky-900 mb-3">
+                <p className="text-lg font-semibold text-sky-900 dark:text-sky-200 mb-3">
                   {T.answer}: {isSubjectiveProblem ? (String(correctAnswer || '').trim() || '-') : `${correctAnswerIndex + 1}${T.numberSuffix}`}
                 </p>
                 {explanationText && (
-                  <p className={`text-gray-700 whitespace-pre-wrap border-t pt-3 leading-relaxed ${isCorrect ? 'border-blue-100' : 'border-red-100'}`}>
+                  <p className={`text-gray-700 dark:text-slate-200 whitespace-pre-wrap border-t pt-3 leading-relaxed ${isCorrect ? 'border-blue-100 dark:border-sky-900/50' : 'border-red-100 dark:border-rose-900/50'}`}>
                     <span className="font-semibold">{T.explanation}:</span>{'\n'}
                     {formatExplanation(explanationText)}
                   </p>
@@ -2141,7 +2212,7 @@ export default function Quiz({
               </div>
             )}
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-stretch sm:justify-end">
               {(() => {
                 const isLast = currentProblemIndex === quizProblems.length - 1;
                 const primaryLabel = isDirectProgressMode
@@ -2173,7 +2244,7 @@ export default function Quiz({
               <button
                 onClick={handlePrimaryClick}
                 disabled={primaryDisabled}
-                className="px-8 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-700 disabled:bg-sky-300 disabled:cursor-not-allowed inline-flex items-center"
+                className="inline-flex w-full sm:w-auto justify-center px-6 md:px-8 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-700 disabled:bg-sky-300 disabled:cursor-not-allowed items-center"
               >
                 {primaryLabel}
                 {(isDirectProgressMode ? !isLast : (isChecked && !isLast)) && <ChevronRight className="ml-2 w-5 h-5" />}
@@ -2224,11 +2295,11 @@ export default function Quiz({
         </div>
       </main>
 
-      <footer className="bg-white shadow-t-md p-4 flex justify-between items-center">
+      <footer className="sticky bottom-0 bg-white shadow-t-md px-3 py-3 md:p-4 flex justify-between items-center transition-colors dark:bg-slate-900 dark:shadow-none dark:border-t dark:border-slate-800">
         <button
           onClick={goToPreviousProblem}
           disabled={currentProblemIndex === 0}
-          className="px-8 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed inline-flex items-center"
+          className="inline-flex items-center justify-center px-5 md:px-8 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-800 dark:disabled:bg-slate-900 dark:disabled:text-slate-600"
         >
           <ChevronLeft className="mr-2 w-5 h-5" />
           {T.prev}

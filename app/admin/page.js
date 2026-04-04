@@ -32,6 +32,19 @@ const emptyMetrics = {
   subjectAverages: [],
   reportReasons: [],
   recentReports: [],
+  themeUsage: {
+    summary: {
+      totalChanges: 0,
+      uniqueClients: 0,
+      customChanges: 0,
+      presetChanges: 0,
+      topThemeId: '',
+      topThemeLabel: '-',
+      topThemeCount: 0,
+    },
+    themes: [],
+    customColors: [],
+  },
   gptFeedback: {
     summary: { total: 0, liked: 0, disliked: 0, netLikeRatio: 0 },
     items: [],
@@ -43,6 +56,7 @@ const LIST_TABS = [
   { key: 'daily', label: '일자별 리스트' },
   { key: 'session', label: '회차별 리스트' },
   { key: 'subject', label: '과목별 리스트' },
+  { key: 'themes', label: '색상 통계' },
   { key: 'ipSearch', label: '사용자 조회' },
   { key: 'gptCache', label: 'GPT 캐시 조회' },
   { key: 'reports', label: '신고 리스트' },
@@ -962,6 +976,113 @@ export default function AdminPage() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {tab === 'themes' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <InfoStat label="전체 변경 로그" value={metrics.themeUsage?.summary?.totalChanges || 0} />
+              <InfoStat label="현재 집계 사용자" value={metrics.themeUsage?.summary?.uniqueClients || 0} />
+              <InfoStat label="현재 Preset 사용자" value={metrics.themeUsage?.summary?.presetChanges || 0} />
+              <InfoStat
+                label="현재 가장 많은 색"
+                value={`${metrics.themeUsage?.summary?.topThemeLabel || '-'} (${metrics.themeUsage?.summary?.topThemeCount || 0})`}
+              />
+            </div>
+
+            <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="font-bold text-slate-900">현재 사용 테마 순위</h2>
+                <span className="text-xs text-slate-500">유저별 마지막 선택 1건만 반영</span>
+              </div>
+              {loading ? (
+                <div className="text-slate-500">로딩 중...</div>
+              ) : !(metrics.themeUsage?.themes || []).length ? (
+                <div className="text-slate-500">아직 색상 변경 데이터가 없습니다.</div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-left text-slate-600">
+                        <th className="px-3 py-2">순위</th>
+                        <th className="px-3 py-2">색상</th>
+                        <th className="px-3 py-2">테마</th>
+                        <th className="px-3 py-2">현재 사용자</th>
+                        <th className="px-3 py-2">사용자 수</th>
+                        <th className="px-3 py-2">현재 점유율</th>
+                        <th className="px-3 py-2">최근 사용</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(metrics.themeUsage?.themes || []).map((row, idx) => (
+                        <tr key={`theme-usage:${row.themeId}:${idx}`} className="border-b border-slate-100 last:border-b-0">
+                          <td className="px-3 py-2 font-semibold text-slate-700">{idx + 1}</td>
+                          <td className="px-3 py-2">
+                            <span
+                              className="inline-flex h-6 w-6 rounded-full border border-slate-200"
+                              style={{ backgroundColor: row.swatch }}
+                              title={row.swatch}
+                            />
+                          </td>
+                          <td className="px-3 py-2 font-semibold text-slate-900">
+                            {row.label}
+                            <span className="ml-2 text-xs font-normal text-slate-500">{row.themeId}</span>
+                          </td>
+                          <td className="px-3 py-2">{row.count}</td>
+                          <td className="px-3 py-2">{row.uniqueClients}</td>
+                          <td className="px-3 py-2 font-semibold text-sky-700">{row.share}%</td>
+                          <td className="px-3 py-2">{fmtTime(row.lastUsedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="font-bold text-slate-900">현재 custom 색 Top</h2>
+                <span className="text-xs text-slate-500">custom 사용자들의 마지막 선택 색상</span>
+              </div>
+              {loading ? (
+                <div className="text-slate-500">로딩 중...</div>
+              ) : !(metrics.themeUsage?.customColors || []).length ? (
+                <div className="text-slate-500">직접 고른 색 데이터가 없습니다.</div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {(metrics.themeUsage?.customColors || []).slice(0, 12).map((row) => (
+                    <div key={`custom-color:${row.color}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="inline-flex h-10 w-10 rounded-full border border-slate-200"
+                          style={{ backgroundColor: row.color }}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900">{row.color}</p>
+                          <p className="text-xs text-slate-500">최근 사용: {fmtTime(row.lastUsedAt)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                        <div className="rounded-lg bg-white px-2 py-1.5">
+                          <p className="text-slate-500">현재 사용자</p>
+                          <p className="font-bold text-slate-900">{row.count}</p>
+                        </div>
+                        <div className="rounded-lg bg-white px-2 py-1.5">
+                          <p className="text-slate-500">사용자</p>
+                          <p className="font-bold text-slate-900">{row.uniqueClients}</p>
+                        </div>
+                        <div className="rounded-lg bg-white px-2 py-1.5">
+                          <p className="text-slate-500">custom 비중</p>
+                          <p className="font-bold text-sky-700">{row.shareWithinCustom}%</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -2100,6 +2221,15 @@ function Info({ label, value }) {
     <div className="rounded-lg border border-slate-200 p-2">
       <p className="text-xs text-slate-500">{label}</p>
       <p className="text-sm font-semibold text-slate-900">{value || '-'}</p>
+    </div>
+  );
+}
+
+function InfoStat({ label, value }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
+      <p className="mt-1 text-2xl font-extrabold text-slate-900">{value}</p>
     </div>
   );
 }

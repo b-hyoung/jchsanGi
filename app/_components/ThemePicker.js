@@ -1,14 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { DEFAULT_THEME_ID, THEME_OPTIONS } from '@/lib/themeCatalog';
 
-export const themes = [
-  { id: 'sky', label: 'Sky', color: 'oklch(60% 0.18 210)' },
-  { id: 'violet', label: 'Violet', color: 'oklch(55% 0.25 280)' },
-  { id: 'rose', label: 'Rose', color: 'oklch(55% 0.23 355)' },
-  { id: 'amber', label: 'Amber', color: 'oklch(68% 0.18 75)' },
-  { id: 'teal', label: 'Teal', color: 'oklch(55% 0.17 188)' },
-];
+export const themes = THEME_OPTIONS;
 
 const sizeClasses = {
   sm: 'h-6 w-6',
@@ -16,9 +11,9 @@ const sizeClasses = {
 };
 
 function getInitialTheme() {
-  if (typeof window === 'undefined') return 'sky';
+  if (typeof window === 'undefined') return DEFAULT_THEME_ID;
   const stored = window.localStorage.getItem('color-theme');
-  return themes.some((theme) => theme.id === stored) ? stored : 'sky';
+  return themes.some((theme) => theme.id === stored) ? stored : DEFAULT_THEME_ID;
 }
 
 export default function ThemePicker({ size = 'md' }) {

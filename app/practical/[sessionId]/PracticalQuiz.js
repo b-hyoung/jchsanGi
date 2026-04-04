@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { trackEvent } from '@/lib/analyticsClient';
 import ThemeControls from '@/app/_components/ThemeControls';
 import { removeUnknownProblem, upsertUnknownProblem } from '@/lib/unknownProblemsStore';
@@ -886,6 +886,7 @@ export default function PracticalQuiz({
   const [gptConversationsByProblem, setGptConversationsByProblem] = useState({});
   const [gptVoteMap, setGptVoteMap] = useState({});
   const [initialJumpApplied, setInitialJumpApplied] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const sequenceInputRefs = useRef([]);
   const multiBlankInputRefs = useRef([]);
   const multiBlankDraftsRef = useRef({});
@@ -2680,18 +2681,18 @@ export default function PracticalQuiz({
   }
 
   return (
-    <div className="exam-scale min-h-screen w-full bg-gray-50 flex flex-col">
-      <header className="bg-white shadow-md p-4 flex justify-between items-center relative z-10">
+    <div className="exam-scale min-h-screen w-full bg-gray-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100 flex flex-col">
+      <header className="bg-white shadow-md p-4 flex justify-between items-center relative z-10 transition-colors dark:bg-slate-900 dark:shadow-none dark:border-b dark:border-slate-800">
         <div className="flex items-center gap-4 min-w-0">
-          <h1 className="text-xl font-bold text-sky-900 hidden md:block">{session.title}</h1>
-          <h1 className="text-xl font-bold text-sky-900 md:hidden">{session.title.split(' ')[0]}...</h1>
+          <h1 className="text-xl font-bold text-sky-900 dark:text-sky-200 hidden md:block">{session.title}</h1>
+          <h1 className="text-xl font-bold text-sky-900 dark:text-sky-200 md:hidden">{session.title.split(' ')[0]}...</h1>
         </div>
-        <div className="text-lg font-semibold text-gray-900 whitespace-nowrap">
+        <div className="text-lg font-semibold text-gray-900 dark:text-slate-100 whitespace-nowrap">
           {T.problem} {currentProblemIndex + 1} / {quizProblems.length}
         </div>
         <div className="flex items-center gap-3">
           <ThemeControls />
-          <div className="hidden sm:flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-bold text-sky-700 tabular-nums">
+          <div className="hidden sm:flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-bold text-sky-700 tabular-nums dark:border-sky-900/70 dark:bg-slate-800 dark:text-sky-200">
             {timerMinutes}:{timerSeconds}
           </div>
           <button
@@ -2719,7 +2720,7 @@ export default function PracticalQuiz({
           <div className="relative">
             <button
               onClick={() => setIsSettingsOpen((prev) => !prev)}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors dark:text-slate-300 dark:hover:bg-slate-800"
               aria-label="Settings"
             >
               <Settings className="w-6 h-6" />
@@ -2747,25 +2748,82 @@ export default function PracticalQuiz({
 
       <main className="flex-grow container mx-auto p-4 md:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 md:gap-6">
-          <aside className="bg-white rounded-xl shadow-lg p-4 h-fit lg:sticky lg:top-24">
-            <h3 className="text-sm font-bold text-gray-700 mb-3">{T.navTitle}</h3>
-            <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-4 gap-2">
-              {quizProblems.map((problem, index) => {
-                const status = getProblemStatus(problem);
-                const isCurrent = index === currentProblemIndex;
-                return (
-                  <button
-                    key={problem.problem_number}
-                    onClick={() => goToProblem(index)}
-                    className={`h-10 rounded-md border text-xs font-semibold transition ${getStatusClass(status)} ${isCurrent ? 'ring-2 ring-sky-500' : ''}`}
-                    title={`${T.problem} ${problem.problem_number} (${status})`}
-                  >
-                    {problem.problem_number} {status}
-                  </button>
-                );
-              })}
+          <aside className="bg-white rounded-xl shadow-lg p-3 md:p-4 h-fit lg:sticky lg:top-24 dark:bg-slate-900 dark:shadow-none dark:border dark:border-slate-800">
+            <div className="lg:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen((prev) => !prev)}
+                aria-expanded={mobileNavOpen}
+                className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+              >
+                <div>
+                  <p className="text-sm font-bold text-gray-700 dark:text-slate-200">{T.navTitle}</p>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {currentProblemIndex + 1} / {quizProblems.length}
+                  </p>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-slate-500 transition-transform duration-300 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] dark:text-slate-300 ${mobileNavOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              <div
+                className={`grid overflow-hidden transition-[grid-template-rows,opacity,margin-top] duration-300 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] motion-reduce:transition-none ${
+                  mobileNavOpen ? 'mt-3 grid-rows-[1fr] opacity-100' : 'mt-0 grid-rows-[0fr] opacity-0'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="-mx-1 overflow-x-auto pb-1">
+                    <div className="grid grid-flow-col auto-cols-[3rem] gap-2 px-1">
+                      {quizProblems.map((problem, index) => {
+                        const status = getProblemStatus(problem);
+                        const isCurrent = index === currentProblemIndex;
+                        return (
+                          <button
+                            key={`mobile-${problem.problem_number}`}
+                            onClick={() => {
+                              goToProblem(index);
+                              setMobileNavOpen(false);
+                            }}
+                            className={`h-11 min-w-[3rem] rounded-md border text-xs font-semibold transition ${getStatusClass(status)} ${isCurrent ? 'ring-2 ring-sky-500' : ''}`}
+                            title={`${T.problem} ${problem.problem_number} (${status})`}
+                          >
+                            {problem.problem_number} {status}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-slate-400">
+                    <p><span className="font-bold text-green-700">O</span> {T.statusCorrect}</p>
+                    <p><span className="font-bold text-red-700">X</span> {T.statusWrong}</p>
+                    {isDirectProgressMode && <p><span className="font-bold text-blue-700">●</span> {T.statusSolved}</p>}
+                    <p><span className="font-bold text-gray-700">?</span> {T.statusUnsolved}</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="mt-4 text-xs text-gray-600 space-y-1">
+
+            <div className="hidden lg:block">
+              <h3 className="text-sm font-bold text-gray-700 dark:text-slate-200 mb-3">{T.navTitle}</h3>
+              <div className="grid grid-cols-4 gap-2">
+                {quizProblems.map((problem, index) => {
+                  const status = getProblemStatus(problem);
+                  const isCurrent = index === currentProblemIndex;
+                  return (
+                    <button
+                      key={problem.problem_number}
+                      onClick={() => goToProblem(index)}
+                      className={`h-10 rounded-md border text-xs font-semibold transition ${getStatusClass(status)} ${isCurrent ? 'ring-2 ring-sky-500' : ''}`}
+                      title={`${T.problem} ${problem.problem_number} (${status})`}
+                    >
+                      {problem.problem_number} {status}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="mt-4 hidden lg:block text-xs text-gray-600 dark:text-slate-400 space-y-1">
               <p><span className="font-bold text-green-700">O</span> {T.statusCorrect}</p>
               <p><span className="font-bold text-red-700">X</span> {T.statusWrong}</p>
               {isDirectProgressMode && <p><span className="font-bold text-blue-700">●</span> {T.statusSolved}</p>}
@@ -2773,7 +2831,7 @@ export default function PracticalQuiz({
             </div>
           </aside>
 
-          <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+          <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg dark:bg-slate-900 dark:shadow-none dark:border dark:border-slate-800">
             <p className="text-sm font-semibold text-sky-600 mb-2">{currentProblem.sectionTitle}</p>
             {(typeof currentProblem?.wrongRatePercent === 'number' || typeof currentProblem?.unknownRatePercent === 'number') && (
               <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -2788,7 +2846,7 @@ export default function PracticalQuiz({
                   </span>
                 )}
                 {Number.isFinite(Number(currentProblem?.attemptCount)) && (
-                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                     시도 {Number(currentProblem.attemptCount)}회
                   </span>
                 )}
@@ -3304,7 +3362,7 @@ export default function PracticalQuiz({
         </div>
       </main>
 
-      <footer className="bg-white shadow-t-md p-4 flex justify-between items-center">
+      <footer className="bg-white shadow-t-md p-4 flex justify-between items-center transition-colors dark:bg-slate-900 dark:shadow-none dark:border-t dark:border-slate-800">
         <button
           onClick={goToPreviousProblem}
           disabled={currentProblemIndex === 0}

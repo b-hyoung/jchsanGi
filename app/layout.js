@@ -1,5 +1,6 @@
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
+import { ALL_THEME_IDS } from "@/lib/themeCatalog";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-sans",
@@ -17,7 +18,7 @@ export const metadata = {
 const themeScript = `
 (function() {
   try {
-    var allowedThemes = ['sky', 'violet', 'rose', 'amber', 'teal', 'custom'];
+    var allowedThemes = ${JSON.stringify(ALL_THEME_IDS)};
     var stored = localStorage.getItem('theme');
     var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (stored === 'dark' || (!stored && prefersDark)) {
