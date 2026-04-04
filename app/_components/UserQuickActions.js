@@ -43,10 +43,20 @@ export default function UserQuickActions({ className = '' }) {
     };
   }, []);
 
-  if (!isReady || !isLoggedIn) return null;
+  if (!isReady) {
+    return (
+      <div className={`flex min-h-9 items-center justify-end gap-2 ${className}`} aria-hidden="true">
+        <div className="h-8 w-24 rounded-full border border-slate-200 bg-white/80 shadow-sm dark:border-slate-700 dark:bg-slate-800/80" />
+        <div className="h-8 w-24 rounded-full border border-sky-200 bg-white/80 shadow-sm dark:border-sky-800 dark:bg-slate-800/80" />
+        <div className="h-8 w-24 rounded-full border border-rose-200 bg-white/80 shadow-sm dark:border-rose-800 dark:bg-slate-800/80" />
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) return null;
 
   return (
-    <div className={`flex items-center justify-end gap-2 ${className}`}>
+    <div className={`flex min-h-9 items-center justify-end gap-2 ${className}`}>
       <Link
         href="/mypage"
         className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"

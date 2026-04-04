@@ -21,7 +21,7 @@ const WHEEL_STEP_THRESHOLD = 36;
 const DEFAULT_CUSTOM_COLOR = '#0ea5e9';
 
 export default function ThemeControls({ onOpenChange }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [activeTheme, setActiveTheme] = useState(getInitialTheme);
   const [customColor, setCustomColor] = useState(getInitialCustomColor);
   const wheelDeltaRef = useRef(0);

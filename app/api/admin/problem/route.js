@@ -2,6 +2,7 @@
 import path from 'path';
 import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/adminAccess';
+import { classifySessionId } from '@/lib/examType';
 
 export const dynamic = 'force-dynamic';
 
@@ -171,6 +172,8 @@ export async function GET(request) {
       return NextResponse.json({ message: 'problem not found' }, { status: 404 });
     }
 
+    const problemBasePath = classifySessionId(sessionId) === 'practical' ? '/practical' : '/test';
+
     return NextResponse.json({
       sessionId,
       problemNumber,
@@ -180,7 +183,7 @@ export async function GET(request) {
       examples: problem.examples ?? null,
       answerText: data.answersMap[problem.problem_number] ?? '',
       commentText: data.commentsMap[problem.problem_number] ?? '',
-      gotoPath: `/test/${sessionId}?p=${problemNumber}`,
+      gotoPath: `${problemBasePath}/${sessionId}?p=${problemNumber}`,
     });
   } catch {
     return NextResponse.json({ message: 'failed to load problem detail' }, { status: 500 });

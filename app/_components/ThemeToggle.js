@@ -11,8 +11,7 @@ const sizeClasses = {
 function getInitialDarkMode() {
   if (typeof window === 'undefined') return false;
   const stored = window.localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  return stored ? stored === 'dark' : prefersDark;
+  return stored === 'dark';
 }
 
 export default function ThemeToggle({ size = 'md' }) {

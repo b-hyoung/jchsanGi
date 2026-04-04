@@ -118,6 +118,14 @@ function sessionLabelWithCode(sessionId) {
   return `${label} (${raw})`;
 }
 
+function buildProblemPagePath(sessionId, problemNumber) {
+  const sid = String(sessionId || '').trim();
+  const pno = String(problemNumber || '').trim();
+  if (!sid) return '#';
+  const basePath = classifySessionId(sid) === 'practical' ? `/practical/${encodeURIComponent(sid)}` : `/test/${encodeURIComponent(sid)}`;
+  return pno ? `${basePath}?p=${encodeURIComponent(pno)}` : basePath;
+}
+
 function fmtTime(ts) {
   const raw = String(ts || '').trim();
   if (!raw) return '-';
@@ -2114,9 +2122,7 @@ export default function AdminPage() {
 
               <div className="flex justify-end">
                 <a
-                  href={`/test/${encodeURIComponent(String(selectedGptCacheRow.sourceSessionId || ''))}?p=${encodeURIComponent(
-                    String(selectedGptCacheRow.sourceProblemNumber || '')
-                  )}`}
+                  href={buildProblemPagePath(selectedGptCacheRow.sourceSessionId, selectedGptCacheRow.sourceProblemNumber)}
                   target="_blank"
                   rel="noreferrer"
                   className="px-4 py-2 rounded-lg bg-sky-600 text-white font-semibold hover:bg-sky-700"

@@ -19,10 +19,7 @@ const themeScript = `
   try {
     var allowedThemes = ['sky', 'violet', 'rose', 'amber', 'teal', 'custom'];
     var stored = localStorage.getItem('theme');
-    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (stored === 'dark' || (!stored && prefersDark)) {
-      document.documentElement.classList.add('dark');
-    }
+    document.documentElement.classList.toggle('dark', stored === 'dark');
     var colorTheme = localStorage.getItem('color-theme');
     var customThemeColor = localStorage.getItem('custom-theme-color');
     if (!allowedThemes.includes(colorTheme)) colorTheme = 'sky';
