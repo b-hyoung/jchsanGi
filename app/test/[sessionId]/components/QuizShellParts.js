@@ -96,16 +96,7 @@ export function QuizResults({ session, results, onRetryWrong, onRetryUnknown, la
   const [showFailModal, setShowFailModal] = useState(!isReviewOnly && !isRetryMode && !isOverallPass);
   const [failQuote] = useState(() => FAIL_QUOTES[Math.floor(Math.random() * FAIL_QUOTES.length)]);
   const backHref = String(session?.backHref || '/test');
-  const displaySubjectSummaries =
-    Array.isArray(subjectSummaries) && subjectSummaries.length > 0
-      ? subjectSummaries
-      : [1, 2, 3].map((subjectNum) => ({
-          id: subjectNum,
-          label: `${labels.subject} ${subjectNum}`,
-          correctCount: subjectCorrectCounts?.[subjectNum] ?? 0,
-          totalCount: subjectTotalCounts?.[subjectNum] ?? 20,
-          passed: Boolean(subjectPassFail?.[subjectNum]),
-        }));
+  const displaySubjectSummaries = Array.isArray(subjectSummaries) ? subjectSummaries : [];
 
   const safeElapsed = Math.max(0, Number(elapsedSeconds) || 0);
   const elapsedH = String(Math.floor(safeElapsed / 3600)).padStart(2, '0');
