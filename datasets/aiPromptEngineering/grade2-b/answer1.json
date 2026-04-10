@@ -36,7 +36,7 @@
       { "problem_number": 32, "correct_answer_index": 0, "correct_answer_text": "업스케일링" },
       { "problem_number": 33, "correct_answer_index": 0, "correct_answer_text": "달리" },
       { "problem_number": 34, "correct_answer_index": 0, "correct_answer_text": "멀티모달" },
-      { "problem_number": 35, "correct_answer_index": 0, "correct_answer_text": "환각" },
+      { "problem_number": 35, "correct_answer_index": 0, "correct_answer_text": "환각", "accepted_answers": ["환각", "할루시네이션"] },
       { "problem_number": 36, "correct_answer_index": 0, "correct_answer_text": "5" },
       { "problem_number": 37, "correct_answer_index": 0, "correct_answer_text": "8" },
       { "problem_number": 38, "correct_answer_index": 0, "correct_answer_text": "19" },
