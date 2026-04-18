@@ -1,6 +1,6 @@
 """FastAPI 앱 엔트리포인트."""
 from fastapi import FastAPI
-from config import get_settings
+from .config import get_settings
 
 app = FastAPI(title="Core-CBT Agent API", version="0.1.0")
 
