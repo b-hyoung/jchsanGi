@@ -17,40 +17,84 @@ const LANG_COLOR = {
 };
 
 const CODE_THEME = {
-  C: {
-    bg: 'bg-[#1e1e2e]',
-    text: 'text-[#cdd6f4]',
-    keyword: '#cba6f7',
-    label: 'C',
-    labelBg: 'bg-indigo-500',
-    accent: '#89b4fa',
-  },
-  Java: {
-    bg: 'bg-[#2b2b2b]',
-    text: 'text-[#a9b7c6]',
-    keyword: '#cc7832',
-    label: 'Java',
-    labelBg: 'bg-orange-500',
-    accent: '#ffc66d',
-  },
-  Python: {
-    bg: 'bg-[#1a1b26]',
-    text: 'text-[#a9b1d6]',
-    keyword: '#7aa2f7',
-    label: 'Python',
-    labelBg: 'bg-sky-500',
-    accent: '#9ece6a',
-  },
+  C:      { bg: '#1e1e2e', base: '#cdd6f4', keyword: '#cba6f7', string: '#a6e3a1', number: '#fab387', comment: '#6c7086', preproc: '#f38ba8', func: '#89b4fa', label: 'C' },
+  Java:   { bg: '#2b2b2b', base: '#a9b7c6', keyword: '#cc7832', string: '#6a8759', number: '#6897bb', comment: '#808080', func: '#ffc66d', label: 'Java' },
+  Python: { bg: '#1a1b26', base: '#a9b1d6', keyword: '#7aa2f7', string: '#9ece6a', number: '#ff9e64', comment: '#565f89', func: '#7dcfff', label: 'Python' },
 };
+
+const KW = {
+  C: 'auto break case char const continue default do double else enum extern float for goto if int long register return short signed sizeof static struct switch typedef union unsigned void volatile while',
+  Java: 'abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while null true false',
+  Python: 'False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield',
+};
+
+const BF = {
+  C: 'printf scanf main strlen strcmp strcpy strcat malloc calloc realloc free fprintf sprintf sscanf fopen fclose fgets fputs puts getchar putchar atoi atof exit memcpy memset sizeof',
+  Java: 'System out println print main length toString equals charAt substring indexOf parseInt valueOf Math Arrays sort add get size put remove contains isEmpty String Integer Double Float Boolean Object',
+  Python: 'print len range list dict set tuple int str float bool input abs max min sum round sorted map filter zip enumerate open type isinstance hasattr getattr setattr super append pop sort join split strip replace find count upper lower',
+};
+
+function buildSets(raw) { return new Set(raw.split(' ')); }
+
+function tokenize(line, lang) {
+  const kw = buildSets(KW[lang] || '');
+  const bf = buildSets(BF[lang] || '');
+  const tokens = [];
+  let i = 0;
+  while (i < line.length) {
+    // 행 끝 주석
+    if ((lang === 'C' || lang === 'Java') && line[i] === '/' && line[i+1] === '/') {
+      tokens.push({ t: 'comment', v: line.slice(i) }); return tokens;
+    }
+    if (lang === 'Python' && line[i] === '#') {
+      tokens.push({ t: 'comment', v: line.slice(i) }); return tokens;
+    }
+    // C 전처리기
+    if (lang === 'C' && line[i] === '#') {
+      const m = line.slice(i).match(/^#\w+/);
+      if (m) { tokens.push({ t: 'preproc', v: m[0] }); i += m[0].length; continue; }
+    }
+    // 문자열
+    if (line[i] === '"' || line[i] === "'") {
+      const q = line[i]; let j = i + 1;
+      while (j < line.length && line[j] !== q) { if (line[j] === '\\') j++; j++; }
+      j = Math.min(j + 1, line.length);
+      tokens.push({ t: 'string', v: line.slice(i, j) }); i = j; continue;
+    }
+    // 숫자
+    if (/\d/.test(line[i]) && (i === 0 || /[^a-zA-Z_]/.test(line[i-1]))) {
+      const m = line.slice(i).match(/^\d+(\.\d+)?[fFlLuU]?/);
+      if (m) { tokens.push({ t: 'number', v: m[0] }); i += m[0].length; continue; }
+    }
+    // 식별자
+    if (/[a-zA-Z_]/.test(line[i])) {
+      const m = line.slice(i).match(/^[a-zA-Z_]\w*/);
+      if (m) {
+        const w = m[0];
+        tokens.push({ t: kw.has(w) ? 'keyword' : bf.has(w) ? 'func' : 'plain', v: w });
+        i += w.length; continue;
+      }
+    }
+    tokens.push({ t: 'plain', v: line[i] }); i++;
+  }
+  return tokens;
+}
+
+function HighlightedLine({ line, lang, theme }) {
+  const toks = tokenize(line, lang);
+  return <>{toks.map((tok, i) => (
+    <span key={i} style={{ color: theme[tok.t] || theme.base, fontStyle: tok.t === 'comment' ? 'italic' : undefined }}>{tok.v}</span>
+  ))}</>;
+}
 
 function CodeBlock({ code, lang }) {
   const theme = CODE_THEME[lang] || CODE_THEME.C;
   const lines = code.split('\n');
 
   return (
-    <div className={`rounded-xl ${theme.bg} overflow-hidden mb-4 shadow-lg`}>
+    <div className="rounded-xl overflow-hidden mb-4 shadow-lg" style={{ background: theme.bg }}>
       {/* 상단 바 */}
-      <div className="flex items-center px-4 py-2 bg-black/20">
+      <div className="flex items-center px-4 py-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
         <div className="flex gap-1.5">
           <span className="h-3 w-3 rounded-full bg-red-500/80" />
           <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
@@ -58,22 +102,25 @@ function CodeBlock({ code, lang }) {
         </div>
         <div className="flex items-center gap-1.5 ml-3">
           <img src={LANG_ICON[lang]} alt={lang} className="h-3.5 w-3.5 brightness-0 invert opacity-70" />
-          <span className="text-[11px] font-medium text-white/50">{theme.label}</span>
+          <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>{theme.label}</span>
         </div>
       </div>
       {/* 코드 본문 */}
       <div className="overflow-x-auto p-4 pt-2">
-        <pre className={`text-sm font-mono ${theme.text} leading-relaxed`} style={{ margin: 0 }}>
+        <pre className="text-sm font-mono leading-relaxed" style={{ margin: 0, color: theme.base }}>
           {lines.map((line, i) => (
             <div key={i} className="flex hover:bg-white/5 rounded">
-              <span className="select-none text-right text-white/20 text-[11px] mr-4 inline-block" style={{ minWidth: '2ch' }}>
+              <span className="select-none text-right text-[11px] mr-4 inline-block" style={{ minWidth: '2ch', color: 'rgba(255,255,255,0.15)' }}>
                 {i + 1}
               </span>
-              <span style={{ whiteSpace: 'pre' }}>{line}</span>
+              <span style={{ whiteSpace: 'pre' }}>
+                <HighlightedLine line={line} lang={lang} theme={theme} />
+              </span>
             </div>
           ))}
         </pre>
       </div>
+      <div className="h-2" />
     </div>
   );
 }
