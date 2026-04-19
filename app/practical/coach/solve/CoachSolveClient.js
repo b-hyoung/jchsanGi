@@ -595,8 +595,7 @@ function AnswerInput({ problem, answer, correctAnswer, onAnswer, onSubmit, disab
           nextInput?.focus();
         } else {
           // 마지막 칸에서 엔터 → 제출
-          const joined = joinMultiBlankAnswer(meta.labels, values);
-          onSubmit(joined);
+          onSubmit();
         }
       }
     }
@@ -622,7 +621,7 @@ function AnswerInput({ problem, answer, correctAnswer, onAnswer, onSubmit, disab
           </div>
         ))}
         <button
-          onClick={() => onSubmit(joinMultiBlankAnswer(meta.labels, values))}
+          onClick={() => onSubmit()}
           disabled={disabled || values.every((v) => !v?.trim())}
           className={`w-full rounded-xl bg-${accentColor}-600 text-white px-4 py-3 text-sm font-semibold hover:opacity-90 transition disabled:opacity-50`}
         >
@@ -639,14 +638,14 @@ function AnswerInput({ problem, answer, correctAnswer, onAnswer, onSubmit, disab
         type="text"
         value={typeof answer === 'string' ? answer : ''}
         onChange={(e) => onAnswer(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(typeof answer === 'string' ? answer : ''); } }}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(); } }}
         disabled={disabled}
         placeholder="답 입력..."
         autoFocus
         className={`flex-1 rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-${accentColor}-300 disabled:bg-slate-50 disabled:text-slate-400`}
       />
       <button
-        onClick={() => onSubmit(typeof answer === 'string' ? answer : '')}
+        onClick={() => onSubmit()}
         disabled={disabled || !(typeof answer === 'string' ? answer.trim() : false)}
         className={`bg-${accentColor}-600 text-white rounded-xl px-6 py-3 text-sm font-semibold hover:opacity-90 transition disabled:opacity-50`}
       >
@@ -1096,7 +1095,7 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
                     answer={userAnswer}
                     correctAnswer={problem._answer}
                     onAnswer={setUserAnswer}
-                    onSubmit={(val) => { setUserAnswer(val); handleCheck(); }}
+                    onSubmit={() => handleCheck()}
                   />
                 ) : (
                   <div className="space-y-4 mb-4">
