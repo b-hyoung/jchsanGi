@@ -575,7 +575,7 @@ function AnswerInput({ problem, answer, correctAnswer, onAnswer, onSubmit, disab
   // AI 생성 문제: question_text+examples 에서 (가)(나)(다) 직접 추출 보강
   if ((!meta || meta.labels.length < 2) && problem?.input_type === 'multi_blank') {
     const fullText = `${problem.question_text || ''}\n${problem.examples || ''}`;
-    const found = [...fullText.matchAll(/\(([가-힣])\)/g)].map(m => m[1]);
+    const found = [...fullText.matchAll(/\(\s*([가-힣])\s*\)/g)].map(m => m[1]);
     const unique = [...new Set(found)];
     if (unique.length >= 2) meta = { labels: unique };
   }
