@@ -125,6 +125,41 @@ function CodeBlock({ code, lang }) {
   );
 }
 
+// 마크다운 코드블럭을 분리해서 렌더링
+function renderMarkdown(text) {
+  if (!text) return null;
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  return parts.map((part, i) => {
+    const codeMatch = part.match(/^```(\w*)\n?([\s\S]*?)```$/);
+    if (codeMatch) {
+      return (
+        <pre key={i} className="bg-slate-900 text-slate-200 rounded-lg p-3 text-xs font-mono my-2 overflow-x-auto whitespace-pre-wrap">
+          {codeMatch[2].trim()}
+        </pre>
+      );
+    }
+    // 인라인 코드 `...`
+    const inlineParts = part.split(/(`[^`]+`)/g);
+    return (
+      <span key={i}>
+        {inlineParts.map((ip, j) => {
+          if (ip.startsWith('`') && ip.endsWith('`')) {
+            return <code key={j} className="bg-slate-100 text-rose-600 px-1.5 py-0.5 rounded text-xs font-mono">{ip.slice(1, -1)}</code>;
+          }
+          // 볼드 **...**
+          const boldParts = ip.split(/(\*\*[^*]+\*\*)/g);
+          return boldParts.map((bp, k) => {
+            if (bp.startsWith('**') && bp.endsWith('**')) {
+              return <strong key={`${j}-${k}`}>{bp.slice(2, -2)}</strong>;
+            }
+            return bp;
+          });
+        })}
+      </span>
+    );
+  });
+}
+
 function ChatBubble({ msg }) {
   if (msg.role === 'user') {
     return (
@@ -133,26 +168,29 @@ function ChatBubble({ msg }) {
       </div>
     );
   }
-  // 유사 문제 카드
-  if (msg.ui_action?.type === 'present_problem') {
-    const d = msg.ui_action.data || {};
+  // 채점 결과 카드
+  if (msg.ui_action?.type === 'evaluation') {
+    const e = msg.ui_action;
     return (
-      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mr-4">
-        <p className="text-xs font-bold text-emerald-700 mb-1">✏️ 유사 문제</p>
-        <p className="text-sm text-emerald-900 mb-2">{d.question_text}</p>
-        {d.examples && (
-          <pre className="bg-slate-900 text-emerald-300 rounded-lg p-2 text-xs font-mono mb-2 overflow-x-auto whitespace-pre-wrap">
-            {d.examples}
-          </pre>
+      <div className={`rounded-xl p-3 mr-4 border ${e.correct ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+        <div className="flex items-center gap-2 mb-1">
+          {e.correct
+            ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            : <XCircle className="h-4 w-4 text-rose-600" />}
+          <span className={`text-sm font-bold ${e.correct ? 'text-emerald-700' : 'text-rose-700'}`}>
+            {e.correct ? '정답!' : '오답'}
+          </span>
+        </div>
+        {e.reasoning && (
+          <p className="text-xs text-slate-600 mt-1 leading-relaxed">{e.reasoning}</p>
         )}
-        <p className="text-[10px] text-emerald-500">답을 아래 입력창에 보내세요</p>
       </div>
     );
   }
-  // 일반 AI 응답
+  // 일반 AI 응답 (마크다운 지원)
   return (
-    <div className="bg-white border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-sm mr-8 whitespace-pre-wrap leading-relaxed">
-      {msg.content}
+    <div className="bg-white border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-sm mr-8 leading-relaxed">
+      {renderMarkdown(msg.content)}
     </div>
   );
 }
@@ -166,9 +204,15 @@ export default function CoachSolveClient({ lang, problems }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
-  const [autoSent, setAutoSent] = useState(false); // 자동 해설 요청 여부
+  const [autoSent, setAutoSent] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [results, setResults] = useState([]); // {problemNumber, sourceSessionId, correct}
+  const [results, setResults] = useState([]);
+  // 유사 문제 상태
+  const [genProblem, setGenProblem] = useState(null); // { problem_id, question_text, examples, category, input_type, ... }
+  const [genAnswer, setGenAnswer] = useState('');
+  const [genSubmitted, setGenSubmitted] = useState(false);
+  const [genLoading, setGenLoading] = useState(false);
+  const [slideDir, setSlideDir] = useState(''); // 'slide-left' | 'slide-right' | ''
   const inputRef = useRef(null);
   const chatEndRef = useRef(null);
 
@@ -217,6 +261,9 @@ export default function CoachSolveClient({ lang, problems }) {
     setChatOpen(false);
     setAutoSent(false);
     setChatLoading(false);
+    setGenProblem(null);
+    setGenAnswer('');
+    setGenSubmitted(false);
   }
 
   async function sendToAgent(message) {
@@ -236,15 +283,22 @@ export default function CoachSolveClient({ lang, problems }) {
       if (data.reply) {
         setChatMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
       }
-      // ui_actions 처리 (유사 문제 카드 등)
+      // ui_actions 처리 — 유사 문제가 왼쪽 슬라이드로 전환
       if (data.ui_actions?.length > 0) {
         for (const action of data.ui_actions) {
           if (action.type === 'present_problem') {
             setChatMessages((prev) => [...prev, {
               role: 'assistant',
-              content: null,
-              ui_action: action,
+              content: '유사 문제를 왼쪽에 띄웠어요. 풀어보세요!',
             }]);
+            // 왼쪽 슬라이드 전환
+            setSlideDir('slide-left');
+            setTimeout(() => {
+              setGenProblem({ problem_id: action.problem_id, ...action.data });
+              setGenAnswer('');
+              setGenSubmitted(false);
+              setSlideDir('');
+            }, 200);
           }
         }
       }
@@ -256,6 +310,64 @@ export default function CoachSolveClient({ lang, problems }) {
     } finally {
       setChatLoading(false);
     }
+  }
+
+  async function handleGenSubmit() {
+    if (!genAnswer.trim() || genLoading || !genProblem) return;
+    setGenLoading(true);
+    setGenSubmitted(true);
+    try {
+      const resp = await fetch('/api/agent/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_session_id: problem._sourceSessionId,
+          problem_number: problem.problem_number,
+          problem_id: genProblem.problem_id,
+          user_answer: genAnswer.trim(),
+        }),
+      });
+      const data = await resp.json();
+      if (data.reply) {
+        setChatMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
+      }
+      // 채점 결과 ui_action 처리
+      if (data.ui_actions?.length > 0) {
+        for (const action of data.ui_actions) {
+          if (action.type === 'evaluation') {
+            setChatMessages((prev) => [...prev, {
+              role: 'assistant',
+              content: null,
+              ui_action: action,
+            }]);
+          }
+          if (action.type === 'present_problem') {
+            // AI가 또 유사 문제를 내면 다시 전환
+            setSlideDir('slide-left');
+            setTimeout(() => {
+              setGenProblem({ problem_id: action.problem_id, ...action.data });
+              setGenAnswer('');
+              setGenSubmitted(false);
+              setSlideDir('');
+            }, 200);
+          }
+        }
+      }
+    } catch {
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: '제출 중 오류가 발생했어요.' }]);
+    } finally {
+      setGenLoading(false);
+    }
+  }
+
+  function handleBackToOriginal() {
+    setSlideDir('slide-right');
+    setTimeout(() => {
+      setGenProblem(null);
+      setGenAnswer('');
+      setGenSubmitted(false);
+      setSlideDir('');
+    }, 200);
   }
 
   function handleChatSend() {
@@ -343,89 +455,122 @@ export default function CoachSolveClient({ lang, problems }) {
       <div className="mx-auto max-w-5xl flex min-h-[calc(100vh-57px)]">
         {/* 왼쪽: 퀴즈 영역 */}
         <div className={`flex-1 p-6 ${chatOpen ? 'hidden md:block' : ''}`}>
-          <div className="max-w-2xl mx-auto">
-            {/* 문제 출처 */}
-            <p className="text-xs font-medium text-slate-400 mb-1">
-              {problem._sourceSessionId} · {problem.problem_number}번
-            </p>
+          <div className={`max-w-2xl mx-auto transition-all duration-200 ${slideDir === 'slide-left' ? 'opacity-0 -translate-x-8' : slideDir === 'slide-right' ? 'opacity-0 translate-x-8' : 'opacity-100 translate-x-0'}`}>
 
-            {/* 문제 텍스트 */}
-            <h2 className="text-base font-bold text-slate-900 mb-3 leading-relaxed">
-              {problem.question_text}
-            </h2>
-
-            {/* 코드 예시 */}
-            {problem.examples && (
-              <CodeBlock code={problem.examples} lang={lang} />
-            )}
-
-            {/* 답 입력 */}
-            {!checked ? (
-              <div className="flex gap-2 mb-4">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="답 입력..."
-                  className="flex-1 rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-                <button
-                  onClick={handleCheck}
-                  className={`${colors.accent} text-white rounded-xl px-6 py-3 text-sm font-semibold hover:opacity-90 transition`}
-                >
-                  확인
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3 mb-4">
-                {/* 정답/오답 피드백 */}
-                <div className={`rounded-xl p-4 ${isCorrect ? 'bg-emerald-50 border border-emerald-200' : 'bg-rose-50 border border-rose-200'}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    {isCorrect
-                      ? <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                      : <XCircle className="h-5 w-5 text-rose-600" />}
-                    <span className={`text-sm font-bold ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
-                      {isCorrect ? '정답!' : '오답'}
-                    </span>
-                  </div>
-                  {!isCorrect && (
-                    <p className="text-sm text-rose-600">
-                      내 답: <span className="font-semibold">{userAnswer}</span> → 정답: <span className="font-semibold">{problem._answer}</span>
-                    </p>
-                  )}
+            {genProblem ? (
+              /* ─── 유사 문제 모드 ─── */
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-bold">유사 문제</span>
+                  <button onClick={handleBackToOriginal} className="text-xs text-slate-400 hover:text-slate-600 underline">원래 문제 보기</button>
                 </div>
-
-                {/* 해설 */}
-                {problem._comment && (
-                  <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
-                    <p className="text-xs font-bold text-blue-600 mb-1">해설</p>
-                    <p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{problem._comment}</p>
+                <h2 className="text-base font-bold text-slate-900 mb-3 leading-relaxed">
+                  {genProblem.question_text}
+                </h2>
+                {genProblem.examples && (
+                  <CodeBlock code={genProblem.examples} lang={lang} />
+                )}
+                {!genSubmitted ? (
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      type="text"
+                      value={genAnswer}
+                      onChange={(e) => setGenAnswer(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleGenSubmit(); } }}
+                      placeholder="답 입력..."
+                      className="flex-1 rounded-xl border border-emerald-200 bg-white text-slate-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleGenSubmit}
+                      disabled={genLoading}
+                      className="bg-emerald-600 text-white rounded-xl px-6 py-3 text-sm font-semibold hover:bg-emerald-500 transition disabled:opacity-50"
+                    >
+                      {genLoading ? '채점 중...' : '제출'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 mb-4 text-center">
+                    <p className="text-sm text-slate-500">제출 완료 — AI 코치 패널에서 채점 결과를 확인하세요</p>
                   </div>
                 )}
-
-                {/* 다음/AI 코치 버튼 */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleNext}
-                    className="flex-1 flex items-center justify-center gap-1 rounded-xl bg-slate-800 text-white px-4 py-3 text-sm font-semibold hover:bg-slate-700 transition"
-                  >
-                    {currentIndex + 1 >= total ? '결과 보기' : '다음 문제'}
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                  {!isCorrect && (
+              </>
+            ) : (
+              /* ─── 원래 문제 모드 ─── */
+              <>
+                <p className="text-xs font-medium text-slate-400 mb-1">
+                  {problem._sourceSessionId} · {problem.problem_number}번
+                </p>
+                <h2 className="text-base font-bold text-slate-900 mb-3 leading-relaxed">
+                  {problem.question_text}
+                </h2>
+                {problem.examples && (
+                  <CodeBlock code={problem.examples} lang={lang} />
+                )}
+                {!checked ? (
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="답 입력..."
+                      className="flex-1 rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                    />
                     <button
-                      onClick={() => setChatOpen(true)}
-                      className="flex items-center gap-1 rounded-xl bg-violet-600 text-white px-4 py-3 text-sm font-semibold hover:bg-violet-500 transition"
+                      onClick={handleCheck}
+                      className={`${colors.accent} text-white rounded-xl px-6 py-3 text-sm font-semibold hover:opacity-90 transition`}
                     >
-                      <MessageCircle className="h-4 w-4" />
-                      AI 코치
+                      확인
                     </button>
-                  )}
-                </div>
-              </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-4">
+                    <div className={`rounded-xl p-4 ${isCorrect ? 'bg-emerald-50 border border-emerald-200' : 'bg-rose-50 border border-rose-200'}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        {isCorrect
+                          ? <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                          : <XCircle className="h-5 w-5 text-rose-600" />}
+                        <span className={`text-sm font-bold ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          {isCorrect ? '정답!' : '오답'}
+                        </span>
+                      </div>
+                      {!isCorrect && (
+                        <p className="text-sm text-rose-600">
+                          내 답: <span className="font-semibold">{userAnswer}</span> → 정답: <span className="font-semibold">{problem._answer}</span>
+                        </p>
+                      )}
+                    </div>
+                    {problem._comment && (
+                      <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
+                        <p className="text-xs font-bold text-blue-600 mb-1">해설</p>
+                        <p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{problem._comment}</p>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleNext}
+                        className="flex-1 flex items-center justify-center gap-1 rounded-xl bg-slate-800 text-white px-4 py-3 text-sm font-semibold hover:bg-slate-700 transition"
+                      >
+                        {currentIndex + 1 >= total ? '결과 보기' : '다음 문제'}
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                      {!isCorrect && (
+                        <button
+                          onClick={() => setChatOpen(true)}
+                          className="flex items-center gap-1 rounded-xl bg-violet-600 text-white px-4 py-3 text-sm font-semibold hover:bg-violet-500 transition"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          AI 코치
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
+
           </div>
         </div>
 
