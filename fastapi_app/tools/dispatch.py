@@ -73,7 +73,7 @@ async def dispatch_tool(tool_call, user_email: str, session, ui_actions: list) -
             new_answer = _normalize(args.get("expected_answer", ""))
             original_answer = _get_original_answer(session)
             if new_answer and original_answer and new_answer == original_answer:
-                return {"error": "유사 문제의 정답이 원래 문제와 동일합니다. 테이블명·조건·정답을 바꿔서 다시 만들어주세요."}
+                return {"error": "REJECTED: 유사 문제의 정답이 원래 문제와 완전히 동일합니다. 다른 SQL 키워드가 정답이 되도록 테이블 구조와 조건을 완전히 새로 설계해서 present_similar_problem을 다시 호출하세요. 예: OR→AND였다면 BETWEEN, LIKE, EXISTS 등 다른 키워드를 정답으로."}
             return handle_present_similar_problem(args, session, ui_actions)
         if name == "submit_evaluation":
             return handle_submit_evaluation(args, session, ui_actions)
