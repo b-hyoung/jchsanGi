@@ -392,7 +392,7 @@ function MobileChatOverlay({
 
           {genProblem && viewMode === 'generated' ? (
             <>
-              <h2 className="text-sm font-bold text-slate-900 mb-2 leading-relaxed">{genProblem.question_text}</h2>
+              <h2 className="text-base font-bold text-slate-900 mb-5 leading-relaxed">{genProblem.question_text}</h2>
               {genProblem.examples && <CodeBlock code={genProblem.examples} lang={lang} />}
               {!genSubmitted ? (
                 <div className="flex gap-2">
@@ -427,7 +427,7 @@ function MobileChatOverlay({
             </>
           ) : (
             <>
-              <h2 className="text-sm font-bold text-slate-900 mb-2 leading-relaxed">{problem.question_text}</h2>
+              <h2 className="text-base font-bold text-slate-900 mb-5 leading-relaxed">{problem.question_text}</h2>
               {problem.examples && <CodeBlock code={problem.examples} lang={lang} />}
               {checked && (
                 <div className="space-y-2">
@@ -904,18 +904,20 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
             ) : (
               /* ─── 원래 문제 모드 ─── */
               <>
-                <p className="text-xs font-medium text-slate-400 mb-1">
+                <p className="text-xs font-medium text-slate-400 mb-2">
                   {problem._sourceSessionId} · {problem.problem_number}번
                 </p>
 
-                <h2 className="text-base font-bold text-slate-900 mb-3 leading-relaxed">
+                <h2 className="text-base font-bold text-slate-900 mb-5 leading-relaxed">
                   {problem.question_text}
                 </h2>
                 {problem.examples && (
-                  <CodeBlock code={problem.examples} lang={lang} />
+                  <div className="mb-5">
+                    <CodeBlock code={problem.examples} lang={lang} />
+                  </div>
                 )}
                 {!checked ? (
-                  <div className="flex gap-2 mb-4">
+                  <div className="flex gap-2 mb-4 mt-2">
                     <input
                       ref={inputRef}
                       type="text"
