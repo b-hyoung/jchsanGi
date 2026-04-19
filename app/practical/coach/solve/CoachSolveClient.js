@@ -326,7 +326,8 @@ export default function CoachSolveClient({ lang, problems }) {
   const [genSubmitted, setGenSubmitted] = useState(false);
   const [genLoading, setGenLoading] = useState(false);
   const [genResult, setGenResult] = useState(null); // { correct, reasoning, correctAnswer }
-  const [slideDir, setSlideDir] = useState(''); // 'slide-left' | 'slide-right' | ''
+  const [slideDir, setSlideDir] = useState('');
+  const [viewMode, setViewMode] = useState('original'); // 'original' | 'generated'
   const inputRef = useRef(null);
   const chatEndRef = useRef(null);
 
@@ -379,6 +380,7 @@ export default function CoachSolveClient({ lang, problems }) {
     setGenAnswer('');
     setGenSubmitted(false);
     setGenResult(null);
+    setViewMode('original');
   }
 
   async function sendToAgent(message) {
@@ -487,18 +489,19 @@ export default function CoachSolveClient({ lang, problems }) {
       setGenAnswer('');
       setGenSubmitted(false);
       setGenResult(null);
+      setViewMode('generated');
       setSlideDir('');
     }, 200);
   }
 
-  function handleBackToOriginal() {
+  function switchToOriginal() {
     setSlideDir('slide-right');
-    setTimeout(() => {
-      setGenProblem(null);
-      setGenAnswer('');
-      setGenSubmitted(false);
-      setSlideDir('');
-    }, 200);
+    setTimeout(() => { setViewMode('original'); setSlideDir(''); }, 200);
+  }
+
+  function switchToGenerated() {
+    setSlideDir('slide-left');
+    setTimeout(() => { setViewMode('generated'); setSlideDir(''); }, 200);
   }
 
   function handleChatSend() {
@@ -588,23 +591,27 @@ export default function CoachSolveClient({ lang, problems }) {
         <div className={`flex-1 p-6 ${chatOpen ? 'hidden md:block' : ''}`}>
           <div className={`max-w-2xl mx-auto transition-all duration-200 ${slideDir === 'slide-left' ? 'opacity-0 -translate-x-8' : slideDir === 'slide-right' ? 'opacity-0 translate-x-8' : 'opacity-100 translate-x-0'}`}>
 
-            {genProblem ? (
+            {/* 원본/유사 탭 (유사 문제 있을 때만 표시) */}
+            {genProblem && (
+              <div className="flex gap-1 mb-4 p-1 bg-slate-100 rounded-xl">
+                <button
+                  onClick={switchToOriginal}
+                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${viewMode === 'original' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500 hover:bg-white/60'}`}
+                >
+                  원본 문제
+                </button>
+                <button
+                  onClick={switchToGenerated}
+                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${viewMode === 'generated' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:bg-white/60'}`}
+                >
+                  유사 문제
+                </button>
+              </div>
+            )}
+
+            {genProblem && viewMode === 'generated' ? (
               /* ─── 유사 문제 모드 ─── */
               <>
-                {/* 원본/유사 탭 전환 */}
-                <div className="flex gap-1 mb-4 p-1 bg-slate-100 rounded-xl">
-                  <button
-                    onClick={handleBackToOriginal}
-                    className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-white hover:text-slate-700 transition"
-                  >
-                    원본 문제
-                  </button>
-                  <button
-                    className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold bg-white text-emerald-700 shadow-sm"
-                  >
-                    유사 문제
-                  </button>
-                </div>
                 <h2 className="text-base font-bold text-slate-900 mb-3 leading-relaxed">
                   {genProblem.question_text}
                 </h2>
@@ -769,7 +776,7 @@ export default function CoachSolveClient({ lang, problems }) {
 
         {/* 오른쪽: AI 채팅 사이드 패널 (데스크탑) */}
         {chatOpen && (
-          <div className="hidden md:flex w-[360px] flex-col border-l border-slate-200 bg-slate-50">
+          <div className="hidden md:flex w-[360px] flex-col border-l border-slate-200 bg-slate-50 sticky top-[57px] h-[calc(100vh-57px)]">
             {/* 패널 헤더 */}
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
               <div className="flex items-center gap-2">
