@@ -34,7 +34,9 @@ export default async function CoachSolvePage({ searchParams: searchParamsPromise
   const wrongRows = await getUserWrongProblemsByCategory(email, category);
   const langRows = category === 'Code'
     ? wrongRows.filter((r) => r.subcategory === lang)
-    : wrongRows;
+    : category === 'SQL'
+      ? wrongRows.filter((r) => r.subcategory === 'QUERY')
+      : wrongRows;
 
   if (langRows.length === 0) {
     redirect(`/practical/coach/${category.toLowerCase()}`);
