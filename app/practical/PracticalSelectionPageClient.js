@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Book, ChevronRight, LoaderCircle, Shuffle } from 'lucide-react';
+import { ArrowLeft, Book, Brain, ChevronRight, LoaderCircle, Shuffle } from 'lucide-react';
 import { trackEvent } from '@/lib/analyticsClient';
 import { PRACTICAL_SESSIONS_BY_YEAR } from './_lib/practicalSessions';
 import UserQuickActions from '@/app/_components/UserQuickActions';
@@ -255,6 +255,8 @@ export default function PracticalSelectionPageClient({
             </div>
           </SectionShell>
 
+          <CoachAgentSection />
+
           <SectionShell eyebrow="연도별 기출">
             <div className="space-y-3">
               {PRACTICAL_SESSIONS_BY_YEAR.map((yearGroup) => (
@@ -308,5 +310,76 @@ export default function PracticalSelectionPageClient({
         </div>
       </div>
     </main>
+  );
+}
+
+function CoachAgentSection() {
+  const [enabled, setEnabled] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/user/topic-stats')
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json?.ok) { setEnabled(false); return; }
+        const total =
+          (json.stats?.SQL?.total || 0) +
+          (json.stats?.Code?._total?.total || 0) +
+          (json.stats?.이론?._total?.total || 0);
+        setEnabled(total > 0);
+      })
+      .catch(() => setEnabled(false));
+  }, []);
+
+  if (enabled === null) {
+    return (
+      <SectionShell eyebrow="AI 코치">
+        <div className="flex items-center gap-4 rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm animate-pulse dark:border-slate-800 dark:bg-slate-900">
+          <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800" />
+          <div className="space-y-2">
+            <div className="h-3 w-24 rounded bg-slate-100 dark:bg-slate-800" />
+            <div className="h-2 w-32 rounded bg-slate-100 dark:bg-slate-800" />
+          </div>
+        </div>
+      </SectionShell>
+    );
+  }
+
+  if (!enabled) {
+    return (
+      <SectionShell eyebrow="AI 코치">
+        <div
+          title="먼저 실기를 한 번 풀어보세요"
+          className="flex items-center gap-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-5 shadow-sm opacity-60 cursor-not-allowed dark:border-slate-800 dark:bg-slate-950/35"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+            <Brain className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">코치 에이전트</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">먼저 실기를 풀어보세요</p>
+          </div>
+        </div>
+      </SectionShell>
+    );
+  }
+
+  return (
+    <SectionShell eyebrow="AI 코치">
+      <Link
+        href="/practical/coach"
+        className="group flex items-center justify-between rounded-[1.25rem] border-2 border-violet-200 bg-gradient-to-r from-violet-50 to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-violet-900/70 dark:from-violet-950/30 dark:to-slate-900"
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-300">
+            <Brain className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-extrabold text-violet-700 dark:text-violet-200">코치 에이전트</p>
+            <p className="text-xs text-violet-500 dark:text-violet-400">약점 중심 AI 복습</p>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 text-violet-300 transition-transform group-hover:translate-x-0.5 dark:text-violet-500" />
+      </Link>
+    </SectionShell>
   );
 }
