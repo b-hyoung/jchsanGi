@@ -25,7 +25,8 @@
         "examples": "<처리조건>\n-customer 테이블에서 학년(grade) 속성을 중복없이 검색한다",
         "input_type": "textarea",
         "answer_format_hint": "예: SELECT ...;",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 4,
@@ -99,7 +100,8 @@
         "examples": "(1) 데이터베이스에 존재하는 자료의 구조 및 내용 그리고 이 자료들에 대한 논리적, 물리적 특성에 대한 정보들을 표현한다\n(2) 데이터베이스를 구성하는 가장 작은 논리적 단위이며 개체의 특성을 기술한다",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 1) 값 / 2) 값",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 13,
@@ -149,7 +151,8 @@
         "examples": "Unique Integrity\nDomain Integrity\nReferential Integrity\nEntity Integrity\n\nㄱ. 튜플의 모든 속성 값이 각 속성의 도메인에 속한 값만을 가져야 한다는 제약조건\nㄴ. 특정 속성의 값은 중복 없이 유일해야 한다는 제약 조건\nㄷ. 기본키는 NULL값을 가져서는 안되며 릴레이션 내에 오직 하나의 값만 존재해야 한다는 제약 조건\nㄹ. 외래키 제약 조건으로 개체의 참조 관계를 선언하는 제약 조건",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 1) 값 / 2) 값",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 19,
@@ -157,13 +160,15 @@
         "examples": "학번 | 이름 | 학과 | 학점 | 도시\n1 | 홍길동 | 간호 | 3.5 | 서울\n2 | 김길동 | 전기 | 4.0 | 경기\n3 | 상길동 | 기계 | 4.3 | 부산",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 항목별 답을 함께 입력",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 20,
         "question_text": "함수 종속이 아닌 다치 종속을 제거하면 만족하는 정규형이다",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       }
     ]
   }

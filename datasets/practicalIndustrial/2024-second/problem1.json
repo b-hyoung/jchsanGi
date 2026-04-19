@@ -16,7 +16,8 @@
         "question_text": "정규화 과정을 묻는 용어 쓰기",
         "examples": "데이터베이스 정규화 과정에서 테이블 R이 제1정규형이고, 기본키가 아닌 모든 속성이 기본키에 대하여 완전 함수적 종속을 만족하는 정규형은 무엇인지 쓰시오.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 3,
@@ -47,7 +48,8 @@
         "question_text": "다음 설명에 해당하는 용어를 쓰시오",
         "examples": "기본 테이블의 기본키를 구성하는 어떤 속성도 널(Null) 값이나 중복값을 가질 수 없다는 규정이다.\n관계 데이터 모델에서는 릴레이션에 포함되어 있는 튜플들을 유일하게 구별해주고 각 튜플에 쉽게 접근할 수 있도록 릴레이션마다 기본키를 정의하는데, 기본키를 구성하는 속성 전체나 일부가 널(Null) 값이 되면 튜플의 유일성을 판단할 수 없어 기본키의 본래 목적을 상실하게 된다. 이를 ( ) 무결성 제약조건이라고 한다.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 7,
@@ -88,7 +90,8 @@
         "examples": "학생(STUDENT) 테이블에 전기과 학생 50명, 전산과 학생 100명, 전자과 학생 50명일 때 SQL문 실행 결과로 표시되는 튜플 수를 쓰시오. (DEPT는 학과)\n\n1. SELECT DEPT FROM STUDENT;\n2. SELECT DISTINCT DEPT FROM STUDENT;\n3. SELECT COUNT(DISTINCT DEPT) FROM STUDENT WHERE DEPT='전산과';",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 1) 값 / 2) 값",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "query"
       },
       {
         "problem_number": 12,
@@ -96,14 +99,16 @@
         "examples": "<처리조건>\n- <사원> 테이블에 이름이 \"윤정희\", 부서가 \"영업부\", 주소가 \"마포구\"인 사원의 정보를 입력하시오.\n- <사원> 테이블에서 이름이 \"임선호\"인 사원의 부서를 \"기획부\"로 변경하시오.\n\n<SQL문>\n- INSERT (1) 사원 (이름, 부서, 주소) (2) ('윤정희', '영업부', '마포구');\n- UPDATE 사원 (3) 부서 = '기획부' WHERE 이름 = '임선호';",
         "input_type": "textarea",
         "answer_format_hint": "예: SQL문 전체를 입력하세요.",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "query"
       },
       {
         "problem_number": 13,
         "question_text": "처리조건에 부합하는 SQL문 빈칸 채우기",
         "examples": "<처리조건>\n- <회원> 테이블에서 성별이 \"여\"이면서 등급이 \"GOLD\"인 회원의 정보를 검색하시오.\n- <회원> 테이블에서 회원들의 구매내역을 검색하되, 가입년도를 기준으로 오름차순정렬하여 검색하시오.\n- <회원> 테이블에서 이름이 \"김\"으로 시작하지 않는 회원들을 검색하시오.\n\n<SQL문>\n- SELECT * FROM 회원 WHERE 성별='여' (1) 등급='GOLD';\n- SELECT * FROM 회원 ORDER BY 가입년도 (2);\n- SELECT * FROM 회원 WHERE 이름 (3) LIKE '김%';",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "query"
       },
       {
         "problem_number": 14,

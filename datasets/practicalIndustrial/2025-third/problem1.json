@@ -7,7 +7,8 @@
         "question_text": "데이터베이스의 특성으로 옳은 것을 모두 고르시오.",
         "examples": "ㄱ. 실시간 접근성\nㄴ. 계속적인 변화\nㄷ. 동시 공용\nㄹ. 주소기반 참조\nㅁ. 내용에 의한 참조",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 2,

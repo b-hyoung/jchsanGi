@@ -35,7 +35,7 @@ export default async function CoachSolvePage({ searchParams: searchParamsPromise
   const langRows = category === 'Code'
     ? wrongRows.filter((r) => r.subcategory === lang)
     : category === 'SQL'
-      ? wrongRows.filter((r) => r.subcategory === 'QUERY')
+      ? wrongRows.filter((r) => r.subcategory === 'query')
       : wrongRows;
 
   if (langRows.length === 0) {

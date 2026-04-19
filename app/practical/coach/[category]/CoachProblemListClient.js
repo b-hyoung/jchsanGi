@@ -91,7 +91,7 @@ export default function CoachProblemListClient({ category, slug, stats, rows }) 
   const filteredRows = category === 'Code' && langFilter !== '전체'
     ? rows.filter((r) => r.subcategory === langFilter)
     : category === 'SQL'
-      ? rows.filter((r) => r.subcategory === 'QUERY')
+      ? rows.filter((r) => r.subcategory === 'query')
       : rows;
 
   return (

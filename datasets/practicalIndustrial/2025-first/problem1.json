@@ -16,7 +16,8 @@
         "question_text": "데이터베이스에 대한 다음 설명에서 괄호에 공통으로 들어갈 알맞은 답을 쓰시오.",
         "examples": "-(  )은 응용 프로그램 내에 데이터베이스에서 사용하는 데이터를 정의하거나 질의하는 SQL 문장을 내포하여 프로그램이 실행될때 함께 실행됟록 호스트 프로그램 언어로 만든 프로그램에 삽입된 SQL 이다.\n-(  )실행문은 호스트 언어에서 실행문이 나타날 수 있는 곳이면 프로그램의 어느곳에나 사용할 수 있다.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 3,
@@ -24,7 +25,8 @@
         "examples": "<회원>\n이름\t주소\t성별\n최시연\t마포\t여\n윤정식\t서대문\t남\n이상희\t성북\t남\n김향기\t노원\t여\n\n① 차수(Degree):\n② 카디널리티(Cardinality):",
         "input_type": "multi_blank",
         "answer_format_hint": "예: ① 값 ② 값",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 4,
@@ -65,7 +67,8 @@
         "examples": "-( 1 ): 스키마, 도메인, 테이블, 뷰, 인덱스 등을 정의함\n-( 2 ): 테이블에 대한 정의를 변경함\n-( 3 ): 스키마, 도메인, 테이블 뷰, 인덱스 등을 삭제함",
         "input_type": "multi_blank",
         "answer_format_hint": "대문자로 입력하세요",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 9,
@@ -90,7 +93,8 @@
         "examples": "CREATE TABLE 사원\n\t(직원코드 NUMBER NOT NULL,\n\t성명 CHAR(10) NUQUE,\n\t직책 CHAR(10) ( 1 )(직책( 2 )('사원', '대리', '과장', '팀장')),\n\t연봉 NUMBER);\n\n<조건>\n- '직원코드' 속성은 NULL을 갖지 않는다.\n- '성명' 속성은 중복 값을 허용하지 않는다.\n- '직책' 속성에는 '사원', '대리', '과장', '팀장' 중 하나의 값만 저장할 수 있다.",
         "input_type": "multi_blank",
         "answer_format_hint": "대문자로 입력하세요",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "query"
       },
       {
         "problem_number": 12,
@@ -114,7 +118,8 @@
         "question_text": "데이터베이스의 무결성에 대한 다음 설명에서 괄호에 들어갈 알맞은 답을 쓰시오.",
         "examples": "무결성이란 데이터베이스에 저장된 데이터 값과 그것이 표현하는 현실 세계의 실제 값이 일치하는 정확성을 의미한다. 무결성 제약 조건은 데이터베이스에 들어 있는 데이터의 정확성을 보장하기 위해 부정확한 자료가 데이터베이스 내에 저장되는 것을 방지하기 위한 제약 조건을 말한다.\n\n<회원>\n이름\t주민번호\t\t\t주소\nkim\t\t800212-2*******\t서울\nchoi\t820911-1*******\t경기\nkang\t750815-1*******\t인천\n\n<결제>\n결제번호\t주문 상품\t회원\n1\trx-123\tchoi\n2\tdp-01\tkim\n3\tqv-433\tkang\n\n위의 두 테이블에서는 (결제) 테이블의 '회원' 속성이 (회원) 테이블의 '이름' 속성을 참조하는 외래키이므로 (      ) 무결성 제약 조건이 준수되어야 한다.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 15,

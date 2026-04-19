@@ -8,7 +8,8 @@
         "examples": "1. 둘 이상의 트랜잭션이 동시에 병행 실행되는 경우 어느 하나의 트랜잭션 실행 중에 다른 트랜잭션의 연산이 끼어들 수 없다\n2. 트랜잭션이 일단 완료되면 그 후에 어떤 형태로 시스템이 고장 나더라도 트랜잭션의 결과는 잃어버리지 않고 지속되어야 한다.",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 1) 값 / 2) 값",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 2,
@@ -21,7 +22,8 @@
           "DCL"
         ],
         "answer_format_hint": "예: DDL / DML / DCL 항목 나열",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "query"
       },
       {
         "problem_number": 3,
@@ -53,7 +55,8 @@
         "examples": "<처리조건>\n-학생 테이블에서 학년이 3학년 이상이 수강하는 과목을 검색한다\n-검색 결과 중복을 제거한다",
         "input_type": "textarea",
         "answer_format_hint": "예: SELECT ...;",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 7,
@@ -70,7 +73,8 @@
         "examples": "<보기>\nㄱ. 이행적 함수 종속 관계를 제거한다\nㄴ. 기본키에 속하지 않는 모든 속성이 기본키에 완전 함수 종속이 되도록 부분 함수 종속성을 제거한다.\nㄷ. 결정자가 후보키가 아닌 함수 종속성을 제거한다\n\n1) 제 2정규화 :\n2) 제 3정규화 :\n3) BCNF :",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 1) 값 / 2) 값",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 9,
@@ -162,7 +166,8 @@
         "problem_number": 19,
         "question_text": "SQL문에서 특정 속성의 값을 제한하기 위해 사용하는 문법으로 도메인이 가질 수 있는 값의 범위를 제약할 때 사용하는 제약조건을 쓰시오.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 20,

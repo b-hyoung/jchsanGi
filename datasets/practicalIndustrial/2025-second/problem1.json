@@ -7,15 +7,23 @@
         "question_text": "다음에서 데이터베이스의 특징을 모두 골라 기호 쓰시오",
         "examples": "ㄱ-실시간 접근성\tㄴ-계속적인 변화\tㄷ-동시 공용\nㄹ-주소 기반 참조\tㅁ-내용에 의한 참조",
         "input_type": "unordered_symbol_set",
-        "input_labels": ["ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ"],
-        "category": "SQL"
+        "input_labels": [
+          "ㄱ",
+          "ㄴ",
+          "ㄷ",
+          "ㄹ",
+          "ㅁ"
+        ],
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 2,
         "question_text": "다음에서 릴레이션의 특징을 모두 골라 기호 쓰시오",
         "examples": "ㄱ-릴레이션에서 튜플은 중복되지 않는다\tㄴ-릴레이션에서 튜플의 순서는 유의미하다\nㄷ-릴레이션에서 속성의 순서는 유의미하다\tㄹ-릴레이션에서 속성값은 원자 값을 쓸 수 없다\nㅁ-릴레이션에서 속성값은 중복될 수 없다",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 3,
@@ -86,7 +94,8 @@
         "question_text": "다음은 <성적> 테이블에서 점수가 80 이상 90 이하인 모든 튜플을 조회하는 두 가지 방법을 보여주는 <SQL문>이다. 괄호(1, 2)에 알맞은 답을 적어 <SQL문>을 완성하시오.",
         "examples": "<SQL 문>\n방법 1 - SELECT + FROM 성적 WHERE 점수 >= 80(  1  ) 점수 <= 90;\n방법 2 - SELECT + FROM 성적 WHERE 점수(  2  )80 AND 90;",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "query"
       },
       {
         "problem_number": 12,
@@ -109,7 +118,8 @@
         "question_text": "데이터베이스에 대한 다음 설명에서 괄호에 들어갈 알맞은 답을 쓰시오",
         "examples": "스키마는 데이터베이스의 구조와 제약 조건에 관한 전반적인 명세를 기술한 것이다.\n-(  1  )스키마: 사용자나 응용 프로그래머가 각 개인의 입장에서 필요로 하는 데이터베이스의 논리적 구조를 정의한 것이다.\n-(  2  )스키마: 데이터베이스의 전체적인 논리적 구조이며, 모든 응용 프로그램이나 사용자들이 필요로 하는 데이터를 종합한 조직 전체의 데이터베이스로, 하나만 존재한다.\n-(  3  )스키마: 물리적 저장장치의 입장에서 본 데이터베이스 구조로, 실제로 저장될 레코드의 형식, 저장 데이터 항목의 표현 방법, 내부 레코드의 물리적 순서 등을 나타낸다",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 15,
@@ -148,7 +158,8 @@
         "question_text": "키(Key)에 대한 다음 설명에서 괄호에 들어갈 알맞은 키의 종류를 쓰시오",
         "examples": "다른 릴레이션의 기본키를 참조하는 속성 또는 속성들의 집합을 의미하는 키로, 참조되는 릴레이션의 기본키와 대응되어 릴레이션 간에 참조 관계를 표현하는데 중요한 도구이다.\n\n(학생): 학번, 주민등록번호, 성명\n(수강): 학번, 과목명\n\n(수강) 릴레이션의 학번은 (학생) 릴레이션의 기본키인 학번을 참조하고 있으므로 (수강) 릴레이션에서 학번은 (      )가 된다.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 20,

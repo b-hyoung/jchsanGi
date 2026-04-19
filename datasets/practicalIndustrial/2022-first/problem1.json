@@ -97,14 +97,16 @@
         "question_text": "다음 설명에 해당하는 용어를 영문 약어로 쓰시오.",
         "examples": "물리적으로 데이터 웨어하우스를 구축하지 않아도 실제 구축한 것과 같은 가상 시스템으로, 비교적 낮은 비용으로 빠른 시간 안에 데이터를 분석할 수 있고, 데이터의 추출 및 로딩 과정이 생략되어 실제 데이터 웨어하우스를 구축하는 것에 비해 노력과 시간이 절감된다. 하지만 온라인 트랜잭션 처리(OLTP) 작업이 대량으로 수행되거나 일정 시간 대에 집중되는 경우에는 시스템의 성능이 저하되거나 신뢰성 및 안정성에 문제가 발생할 수 있다.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 13,
         "question_text": "다음은 키(Key)에 대한 설명이다. 괄호에 공통으로 들어갈 알맞은 용어를 <보기>에서 찾아 쓰시오.",
         "examples": "(    )는 다른 릴레이션의 기본키를 참조하는 속성 또는 속성들의 집합을 의미한다. 한 릴레이션에 속한 속성 A와 참조 릴레이션의 기본키인 B가 동일한 도메인 상에서 정의되었을 때의 속성 A를 (    )라고 한다. (    )로 지정되면 참조 릴레이션의 기본키에 없는 값을 입력할 수 없다.\n\n<보기>\nPrimary Key\nCandidate Key\nAlternate Key\nSuper Key\nForeign Key\nMain Key",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 14,
@@ -120,13 +122,15 @@
         "examples": "SELECT 이름 FROM 인사팀 WHERE 나이 BETWEEN 35 AND 49;\n답 : ( ① ) 명 이상, ( ② )명 이하",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 1, 2",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "query"
       },
       {
         "problem_number": 16,
         "question_text": "데이터베이스를 구축하고 릴레이션을 설계하는 과정에서 특정 릴레이션의 속성이 다중 값으로 구성되어 있어 이를 원자값으로 변환하는 과정을 수행하였다. 이와 같은 변환 과정을 가리키는 정규화를 쓰시오.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 17,
@@ -142,7 +146,8 @@
         "examples": "SELECT sub_Code As 과목코드, (가) (mid) AS 중간평균\nFROM Students\nGROUP BY sub_Code\nHAVING (나) ( * ) >=5;",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 항목별 답을 함께 입력",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "query"
       },
       {
         "problem_number": 19,

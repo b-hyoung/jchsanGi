@@ -8,14 +8,16 @@
         "examples": "<회원>\nID | 이름 | 거주지\n1001 | 김 | 마포구\n1002 | 나 | 관악구\n1003 | 박 | 서대문구\n1004 | 이 | 광진구\n\n디그리 :\n카디널리티 :",
         "input_type": "multi_blank",
         "answer_format_hint": "예: 항목별 답을 함께 입력",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 2,
         "question_text": "트랜잭션의 특성 중 괄호에 들어가기에 적합한 데이터베이스의 기능을 그림에서 한 가지만 찾아 쓰시오.",
         "examples": "트랜잭션의 특성: 원자성, 일관성, 고립성, 영속성\n데이터베이스의 기능: 무결성 제약 조건, 동시성 제어, 회복\n\n원자성 : (1)\n일관성 : 무결성 제약 조건, 동시성 제어\n고립성 : (2)\n영속성 : 회복\n\n(1) :\n(2) :",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 3,
@@ -86,7 +88,8 @@
         "question_text": "데이터베이스의 무결성에 대한 다음 설명에서 괄호에 들어갈 알맞은 답을 쓰시오.",
         "examples": "무결성은 데이터베이스에 저장된 데이터 값과 그것이 표현하는 현실 세계의 실제값이 일치하는 정확성을 의미하며, 무결성 제약 조건은 데이터베이스에 들어 있는 데이터의 정확성을 보장하기 위해 부정확한 자료가 데이터베이스 내에 저장되는 것을 방지하기 위한 제약 조건을 말한다\n(    )은 외래키 값은 Null이거나 참조 릴레이션의 기본키 값과 동일해야 한다는 제약 조건이다. 즉 릴레이션은 참조할 수 없는 외래키 값을 가질 수 없는 규정이다.",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 12,
@@ -144,14 +147,16 @@
         "examples": "SQL의 하나인 DDL은 DB 구조, 데이터 형식, 접근 방식 등 DB를 구축하거나 수정할 목적으로 사용하는 언어로, 다음 3가지 명령어를 사용하여 표현한다.\n( 가 ) : 스키마, 도메인, 테이블 등의 개체를 정의하는 데 사용하는 명령어\n( 나 ) : 개체에 대한 정의를 변경하는 데 사용하는 명령어\n( 다 ) : 스키마, 도메인, 테이블 등의 개체를 삭제하는 데 사용하는 명령어",
         "input_type": "multi_blank",
         "answer_format_hint": "예: (가) 값 / (나) 값",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 19,
         "question_text": "데이터베이스에 대한 다음 설명에서 괄호에 공통으로 들어갈 알맞은 답을 쓰시오.",
         "examples": "(    )는 사용자에게 접근이 허용된 자료만을 제한적으로 보여주기 위해 하나 이상의 기본 테이블로부터 유도된 가상의 테이블이다.\n(    )는 저장장치 내에 물리적으로 존재하지 않지만, 사용자에게는 있는 것처럼 간주된다.\n(    )를 통해서만 데이터에 접근하게 함으로써 (    )에 나타나지 않는 데이터를 안전하게 보호할 수 있다",
         "input_type": "single",
-        "category": "SQL"
+        "category": "SQL",
+        "subcategory": "theory"
       },
       {
         "problem_number": 20,
