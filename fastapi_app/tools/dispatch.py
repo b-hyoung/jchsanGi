@@ -18,6 +18,25 @@ from .output_tools import handle_present_similar_problem, handle_submit_evaluati
 logger = logging.getLogger(__name__)
 
 
+def _normalize(text: str) -> str:
+    """정답 비교용 정규화: 소문자·공백·구두점 제거."""
+    import re
+    return re.sub(r'[\s,/|().:：\-]+', '', str(text or '')).lower()
+
+
+def _get_original_answer(session) -> str:
+    """세션의 시스템 프롬프트 이전 get_question_detail 결과에서 원래 정답 추출."""
+    for msg in session.messages:
+        if isinstance(msg, dict) and msg.get("role") == "tool":
+            try:
+                content = json.loads(msg.get("content", "{}"))
+                if "answer" in content:
+                    return _normalize(content["answer"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+    return ""
+
+
 async def dispatch_tool(tool_call, user_email: str, session, ui_actions: list) -> dict[str, Any]:
     name = tool_call.function.name
     raw_args = tool_call.function.arguments
@@ -50,6 +69,11 @@ async def dispatch_tool(tool_call, user_email: str, session, ui_actions: list) -
                 category=args.get("category"),
             )
         if name == "present_similar_problem":
+            # 정답 중복 거부: 원래 문제 정답과 유사 문제 정답이 같으면 재생성 요청
+            new_answer = _normalize(args.get("expected_answer", ""))
+            original_answer = _get_original_answer(session)
+            if new_answer and original_answer and new_answer == original_answer:
+                return {"error": "유사 문제의 정답이 원래 문제와 동일합니다. 테이블명·조건·정답을 바꿔서 다시 만들어주세요."}
             return handle_present_similar_problem(args, session, ui_actions)
         if name == "submit_evaluation":
             return handle_submit_evaluation(args, session, ui_actions)

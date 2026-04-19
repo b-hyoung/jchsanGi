@@ -405,18 +405,15 @@ function MobileChatOverlay({
               <h2 className="text-base font-bold text-slate-900 mb-5 leading-relaxed">{genProblem.question_text}</h2>
               {genProblem.examples && <CodeBlock code={genProblem.examples} lang={lang || category} />}
               {!genSubmitted ? (
-                <div className="flex gap-2">
-                  <input
-                    type="text" value={genAnswer} onChange={(e) => onGenAnswer(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onGenSubmit(); } }}
-                    placeholder="답 입력..."
-                    className="flex-1 rounded-xl border border-emerald-200 bg-white text-slate-900 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                  />
-                  <button onClick={onGenSubmit} disabled={genLoading}
-                    className="bg-emerald-600 text-white rounded-xl px-5 py-2.5 text-sm font-semibold disabled:opacity-50">
-                    {genLoading ? '...' : '제출'}
-                  </button>
-                </div>
+                <AnswerInput
+                  problem={genProblem}
+                  answer={genAnswer}
+                  correctAnswer=""
+                  onAnswer={onGenAnswer}
+                  onSubmit={() => onGenSubmit()}
+                  disabled={genLoading}
+                  accentColor="emerald"
+                />
               ) : genResult ? (
                 <div className="space-y-2">
                   <div className={`rounded-xl p-3 text-sm ${genResult.correct ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
@@ -814,7 +811,10 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
   }
 
   async function handleGenSubmit() {
-    if (!genAnswer.trim() || genLoading || !genProblem) return;
+    const answerStr = Array.isArray(genAnswer)
+      ? joinMultiBlankAnswer(getMultiBlankMeta(genProblem, '')?.labels || [], genAnswer)
+      : String(genAnswer || '');
+    if (!answerStr.trim() || genLoading || !genProblem) return;
     setGenLoading(true);
     setGenSubmitted(true);
     try {
@@ -825,7 +825,7 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
           source_session_id: problem._sourceSessionId,
           problem_number: problem.problem_number,
           problem_id: genProblem.problem_id,
-          user_answer: genAnswer.trim(),
+          user_answer: answerStr.trim(),
         }),
       });
       const data = await resp.json();
@@ -999,25 +999,15 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
                   <CodeBlock code={genProblem.examples} lang={lang || category} />
                 )}
                 {!genSubmitted ? (
-                  /* 답 입력 */
-                  <div className="flex gap-2 mb-4">
-                    <input
-                      type="text"
-                      value={genAnswer}
-                      onChange={(e) => setGenAnswer(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleGenSubmit(); } }}
-                      placeholder="답 입력..."
-                      className="flex-1 rounded-xl border border-emerald-200 bg-white text-slate-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                      autoFocus
-                    />
-                    <button
-                      onClick={handleGenSubmit}
-                      disabled={genLoading}
-                      className="bg-emerald-600 text-white rounded-xl px-6 py-3 text-sm font-semibold hover:bg-emerald-500 transition disabled:opacity-50"
-                    >
-                      {genLoading ? '채점 중...' : '제출'}
-                    </button>
-                  </div>
+                  <AnswerInput
+                    problem={genProblem}
+                    answer={genAnswer}
+                    correctAnswer=""
+                    onAnswer={setGenAnswer}
+                    onSubmit={() => handleGenSubmit()}
+                    disabled={genLoading}
+                    accentColor="emerald"
+                  />
                 ) : genResult ? (
                   /* diff 비교 UI */
                   <div className="mb-4 space-y-3">
