@@ -1143,7 +1143,7 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
                         AI 코치에게 물어보기
                       </button>
                       <button
-                        onClick={() => { setChatOpen(true); sendToAgent('비슷한 유형으로 문제 하나 내줘.'); }}
+                        onClick={() => { setChatOpen(true); sendToAgent('비슷한 유형이지만 테이블명, 조건, 정답이 모두 다른 새로운 문제를 하나 내줘. 원래 문제를 복사하지 마.'); }}
                         className="w-full flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white px-4 py-3 text-sm font-semibold hover:bg-emerald-500 transition"
                       >
                         유사 문제 바로 풀기
@@ -1189,7 +1189,7 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
                 </div>
               )}
               {chatMessages.map((msg, i) => (
-                <ChatBubble key={i} msg={msg} onStartProblem={handleStartGenProblem} onRequestSimilar={() => sendToAgent('이해했어. 비슷한 유형으로 문제 하나 내줘.')} />
+                <ChatBubble key={i} msg={msg} onStartProblem={handleStartGenProblem} onRequestSimilar={() => sendToAgent('이해했어. 비슷한 유형이지만 테이블명, 조건, 정답이 모두 다른 새로운 문제를 하나 내줘. 원래 문제를 복사하지 마.')} />
               ))}
               {chatLoading && (
                 <div className="bg-white border border-slate-200 text-slate-400 rounded-xl px-3 py-2 text-sm mr-8 animate-pulse">
@@ -1255,7 +1255,7 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
           onChatInput={setChatInput}
           onChatSend={handleChatSend}
           onStartProblem={handleStartGenProblem}
-          onRequestSimilar={() => sendToAgent('이해했어. 비슷한 유형으로 문제 하나 내줘.')}
+          onRequestSimilar={() => sendToAgent('이해했어. 비슷한 유형이지만 테이블명, 조건, 정답이 모두 다른 새로운 문제를 하나 내줘. 원래 문제를 복사하지 마.')}
           onSwitchOriginal={switchToOriginal}
           onSwitchGenerated={switchToGenerated}
           onGenAnswer={setGenAnswer}
