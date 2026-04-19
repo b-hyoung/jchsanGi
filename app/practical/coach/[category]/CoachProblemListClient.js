@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 
@@ -26,22 +27,41 @@ function prettySession(id) {
   return SESSION_LABELS[id] || id;
 }
 
-function SubStatsBadges({ category, stats }) {
-  if (category === 'SQL') return null;
-  if (category === 'Code') {
-    const c = stats?.Code || {};
-    return (
-      <div className="flex flex-wrap gap-2 text-xs">
-        <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">Java {pct(c.Java?.accuracy)}</span>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">C {pct(c.C?.accuracy)}</span>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">Python {pct(c.Python?.accuracy)}</span>
-      </div>
-    );
-  }
-  return null;
+const CODE_LANGUAGES = ['전체', 'C', 'Java', 'Python'];
+
+function LanguageFilterTabs({ active, onChange, stats }) {
+  const codeStats = stats?.Code || {};
+  return (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {CODE_LANGUAGES.map((lang) => {
+        const isActive = active === lang;
+        const stat = lang === '전체' ? codeStats._total : codeStats[lang];
+        const acc = stat?.total > 0 ? ` ${pct(stat.accuracy)}` : '';
+        return (
+          <button
+            key={lang}
+            onClick={() => onChange(lang)}
+            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+              isActive
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            {lang}{acc}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function CoachProblemListClient({ category, slug, stats, rows }) {
+  const [langFilter, setLangFilter] = useState('전체');
+
+  const filteredRows = category === 'Code' && langFilter !== '전체'
+    ? rows.filter((r) => r.subcategory === langFilter)
+    : rows;
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-slate-50 px-4 py-10">
       <div className="mx-auto max-w-2xl">
@@ -54,19 +74,24 @@ export default function CoachProblemListClient({ category, slug, stats, rows }) 
         </Link>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="mb-2 text-xl font-extrabold text-slate-900">{category} 복습</h1>
-          <div className="mb-5">
-            <SubStatsBadges category={category} stats={stats} />
-          </div>
+          <h1 className="mb-4 text-xl font-extrabold text-slate-900">{category} 복습</h1>
 
-          {rows.length === 0 ? (
+          {category === 'Code' && (
+            <LanguageFilterTabs active={langFilter} onChange={setLangFilter} stats={stats} />
+          )}
+
+          {filteredRows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-xl bg-slate-50 py-10 text-center">
               <AlertCircle className="h-8 w-8 text-slate-300" />
-              <p className="text-sm font-semibold text-slate-400">이 카테고리에서 틀린 문제가 없어요</p>
+              <p className="text-sm font-semibold text-slate-400">
+                {category === 'Code' && langFilter !== '전체'
+                  ? `${langFilter}에서 틀린 문제가 없어요`
+                  : '이 카테고리에서 틀린 문제가 없어요'}
+              </p>
             </div>
           ) : (
             <ul className="space-y-2">
-              {rows.map((r) => (
+              {filteredRows.map((r) => (
                 <li key={`${r.source_session_id}:${r.problem_number}`}>
                   <Link
                     href={`/practical/${datasetIdToRouteId(r.source_session_id)}?p=${r.problem_number}&from=coach`}
