@@ -929,13 +929,22 @@ export default function CoachSolveClient({ lang, problems }) {
                           AI 코치에게 물어보기
                         </button>
                       )}
-                      <button
-                        onClick={handleNext}
-                        className="w-full flex items-center justify-center gap-1 rounded-xl bg-slate-800 text-white px-4 py-3 text-sm font-semibold hover:bg-slate-700 transition"
+                      {currentIndex + 1 < total && (
+                        <button
+                          onClick={handleNext}
+                          className="w-full flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white text-slate-700 px-4 py-3 text-sm font-semibold hover:bg-slate-50 transition"
+                        >
+                          다른 문제 풀기
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      )}
+                      <Link
+                        href="/practical/coach/code"
+                        className="w-full flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white text-slate-500 px-4 py-2.5 text-xs font-medium hover:bg-slate-50 transition"
                       >
-                        {currentIndex + 1 >= total ? '결과 보기' : '다음 문제'}
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                        목록으로 돌아가기
+                      </Link>
                     </div>
                   </div>
                 )}
