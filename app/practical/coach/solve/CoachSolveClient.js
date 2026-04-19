@@ -470,10 +470,11 @@ function MobileChatOverlay({
                 type="text" value={chatInput}
                 onChange={(e) => onChatInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onChatSend(); } }}
-                placeholder="질문하기..."
-                className="flex-1 rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                placeholder={chatLoading ? '답변 생성 중...' : '질문하기...'}
+                disabled={chatLoading}
+                className="flex-1 rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 disabled:bg-slate-50 disabled:text-slate-400"
               />
-              <button onClick={onChatSend} className="rounded-lg bg-violet-600 text-white p-2 hover:bg-violet-500 transition">
+              <button onClick={onChatSend} disabled={chatLoading} className="rounded-lg bg-violet-600 text-white p-2 hover:bg-violet-500 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 <Send className="h-4 w-4" />
               </button>
             </div>
@@ -1019,12 +1020,14 @@ export default function CoachSolveClient({ lang, problems }) {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleChatSend(); } }}
-                  placeholder="질문하기..."
-                  className="flex-1 rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  placeholder={chatLoading ? '답변 생성 중...' : '질문하기...'}
+                  disabled={chatLoading}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 disabled:bg-slate-50 disabled:text-slate-400"
                 />
                 <button
                   onClick={handleChatSend}
-                  className="rounded-lg bg-violet-600 text-white p-2 hover:bg-violet-500 transition"
+                  disabled={chatLoading}
+                  className="rounded-lg bg-violet-600 text-white p-2 hover:bg-violet-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="h-4 w-4" />
                 </button>
