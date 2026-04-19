@@ -125,67 +125,118 @@ function CodeBlock({ code, lang }) {
   );
 }
 
-// 마크다운 렌더링 (코드블럭, 헤더, 인라인코드, 볼드, 줄바꿈)
+// 인라인 마크다운: `code`, **bold**
+function renderInline(text) {
+  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+  return tokens.map((tok, i) => {
+    if (tok.startsWith('`') && tok.endsWith('`')) {
+      return <code key={i} className="bg-slate-800/90 text-emerald-300 px-1.5 py-0.5 rounded text-[11px] font-mono">{tok.slice(1, -1)}</code>;
+    }
+    if (tok.startsWith('**') && tok.endsWith('**')) {
+      return <strong key={i} className="font-bold text-slate-800">{tok.slice(2, -2)}</strong>;
+    }
+    return tok;
+  });
+}
+
+// 마크다운 렌더링
 function renderMarkdown(text) {
   if (!text) return null;
 
   // 1. 코드블럭 분리
   const parts = text.split(/(```[\s\S]*?```)/g);
 
-  return parts.map((part, i) => {
-    // 코드블럭
-    const codeMatch = part.match(/^```(\w*)\n?([\s\S]*?)```$/);
-    if (codeMatch) {
-      return (
-        <pre key={i} className="bg-slate-900 text-slate-200 rounded-lg p-3 text-xs font-mono my-2 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-          {codeMatch[2].trim()}
-        </pre>
-      );
-    }
+  return (
+    <div className="space-y-2">
+      {parts.map((part, i) => {
+        // 코드블럭
+        const codeMatch = part.match(/^```(\w*)\n?([\s\S]*?)```$/);
+        if (codeMatch) {
+          return (
+            <pre key={i} className="bg-slate-900 text-slate-200 rounded-lg p-3 text-[12px] font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed">
+              {codeMatch[2].trim()}
+            </pre>
+          );
+        }
 
-    // 2. 줄 단위로 처리 (헤더, 일반 텍스트)
-    const lines = part.split('\n');
-    return (
-      <span key={i}>
-        {lines.map((line, li) => {
-          const trimmed = line.trimStart();
+        // 2. 문단 단위로 분리 (빈 줄 기준)
+        const paragraphs = part.split(/\n\n+/);
+        return (
+          <div key={i} className="space-y-2">
+            {paragraphs.map((para, pi) => {
+              const lines = para.split('\n');
+              // 전체가 리스트인지 확인
+              const isAllList = lines.every((l) => /^\s*([-•]\s|\d+\.\s)/.test(l) || !l.trim());
 
-          // 헤더
-          if (trimmed.startsWith('#### ')) {
-            return <p key={li} className="text-xs font-bold text-slate-500 mt-3 mb-1">{renderInline(trimmed.slice(5))}</p>;
-          }
-          if (trimmed.startsWith('### ')) {
-            return <p key={li} className="text-sm font-bold text-slate-700 mt-3 mb-1">{renderInline(trimmed.slice(4))}</p>;
-          }
-          if (trimmed.startsWith('## ')) {
-            return <p key={li} className="text-base font-bold text-slate-800 mt-3 mb-1">{renderInline(trimmed.slice(3))}</p>;
-          }
+              if (isAllList && lines.some((l) => l.trim())) {
+                return (
+                  <ul key={pi} className="space-y-1.5 pl-1">
+                    {lines.filter((l) => l.trim()).map((line, li) => {
+                      const content = line.replace(/^\s*([-•]\s|\d+\.\s)/, '');
+                      const num = line.match(/^\s*(\d+)\./)?.[1];
+                      return (
+                        <li key={li} className="flex gap-2 text-[13px] leading-relaxed">
+                          <span className="text-slate-400 font-semibold shrink-0 w-4 text-right">
+                            {num ? `${num}.` : '•'}
+                          </span>
+                          <span>{renderInline(content)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              }
 
-          // 빈 줄
-          if (!trimmed) {
-            return <br key={li} />;
-          }
+              return (
+                <div key={pi}>
+                  {lines.map((line, li) => {
+                    const trimmed = line.trimStart();
 
-          // 일반 텍스트
-          return <span key={li}>{renderInline(line)}{li < lines.length - 1 ? '\n' : ''}</span>;
-        })}
-      </span>
-    );
-  });
-}
+                    // 헤더
+                    if (trimmed.startsWith('#### ')) {
+                      return <p key={li} className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mt-2 mb-0.5">{renderInline(trimmed.slice(5))}</p>;
+                    }
+                    if (trimmed.startsWith('### ')) {
+                      return <p key={li} className="text-[13px] font-bold text-slate-700 mt-2 mb-0.5">{renderInline(trimmed.slice(4))}</p>;
+                    }
+                    if (trimmed.startsWith('## ')) {
+                      return <p key={li} className="text-sm font-bold text-slate-800 mt-2 mb-0.5">{renderInline(trimmed.slice(3))}</p>;
+                    }
 
-// 인라인 마크다운: `code`, **bold**
-function renderInline(text) {
-  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
-  return tokens.map((tok, i) => {
-    if (tok.startsWith('`') && tok.endsWith('`')) {
-      return <code key={i} className="bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded text-xs font-mono">{tok.slice(1, -1)}</code>;
-    }
-    if (tok.startsWith('**') && tok.endsWith('**')) {
-      return <strong key={i}>{tok.slice(2, -2)}</strong>;
-    }
-    return tok;
-  });
+                    // 리스트 아이템 (단독)
+                    const listMatch = trimmed.match(/^(\d+)\.\s(.+)/);
+                    if (listMatch) {
+                      return (
+                        <div key={li} className="flex gap-2 text-[13px] leading-relaxed mt-1">
+                          <span className="text-slate-400 font-semibold shrink-0 w-4 text-right">{listMatch[1]}.</span>
+                          <span>{renderInline(listMatch[2])}</span>
+                        </div>
+                      );
+                    }
+                    const bulletMatch = trimmed.match(/^[-•]\s(.+)/);
+                    if (bulletMatch) {
+                      return (
+                        <div key={li} className="flex gap-2 text-[13px] leading-relaxed mt-1">
+                          <span className="text-slate-400 shrink-0">•</span>
+                          <span>{renderInline(bulletMatch[1])}</span>
+                        </div>
+                      );
+                    }
+
+                    // 빈 줄
+                    if (!trimmed) return null;
+
+                    // 일반 텍스트
+                    return <p key={li} className="text-[13px] leading-relaxed text-slate-600">{renderInline(line)}</p>;
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function ChatBubble({ msg, onStartProblem, onRequestSimilar }) {
@@ -251,7 +302,7 @@ function ChatBubble({ msg, onStartProblem, onRequestSimilar }) {
   }
   // 일반 AI 응답 (마크다운 지원)
   return (
-    <div className="bg-white border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-sm mr-8 leading-relaxed">
+    <div className="bg-white border border-slate-200 text-slate-700 rounded-xl px-4 py-3 mr-4 leading-relaxed">
       {renderMarkdown(msg.content)}
     </div>
   );
