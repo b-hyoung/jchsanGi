@@ -341,7 +341,7 @@ export default function CoachSolveClient({ lang, problems }) {
 
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+  }, [chatMessages, chatLoading]);
 
   // AI 코치 열릴 때 해설만 먼저 요청
   useEffect(() => {
