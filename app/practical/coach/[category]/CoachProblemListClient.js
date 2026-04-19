@@ -121,6 +121,16 @@ export default function CoachProblemListClient({ category, slug, stats, rows }) 
             </>
           )}
 
+          {category === 'SQL' && filteredRows.length > 0 && (
+            <Link
+              href="/practical/coach/solve?category=SQL"
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 text-white px-4 py-3 text-sm font-semibold shadow-sm hover:opacity-90 transition"
+            >
+              <Play className="h-4 w-4" />
+              SQL 연속 풀기 ({filteredRows.length}문제)
+            </Link>
+          )}
+
           {filteredRows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-xl bg-slate-50 py-10 text-center">
               <AlertCircle className="h-8 w-8 text-slate-300" />
@@ -135,7 +145,10 @@ export default function CoachProblemListClient({ category, slug, stats, rows }) 
               {filteredRows.map((r) => (
                 <li key={`${r.source_session_id}:${r.problem_number}`}>
                   <Link
-                    href={`/practical/coach/solve?lang=${r.subcategory || 'C'}&sid=${r.source_session_id}&p=${r.problem_number}`}
+                    href={category === 'SQL'
+                      ? `/practical/coach/solve?category=SQL&sid=${r.source_session_id}&p=${r.problem_number}`
+                      : `/practical/coach/solve?lang=${r.subcategory || 'C'}&sid=${r.source_session_id}&p=${r.problem_number}`
+                    }
                     className={`group flex items-center justify-between rounded-xl border border-slate-200/80 border-l-4 ${getLangBorder(r.subcategory, langFilter)} bg-white px-4 py-3 shadow-sm ${getLangHover(r.subcategory, langFilter)} hover:shadow-md transition`}
                   >
                     <div className="flex items-center gap-3">

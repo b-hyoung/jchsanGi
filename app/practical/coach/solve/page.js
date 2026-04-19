@@ -21,19 +21,23 @@ export default async function CoachSolvePage({ searchParams: searchParamsPromise
   if (!session?.user?.email) redirect('/');
   const email = String(session.user.email).trim().toLowerCase();
 
-  const lang = searchParams?.lang; // C, Java, Python
-  if (!lang || !['C', 'Java', 'Python'].includes(lang)) notFound();
+  const lang = searchParams?.lang || null; // C, Java, Python (Code 전용)
+  const category = searchParams?.category || (lang ? 'Code' : null); // SQL or Code
+  if (!category || !['SQL', 'Code'].includes(category)) notFound();
+  if (category === 'Code' && (!lang || !['C', 'Java', 'Python'].includes(lang))) notFound();
 
   // 특정 문제로 진입한 경우
-  const targetSid = searchParams?.sid || null;   // dataset id (e.g. 2024-first)
+  const targetSid = searchParams?.sid || null;
   const targetP = searchParams?.p ? Number(searchParams.p) : null;
 
-  // 해당 언어로 틀린 Code 문제 목록 가져오기
-  const wrongRows = await getUserWrongProblemsByCategory(email, 'Code');
-  const langRows = wrongRows.filter((r) => r.subcategory === lang);
+  // 해당 카테고리 틀린 문제 목록
+  const wrongRows = await getUserWrongProblemsByCategory(email, category);
+  const langRows = category === 'Code'
+    ? wrongRows.filter((r) => r.subcategory === lang)
+    : wrongRows;
 
   if (langRows.length === 0) {
-    redirect(`/practical/coach/code`);
+    redirect(`/practical/coach/${category.toLowerCase()}`);
   }
 
   // 특정 문제가 지정된 경우 해당 문제를 맨 앞으로
@@ -76,12 +80,13 @@ export default async function CoachSolvePage({ searchParams: searchParamsPromise
   }
 
   if (problemsWithData.length === 0) {
-    redirect(`/practical/coach/code`);
+    redirect(`/practical/coach/${category.toLowerCase()}`);
   }
 
   return (
     <CoachSolveClient
       lang={lang}
+      category={category}
       problems={problemsWithData}
     />
   );

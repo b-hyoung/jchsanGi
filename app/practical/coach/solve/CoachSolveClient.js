@@ -494,7 +494,7 @@ function MobileChatOverlay({
   );
 }
 
-export default function CoachSolveClient({ lang, problems }) {
+export default function CoachSolveClient({ lang, category = 'Code', problems }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
   const [checked, setChecked] = useState(false);
@@ -754,7 +754,7 @@ export default function CoachSolveClient({ lang, problems }) {
               ))}
             </div>
             <Link
-              href="/practical/coach/code"
+              href={`/practical/coach/${category.toLowerCase()}`}
               className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 transition"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -772,7 +772,7 @@ export default function CoachSolveClient({ lang, problems }) {
       <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur px-4 py-3">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link
-            href="/practical/coach/code"
+            href={`/practical/coach/${category.toLowerCase()}`}
             className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-700"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
@@ -979,7 +979,7 @@ export default function CoachSolveClient({ lang, problems }) {
                         유사 문제 바로 풀기
                       </button>
                       <Link
-                        href="/practical/coach/code"
+                        href={`/practical/coach/${category.toLowerCase()}`}
                         className="w-full flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white text-slate-700 px-4 py-3 text-sm font-semibold hover:bg-slate-50 transition"
                       >
                         다른 문제 풀기
