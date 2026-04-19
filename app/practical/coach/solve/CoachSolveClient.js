@@ -1140,11 +1140,11 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
         )}
       </div>
 
-      {/* 모바일: 우하단 플로팅 AI 버튼 — 오답 시에만, 버튼 아래로 겹치지 않게 */}
+      {/* 우하단 플로팅 AI 버튼 */}
       {!chatOpen && checked && (
         <button
           onClick={() => setChatOpen(true)}
-          className="md:hidden fixed bottom-20 right-4 z-30 flex items-center gap-2 rounded-full bg-violet-600 text-white pl-4 pr-5 py-3 shadow-lg hover:bg-violet-500 transition active:scale-95"
+          className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-violet-600 text-white pl-4 pr-5 py-3 shadow-lg hover:bg-violet-500 transition active:scale-95"
         >
           <MessageCircle className="h-5 w-5" />
           <span className="text-sm font-semibold">AI 코치</span>
