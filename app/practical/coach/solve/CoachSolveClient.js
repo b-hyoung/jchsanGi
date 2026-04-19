@@ -330,6 +330,15 @@ function MobileChatOverlay({
     return () => vv.removeEventListener('resize', onResize);
   }, []);
 
+  // 채팅 탭 전환 시 맨 아래로 스크롤
+  useEffect(() => {
+    if (mobileTab === 'chat' && chatScrollRef?.current) {
+      setTimeout(() => {
+        chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
+      }, 50);
+    }
+  }, [mobileTab]);
+
   return (
     <div className="md:hidden fixed inset-x-0 top-0 z-40 flex flex-col bg-white" style={{ height: `calc(100dvh - ${kbHeight}px)` }}>
       {/* 상단 바: 문제 요약 + 탭 + 닫기 */}
@@ -522,6 +531,15 @@ export default function CoachSolveClient({ lang, problems }) {
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }, [chatMessages, chatLoading]);
+
+  // 채팅 패널 열릴 때 맨 아래로
+  useEffect(() => {
+    if (chatOpen && chatScrollRef.current) {
+      setTimeout(() => {
+        chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight });
+      }, 50);
+    }
+  }, [chatOpen]);
 
   // AI 코치 열릴 때 해설만 먼저 요청
   useEffect(() => {
