@@ -397,23 +397,16 @@ export default function CoachSolveClient({ lang, problems }) {
         }),
       });
       const data = await resp.json();
-      if (data.reply) {
-        setChatMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
-      }
-      // 해설 응답인데 유사 문제가 없으면 → "유사 문제 내줘" 버튼 추가
       const hasPresentProblem = data.ui_actions?.some((a) => a.type === 'present_problem');
-      if (data.reply && !hasPresentProblem && !genProblem) {
+
+      if (hasPresentProblem) {
+        // 유사 문제가 있으면 → AI 텍스트는 짧게 대체, 카드만 표시
         setChatMessages((prev) => [...prev, {
           role: 'assistant',
-          content: null,
-          ui_action: { type: 'suggest_similar' },
+          content: '유사 문제를 준비했어요!',
         }]);
-      }
-      // ui_actions 처리
-      if (data.ui_actions?.length > 0) {
         for (const action of data.ui_actions) {
           if (action.type === 'present_problem') {
-            // 자동 슬라이드 X → 채팅에 버튼 카드로 표시
             const pendingProblem = { problem_id: action.problem_id, ...action.data };
             setChatMessages((prev) => [...prev, {
               role: 'assistant',
@@ -421,6 +414,18 @@ export default function CoachSolveClient({ lang, problems }) {
               ui_action: { type: 'pending_problem', data: pendingProblem },
             }]);
           }
+        }
+      } else {
+        // 유사 문제 없으면 → AI 응답 그대로 + 유사문제 제안 버튼
+        if (data.reply) {
+          setChatMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
+        }
+        if (data.reply && !genProblem) {
+          setChatMessages((prev) => [...prev, {
+            role: 'assistant',
+            content: null,
+            ui_action: { type: 'suggest_similar' },
+          }]);
         }
       }
     } catch (e) {
