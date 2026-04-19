@@ -43,93 +43,37 @@ const CODE_THEME = {
   },
 };
 
-function highlightCode(code, lang) {
-  let html = code
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  // 문자열 하이라이트
-  html = html.replace(/(["'])(?:(?!\1|\\).|\\.)*\1/g, '<span style="color:#a6e3a1">$&</span>');
-
-  // 숫자
-  html = html.replace(/\b(\d+)\b/g, '<span style="color:#fab387">$1</span>');
-
-  if (lang === 'C') {
-    const keywords = ['int','char','float','double','void','return','if','else','for','while','do','switch','case','break','continue','struct','typedef','sizeof','const','static','include','define','printf','scanf','main','strlen','strcmp','strcpy','malloc','free'];
-    const re = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
-    html = html.replace(re, '<span style="color:#cba6f7">$1</span>');
-    // 전처리기
-    html = html.replace(/(#\w+)/g, '<span style="color:#f38ba8">$1</span>');
-  } else if (lang === 'Java') {
-    const keywords = ['public','private','protected','static','void','class','int','String','double','float','boolean','char','new','return','if','else','for','while','do','switch','case','break','continue','try','catch','finally','extends','implements','import','package','this','super','null','true','false','System','out','println','main','length'];
-    const re = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
-    html = html.replace(re, '<span style="color:#cc7832">$1</span>');
-  } else if (lang === 'Python') {
-    const keywords = ['def','class','if','elif','else','for','while','return','import','from','as','try','except','finally','with','in','not','and','or','is','None','True','False','print','len','range','list','dict','set','tuple','int','str','float','input','append','pop','sort','self'];
-    const re = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
-    html = html.replace(re, '<span style="color:#7aa2f7">$1</span>');
-  }
-
-  // 주석 (// 및 #)
-  if (lang === 'C' || lang === 'Java') {
-    html = html.replace(/(\/\/.*)/g, '<span style="color:#6c7086;font-style:italic">$1</span>');
-  } else if (lang === 'Python') {
-    html = html.replace(/(#.*)/g, '<span style="color:#6c7086;font-style:italic">$1</span>');
-  }
-
-  return html;
-}
-
-function addLineNumbers(code) {
-  return code.split('\n').map((line, i) => ({
-    num: i + 1,
-    text: line,
-  }));
-}
-
 function CodeBlock({ code, lang }) {
   const theme = CODE_THEME[lang] || CODE_THEME.C;
-  const lines = addLineNumbers(code);
-  const highlighted = highlightCode(code, lang);
-  const highlightedLines = highlighted.split('\n');
+  const lines = code.split('\n');
 
   return (
     <div className={`rounded-xl ${theme.bg} overflow-hidden mb-4 shadow-lg`}>
-      {/* 코드 블록 상단 바 */}
-      <div className="flex items-center justify-between px-4 py-2 bg-black/20">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <span className="h-3 w-3 rounded-full bg-red-500/80" />
-            <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
-            <span className="h-3 w-3 rounded-full bg-green-500/80" />
-          </div>
-          <div className="flex items-center gap-1.5 ml-2">
-            <img src={LANG_ICON[lang]} alt={lang} className="h-3.5 w-3.5 brightness-0 invert opacity-70" />
-            <span className="text-[11px] font-medium text-white/50">{theme.label}</span>
-          </div>
+      {/* 상단 바 */}
+      <div className="flex items-center px-4 py-2 bg-black/20">
+        <div className="flex gap-1.5">
+          <span className="h-3 w-3 rounded-full bg-red-500/80" />
+          <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
+          <span className="h-3 w-3 rounded-full bg-green-500/80" />
+        </div>
+        <div className="flex items-center gap-1.5 ml-3">
+          <img src={LANG_ICON[lang]} alt={lang} className="h-3.5 w-3.5 brightness-0 invert opacity-70" />
+          <span className="text-[11px] font-medium text-white/50">{theme.label}</span>
         </div>
       </div>
       {/* 코드 본문 */}
-      <div className="overflow-x-auto">
-        <table className="w-full" style={{ borderCollapse: 'collapse' }}>
-          <tbody>
-            {highlightedLines.map((line, i) => (
-              <tr key={i} className="hover:bg-white/5">
-                <td className="select-none text-right pr-4 pl-4 py-0 text-[11px] text-white/20 font-mono align-top" style={{ width: '1%', whiteSpace: 'nowrap' }}>
-                  {i + 1}
-                </td>
-                <td
-                  className={`pr-4 py-0 text-sm font-mono ${theme.text} leading-relaxed`}
-                  style={{ whiteSpace: 'pre' }}
-                  dangerouslySetInnerHTML={{ __html: line || ' ' }}
-                />
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="overflow-x-auto p-4 pt-2">
+        <pre className={`text-sm font-mono ${theme.text} leading-relaxed`} style={{ margin: 0 }}>
+          {lines.map((line, i) => (
+            <div key={i} className="flex hover:bg-white/5 rounded">
+              <span className="select-none text-right text-white/20 text-[11px] mr-4 inline-block" style={{ minWidth: '2ch' }}>
+                {i + 1}
+              </span>
+              <span style={{ whiteSpace: 'pre' }}>{line}</span>
+            </div>
+          ))}
+        </pre>
       </div>
-      <div className="h-2" />
     </div>
   );
 }
