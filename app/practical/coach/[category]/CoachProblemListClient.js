@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, Play } from 'lucide-react';
 
 function pct(n) {
   return `${Math.round((n || 0) * 100)}%`;
@@ -107,7 +107,18 @@ export default function CoachProblemListClient({ category, slug, stats, rows }) 
           <h1 className="mb-4 text-xl font-extrabold text-slate-900">{category} 복습</h1>
 
           {category === 'Code' && (
-            <LanguageFilterTabs active={langFilter} onChange={setLangFilter} stats={stats} />
+            <>
+              <LanguageFilterTabs active={langFilter} onChange={setLangFilter} stats={stats} />
+              {filteredRows.length > 0 && (
+                <Link
+                  href={`/practical/coach/solve?lang=${langFilter === '전체' ? 'C' : langFilter}`}
+                  className={`mb-4 flex w-full items-center justify-center gap-2 rounded-xl ${LANG_THEME[langFilter]?.active || 'bg-slate-700 text-white'} px-4 py-3 text-sm font-semibold shadow-sm hover:opacity-90 transition`}
+                >
+                  <Play className="h-4 w-4" />
+                  {langFilter === '전체' ? 'Code' : langFilter} 연속 풀기 ({filteredRows.length}문제)
+                </Link>
+              )}
+            </>
           )}
 
           {filteredRows.length === 0 ? (
@@ -124,7 +135,7 @@ export default function CoachProblemListClient({ category, slug, stats, rows }) 
               {filteredRows.map((r) => (
                 <li key={`${r.source_session_id}:${r.problem_number}`}>
                   <Link
-                    href={`/practical/${datasetIdToRouteId(r.source_session_id)}?p=${r.problem_number}&from=coach`}
+                    href={`/practical/coach/solve?lang=${r.subcategory || 'C'}&sid=${r.source_session_id}&p=${r.problem_number}`}
                     className={`group flex items-center justify-between rounded-xl border border-slate-200/80 border-l-4 ${getLangBorder(r.subcategory, langFilter)} bg-white px-4 py-3 shadow-sm ${getLangHover(r.subcategory, langFilter)} hover:shadow-md transition`}
                   >
                     <div className="flex items-center gap-3">
