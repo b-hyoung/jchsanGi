@@ -28,11 +28,15 @@ async def get_question_detail(source_session_id: str, problem_number: int) -> di
     if problem is None:
         raise KeyError(f"problem {problem_number} not found in {source_session_id}")
 
-    answers = _load_json(answer_path) if answer_path.exists() else []
-    comments = _load_json(comment_path) if comment_path.exists() else []
+    raw_answers = _load_json(answer_path) if answer_path.exists() else []
+    raw_comments = _load_json(comment_path) if comment_path.exists() else []
 
-    answer = _find(answers, "problem_number", problem_number, "answer")
-    comment = _find(comments, "problem_number", problem_number, "comment")
+    # answer1.json: [{answers: [...]}] 또는 flat [{problem_number, ...}]
+    answers = raw_answers[0].get("answers", []) if raw_answers and isinstance(raw_answers[0], dict) and "answers" in raw_answers[0] else raw_answers
+    comments = raw_comments[0].get("comments", []) if raw_comments and isinstance(raw_comments[0], dict) and "comments" in raw_comments[0] else raw_comments
+
+    answer = _find(answers, "problem_number", problem_number, "correct_answer_text") or _find(answers, "problem_number", problem_number, "answer")
+    comment = _find(comments, "problem_number", problem_number, "comment") or _find(comments, "problem_number", problem_number, "comment_text")
 
     return {
         "problem_number": problem.get("problem_number"),
