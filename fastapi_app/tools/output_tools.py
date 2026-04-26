@@ -33,7 +33,21 @@ def handle_present_similar_problem(args: dict[str, Any], session, ui_actions: li
         "data": ui_payload,
     })
 
-    return {"problem_id": problem_id, "rendered": True}
+    # 다음 유사 문제 생성 시 차별화를 위한 피드백
+    prev_count = len(session.generated_problems)
+    prev_summaries = []
+    for prev in session.generated_problems[:-1]:  # 현재 건 제외
+        code_preview = (prev.get("examples") or "")[:80]
+        prev_summaries.append(code_preview)
+
+    result = {"problem_id": problem_id, "rendered": True}
+    if prev_summaries:
+        result["note"] = (
+            f"지금까지 {prev_count}개의 유사 문제를 생성했습니다. "
+            f"다음 유사 문제 요청 시 반드시 다른 코드 구조, 다른 연산, 다른 변수명을 사용하세요. "
+            f"이전 문제 코드: {' / '.join(prev_summaries)}"
+        )
+    return result
 
 
 def handle_submit_evaluation(args: dict[str, Any], session, ui_actions: list) -> dict:
