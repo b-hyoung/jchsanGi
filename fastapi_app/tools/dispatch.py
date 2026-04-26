@@ -153,13 +153,14 @@ async def dispatch_tool(tool_call, user_email: str, session, ui_actions: list) -
             if reject_reason:
                 return {"error": reject_reason}
 
-            # 2. Code 카테고리: 3단계 정답 검증
-            #    1차: 컴파일러 실행 (정확도 100%)
-            #    2차: Critic AI 폴백 (컴파일 실패 시)
+            # 2. Code/SQL 카테고리: 3단계 정답 검증
+            #    1차: 실행 검증 — Code: gcc/javac/python, SQL: MySQL
+            #    2차: Critic AI 폴백 (실행 실패 시)
             #    3차: AI 원래 답 그대로 통과 + 로그 (둘 다 실패 시)
-            if args.get("category") == "Code" and args.get("examples"):
+            category = args.get("category")
+            if category in ("Code", "SQL") and args.get("examples"):
                 code = args["examples"]
-                language = args.get("language", "C")
+                language = args.get("language", "C") if category == "Code" else "SQL"
                 original_answer = args.get("expected_answer", "")
 
                 verify_result = verify_answer(code, language, original_answer)

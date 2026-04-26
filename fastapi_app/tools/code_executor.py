@@ -1,7 +1,8 @@
-"""코드 실행 검증기 — AI 생성 문제의 정답을 실제 컴파일/실행으로 검증.
+"""코드/SQL 실행 검증기 — AI 생성 문제의 정답을 실제 컴파일/실행으로 검증.
 
-지원 언어: C (gcc), Java (javac/java), Python
-보안: subprocess에 timeout 적용, 네트워크/파일 접근 제한 없음 (신뢰된 AI 코드만 실행)
+지원 언어: C (gcc), Java (javac/java), Python, SQL (MySQL)
+보안: subprocess에 timeout 적용, 신뢰된 AI 코드만 실행
+SQL: 임시 DB 생성 → 실행 → 결과 비교 → DB 삭제
 """
 import logging
 import os
@@ -147,6 +148,78 @@ def _run_java(code: str) -> dict:
         return {"success": True, "stdout": run.stdout}
 
 
+_MYSQL_PATHS = [
+    "mysql",
+    str(Path("C:/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe")),
+]
+
+_MYSQL_DB_PREFIX = "cbt_verify_"
+
+
+def _run_sql(code: str) -> dict:
+    """MySQL에서 SQL을 실행하고 결과를 반환.
+
+    AI가 생성한 SQL은 보통:
+      - CREATE TABLE + INSERT (테이블 셋업)
+      - SELECT 쿼리 (실제 문제)
+    또는:
+      - GRANT/REVOKE 등 DCL
+    """
+    mysql = _find_executable(_MYSQL_PATHS)
+    if not mysql:
+        return {"success": False, "error": "mysql not found"}
+
+    import uuid
+    db_name = f"{_MYSQL_DB_PREFIX}{uuid.uuid4().hex[:8]}"
+
+    try:
+        # 1. 임시 DB 생성 (UTF-8)
+        setup = subprocess.run(
+            [mysql, "-u", "root", "-e",
+             f"CREATE DATABASE `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"],
+            capture_output=True, text=True, timeout=_TIMEOUT,
+        )
+        if setup.returncode != 0:
+            return {"success": False, "error": f"DB creation failed: {setup.stderr[:300]}"}
+
+        # 2. SQL 실행 (USE db; + 유저 코드)
+        full_sql = f"USE `{db_name}`;\n{code}"
+        run = subprocess.run(
+            [mysql, "-u", "root", "--default-character-set=utf8mb4", "-N"],
+            input=full_sql.encode("utf-8"),
+            capture_output=True, timeout=_TIMEOUT,
+        )
+        run.stdout = run.stdout.decode("utf-8", errors="replace")
+        run.stderr = run.stderr.decode("utf-8", errors="replace")
+
+        # 3. 결과 수집 (에러가 있어도 stdout은 캡처)
+        stdout = run.stdout.strip()
+        stderr = run.stderr.strip()
+
+        if run.returncode != 0:
+            return {"success": False, "error": f"SQL error: {stderr[:300]}"}
+
+        # MySQL -N 옵션: 컬럼 헤더 없이 값만 출력
+        # 탭 구분을 공백으로, 여러 행은 줄바꿈으로
+        result_lines = []
+        for line in stdout.split("\n"):
+            cleaned = line.replace("\t", " ").strip()
+            if cleaned:
+                result_lines.append(cleaned)
+
+        return {"success": True, "stdout": "\n".join(result_lines)}
+
+    finally:
+        # 4. 임시 DB 삭제 (항상 실행)
+        try:
+            subprocess.run(
+                [mysql, "-u", "root", "-e", f"DROP DATABASE IF EXISTS `{db_name}`;"],
+                capture_output=True, timeout=_TIMEOUT,
+            )
+        except Exception:
+            pass
+
+
 def execute_code(code: str, language: str) -> dict:
     """코드를 실행하고 결과를 반환.
 
@@ -162,6 +235,8 @@ def execute_code(code: str, language: str) -> dict:
             return _run_python(code)
         elif lang == "java":
             return _run_java(code)
+        elif lang == "sql":
+            return _run_sql(code)
         else:
             return {"success": False, "error": f"unsupported language: {language}"}
     except subprocess.TimeoutExpired:
