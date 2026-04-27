@@ -14,16 +14,26 @@ export async function POST(request) {
 
   const body = await request.json();
 
-  const resp = await fetch(`${AGENT_API_URL}/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-internal-auth': INTERNAL_SHARED_SECRET,
-      'x-user-email': email,
-    },
-    body: JSON.stringify(body),
-  });
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120_000);
 
-  const data = await resp.json();
-  return Response.json(data, { status: resp.status });
+    const resp = await fetch(`${AGENT_API_URL}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-auth': INTERNAL_SHARED_SECRET,
+        'x-user-email': email,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    const data = await resp.json();
+    return Response.json(data, { status: resp.status });
+  } catch (err) {
+    console.error('[agent/chat] error:', err?.message || err);
+    return Response.json({ error: 'agent server error', detail: String(err?.message || '') }, { status: 502 });
+  }
 }

@@ -920,13 +920,15 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
         setChatMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
       }
       // 채점 결과 ui_action 처리
+      let hasEvaluation = false;
       if (data.ui_actions?.length > 0) {
         for (const action of data.ui_actions) {
           if (action.type === 'evaluation') {
+            hasEvaluation = true;
             setGenResult({
               correct: action.correct,
               reasoning: action.reasoning || '',
-              userAnswer: genAnswer.trim(),
+              userAnswer: answerStr.trim(),
             });
           }
           if (action.type === 'present_problem') {
@@ -942,8 +944,17 @@ export default function CoachSolveClient({ lang, category = 'Code', problems }) 
           }
         }
       }
-    } catch {
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: '제출 중 오류가 발생했어요.' }]);
+      // AI가 evaluation을 안 보낸 경우 (reply만 온 경우) → 입력 상태로 복구
+      if (!hasEvaluation && !data.ui_actions?.some(a => a.type === 'present_problem')) {
+        setGenSubmitted(false);
+        setGenResult(null);
+      }
+    } catch (err) {
+      console.error('submit error:', err);
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: '제출 중 오류가 발생했어요. 다시 시도해주세요.' }]);
+      // 에러 시 제출 상태 초기화 (채점 중... 무한 방지)
+      setGenSubmitted(false);
+      setGenResult(null);
     } finally {
       setGenLoading(false);
     }

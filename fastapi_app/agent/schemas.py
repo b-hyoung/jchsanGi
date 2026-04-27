@@ -66,8 +66,8 @@ _PRESENT_SIMILAR_PROBLEM = {
     "function": {
         "name": "present_similar_problem",
         "description": (
-            "원 문제와 구조적으로 유사한 새 문제를 유저에게 제시한다. "
-            "category 가 'SQL' 또는 'Code' 일 때만 호출 가능. '이론' 금지."
+            "원 문제와 구조적���로 유사한 새 문제를 유저에게 제시한다. "
+            "모든 카테고리(Code, SQL, 이론)에서 호출 가능."
         ),
         "parameters": {
             "type": "object",
@@ -76,7 +76,7 @@ _PRESENT_SIMILAR_PROBLEM = {
                 "examples": {"type": "string", "description": "코드 또는 SQL 스키마·데이터"},
                 "expected_answer": {"type": "string", "description": "정답 (유저에겐 노출 X, 서버만 보관)"},
                 "answer_explanation": {"type": "string", "description": "왜 그 답이 정답인지"},
-                "category": {"type": "string", "enum": ["SQL", "Code"]},
+                "category": {"type": "string", "enum": ["SQL", "Code", "이론"]},
                 "language": {
                     "type": "string",
                     "enum": ["Java", "C", "Python"],
